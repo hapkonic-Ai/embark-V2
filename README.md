@@ -182,9 +182,9 @@ flowchart LR
 
 ## Documentation
 
-- `context.md` — Overall project context and architecture
-- `current.md` — Current standing of the project
-- `todo.md` — Backlog and upcoming work
+- `agent config/context.md` — Overall project context and architecture
+- `agent config/current.md` — Current standing of the project
+- `agent config/todo.md` — Backlog and upcoming work
 
 ## License
 
