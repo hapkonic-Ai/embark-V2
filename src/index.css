@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 33% 98%;
+    --foreground: 24 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 10% 10%;
+    --primary: 20 90% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 28 40% 94%;
+    --secondary-foreground: 24 10% 12%;
+    --muted: 28 30% 94%;
+    --muted-foreground: 25 6% 42%;
+    --accent: 26 95% 93%;
+    --accent-foreground: 22 85% 32%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 28 18% 88%;
+    --input: 28 18% 85%;
+    --ring: 20 90% 48%;
+    --radius: 0.75rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 20 90% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 20 90% 48%;
+  }
+
+  .dark {
+    --background: 24 10% 6%;
+    --foreground: 30 20% 96%;
+    --card: 24 8% 9%;
+    --card-foreground: 30 20% 96%;
+    --popover: 24 8% 9%;
+    --popover-foreground: 30 20% 96%;
+    --primary: 22 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 24 6% 15%;
+    --secondary-foreground: 30 20% 96%;
+    --muted: 24 6% 15%;
+    --muted-foreground: 26 8% 60%;
+    --accent: 22 60% 16%;
+    --accent-foreground: 24 90% 70%;
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 24 6% 18%;
+    --input: 24 6% 20%;
+    --ring: 22 95% 53%;
+    --sidebar-background: 24 8% 8%;
+    --sidebar-foreground: 26 8% 70%;
+    --sidebar-primary: 22 95% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 24 6% 14%;
+    --sidebar-accent-foreground: 30 20% 96%;
+    --sidebar-border: 24 6% 16%;
+    --sidebar-ring: 22 95% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient-orange {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(100deg, #ea580c, #f97316 45%, #fbbf24);
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(0 0 0 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(0 0 0 / 0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .bg-grid-dark {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+  }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(2deg); }
+}
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes shine {
+  from { transform: translateX(-120%) skewX(-18deg); }
+  to { transform: translateX(240%) skewX(-18deg); }
+}
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  animation: shine 3.2s ease-in-out infinite;
+}
+
+@keyframes party-hue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+.party-mode {
+  animation: party-hue 1.6s linear infinite;
+}
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -24px) scale(1.08); }
+  66% { transform: translate(-24px, 18px) scale(0.94); }
+}
+.animate-blob {
+  animation: blob 12s ease-in-out infinite;
+}
