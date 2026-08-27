@@ -5,6 +5,7 @@ import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/format";
+import { ParallaxBox } from "@/components/site/Parallax";
 
 const PLANS = [
   {
@@ -33,7 +34,7 @@ const PLANS = [
 export function Programs() {
   return (
     <section className="py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <ParallaxBox offset={40} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto">
           <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Programs</span>
           <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
@@ -83,7 +84,7 @@ export function Programs() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </ParallaxBox>
     </section>
   );
 }
@@ -93,7 +94,7 @@ export function MentorsPreview() {
   const top = mentors?.slice(0, 4) ?? [];
   return (
     <section className="py-20 bg-orange-50/60 dark:bg-transparent">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <ParallaxBox offset={35} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Mentors</span>
@@ -129,7 +130,7 @@ export function MentorsPreview() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </ParallaxBox>
     </section>
   );
 }
@@ -140,7 +141,7 @@ export function EventsPreview() {
   if (live.length === 0) return null;
   return (
     <section className="py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <ParallaxBox offset={40} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Compete</span>
@@ -179,7 +180,7 @@ export function EventsPreview() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </ParallaxBox>
     </section>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { GraduationCap, Trophy, BookOpen, Users, GitCompareArrows, MessageCircle, CalendarCheck, FileUp } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { ParallaxBox } from "@/components/site/Parallax";
 
 const SCHOOLS = ["IIM Ahmedabad", "IIM Bangalore", "IIM Calcutta", "XLRI", "FMS Delhi", "SPJIMR", "ISB Hyderabad", "IIM Lucknow", "IIFT Delhi", "NMIMS", "SIBM Pune", "MDI Gurgaon", "IIT Bombay", "IIM Kozhikode", "TISS Mumbai", "IIM Indore"];
 
@@ -53,24 +54,26 @@ export function Stats() {
   ];
   return (
     <section className="py-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {items.map((it, idx) => (
-          <motion.div
-            key={it.label}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: idx * 0.08 }}
-            className="rounded-2xl border bg-card p-6 text-center shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
-          >
-            <it.icon className="mx-auto h-6 w-6 text-orange-500" />
-            <div className="mt-3 font-display text-4xl font-bold">
-              <Counter to={it.value} suffix={it.suffix} />
-            </div>
-            <div className="mt-1 text-sm text-muted-foreground">{it.label}</div>
-          </motion.div>
-        ))}
-      </div>
+      <ParallaxBox offset={30} className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {items.map((it, idx) => (
+            <motion.div
+              key={it.label}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.08 }}
+              className="rounded-2xl border bg-card p-6 text-center shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
+            >
+              <it.icon className="mx-auto h-6 w-6 text-orange-500" />
+              <div className="mt-3 font-display text-4xl font-bold">
+                <Counter to={it.value} suffix={it.suffix} />
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">{it.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </ParallaxBox>
     </section>
   );
 }
@@ -105,7 +108,7 @@ const FEATURES = [
 export function Features() {
   return (
     <section className="py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <ParallaxBox offset={40} className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-2xl mx-auto">
           <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">The whole toolkit</span>
           <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
@@ -134,7 +137,7 @@ export function Features() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </ParallaxBox>
     </section>
   );
 }
@@ -151,7 +154,7 @@ export function HowItWorks() {
     <section className="py-20 bg-stone-950 text-stone-100 relative overflow-hidden">
       <div className="absolute inset-0 bg-grid-dark opacity-60" />
       <div className="absolute -top-40 left-1/2 h-80 w-[40rem] -translate-x-1/2 rounded-full bg-orange-600/25 blur-3xl" />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+      <ParallaxBox offset={35} className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto">
           <span className="text-sm font-semibold text-orange-400 uppercase tracking-widest">How it works</span>
           <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
@@ -175,7 +178,7 @@ export function HowItWorks() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </ParallaxBox>
     </section>
   );
 }

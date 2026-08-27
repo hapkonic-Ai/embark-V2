@@ -1,6 +1,7 @@
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 import Hero from "@/sections/landing/Hero";
+import { PanicState } from "@/sections/landing/PanicState";
 import { Marquee, Stats, Features, HowItWorks } from "@/sections/landing/Sections";
 import { Programs, MentorsPreview, EventsPreview } from "@/sections/landing/Showcase";
 import { Testimonials, FAQ, FinalCTA } from "@/sections/landing/Closing";
@@ -11,6 +12,7 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
+        <PanicState />
         <Marquee />
         <Stats />
         <Features />

@@ -8,6 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ParallaxBox } from "@/components/site/Parallax";
 
 const TESTIMONIALS = [
   {
@@ -30,7 +31,7 @@ const TESTIMONIALS = [
 export function Testimonials() {
   return (
     <section className="py-20 bg-orange-50/60 dark:bg-transparent">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <ParallaxBox offset={35} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto">
           <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Converts</span>
           <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
@@ -58,7 +59,7 @@ export function Testimonials() {
             </motion.figure>
           ))}
         </div>
-      </div>
+      </ParallaxBox>
     </section>
   );
 }
@@ -89,7 +90,7 @@ const FAQS = [
 export function FAQ() {
   return (
     <section className="py-20">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6">
+      <ParallaxBox offset={30} className="mx-auto max-w-3xl px-4 sm:px-6">
         <h2 className="text-center font-display text-4xl sm:text-5xl font-bold tracking-tight">
           Questions? Good sign.
         </h2>
@@ -103,7 +104,7 @@ export function FAQ() {
             </AccordionItem>
           ))}
         </Accordion>
-      </div>
+      </ParallaxBox>
     </section>
   );
 }

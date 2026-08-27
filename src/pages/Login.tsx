@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { GraduationCap, Loader2, MapPinned } from "lucide-react";
+import { ArrowRight, GraduationCap, Loader2, MapPinned, Star, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
@@ -83,26 +83,118 @@ export default function Login() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* left panel */}
-      <div className="relative hidden lg:flex flex-col justify-between bg-stone-950 p-12 text-white overflow-hidden">
+      <div className="relative hidden lg:flex flex-col bg-stone-950 p-12 text-white overflow-hidden">
         <div className="absolute inset-0 bg-grid-dark opacity-40" />
         <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-orange-600/30 blur-3xl" />
+        <div className="absolute top-1/3 right-0 h-80 w-80 rounded-full bg-indigo-600/20 blur-3xl" />
+
         <div className="relative [&_span]:text-white">
           <Logo />
         </div>
-        <div className="relative">
-          <h1 className="font-display text-5xl font-bold leading-tight">
+
+        <div className="relative flex-1 flex flex-col justify-center">
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="font-display text-5xl font-bold leading-tight"
+          >
             The journey of
             <br />
             <span className="text-gradient-orange">a thousand mocks</span>
             <br />
             begins with one click.
-          </h1>
-          <p className="mt-6 max-w-md text-stone-400">
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.7 }}
+            className="mt-6 max-w-md text-stone-400"
+          >
             Mentors from IIMs &amp; XLRI. National hackathons. Playbooks that
             actually work. Every B-school in India, comparable.
-          </p>
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.35, duration: 0.7 }}
+            className="mt-10 relative h-72 w-full max-w-md"
+          >
+            {/* floating avatar stack */}
+            <motion.div
+              animate={{ y: [-8, 8, -8] }}
+              transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+              className="absolute left-0 top-0 rounded-2xl border border-stone-800 bg-stone-900/70 p-4 backdrop-blur-sm"
+            >
+              <div className="flex -space-x-3">
+                {["https://i.pravatar.cc/150?u=l1", "https://i.pravatar.cc/150?u=l2", "https://i.pravatar.cc/150?u=l3", "https://i.pravatar.cc/150?u=l4"].map((src, i) => (
+                  <img key={i} src={src} alt="" className="h-10 w-10 rounded-full border-2 border-stone-950 object-cover" />
+                ))}
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-950 bg-orange-500 text-xs font-bold">
+                  +4k
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-1 text-xs text-stone-300">
+                <Users className="h-3.5 w-3.5 text-orange-400" />
+                <span>Students cracked IIMs this season</span>
+              </div>
+            </motion.div>
+
+            {/* review card */}
+            <motion.div
+              animate={{ y: [8, -8, 8] }}
+              transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
+              className="absolute right-0 top-8 max-w-[260px] rounded-2xl border border-stone-800 bg-stone-900/70 p-4 backdrop-blur-sm"
+            >
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-3.5 w-3.5 fill-orange-400 text-orange-400" />
+                ))}
+              </div>
+              <p className="mt-3 text-sm text-stone-300 leading-snug">
+                “My PI mentor asked the exact questions that came up in my actual IIM panel. Unreal.”
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <img src="https://i.pravatar.cc/150?u=l5" alt="" className="h-8 w-8 rounded-full object-cover" />
+                <div className="text-xs">
+                  <div className="font-semibold text-white">Ayesha K.</div>
+                  <div className="text-stone-500">IIM K '27</div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* stat card */}
+            <motion.div
+              animate={{ y: [-6, 6, -6] }}
+              transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+              className="absolute left-6 bottom-6 rounded-2xl border border-stone-800 bg-stone-900/70 p-4 backdrop-blur-sm"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/20 text-orange-400">
+                  <TrendingUp className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="font-display text-2xl font-bold">₹35.3 LPA</div>
+                  <div className="text-xs text-stone-400">Average top-10 package</div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* cta bubble */}
+            <motion.div
+              animate={{ x: [-6, 6, -6] }}
+              transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+              className="absolute right-4 bottom-0 rounded-full border border-stone-800 bg-stone-900/80 px-4 py-2 text-xs text-stone-300"
+            >
+              <span className="inline-flex items-center gap-1">
+                Join the waitlist <ArrowRight className="h-3 w-3 text-orange-400" />
+              </span>
+            </motion.div>
+          </motion.div>
         </div>
-        <p className="relative text-xs text-stone-600">
+
+        <p className="relative mt-6 text-xs text-stone-600">
           “Embark” — because “panic-scroll Quora at 2am” was taken.
         </p>
       </div>

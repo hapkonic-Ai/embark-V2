@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router";
 import { Toaster } from "@/components/ui/sonner";
 import EasterEggs from "@/components/site/EasterEggs";
+import { LoadingScreen } from "@/components/site/LoadingScreen";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -20,6 +21,7 @@ import NotFound from "./pages/NotFound";
 export default function App() {
   return (
     <>
+      <LoadingScreen />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
