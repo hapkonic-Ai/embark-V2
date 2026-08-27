@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const LINKS = [
   { to: "/mentors", label: "Mentors" },
   { to: "/guest-lecturer", label: "Guest Lecturer" },
-  { to: "/events", label: "Hackathons" },
+  { to: "/events", label: "Events" },
   { to: "/playbooks", label: "Playbooks" },
   { to: "/colleges", label: "Compare Colleges" },
 ];

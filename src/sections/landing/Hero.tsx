@@ -1,16 +1,38 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, GraduationCap, Play, Star, TrendingUp } from "lucide-react";
+import { ArrowRight, CheckCircle2, Play, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const WORDS = ["CAT", "GDPI", "Case Comps", "Interviews", "Your Dream Campus"];
+const WORDS = ["CAT", "GDPI", "Case Comps", "Interviews", "Your Dream B-School"];
 
 const REVIEWS = [
   { name: "Ayesha K.", school: "IIM K '27", text: "My PI mentor asked questions that came up in my actual panel.", rating: 5 },
   { name: "Rahul N.", school: "XLRI '27", text: "Won the case comp and put it straight on my resume.", rating: 5 },
   { name: "Priya M.", school: "FMS '27", text: "From blank SOP to final draft in 4 mentor calls.", rating: 5 },
 ];
+
+const STUDENT_PHOTOS = [
+  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1531545514256-b1400e3f03b2?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1571260899304-425eee5c7be8?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=120&h=120&fit=crop",
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.12, delayChildren: 0.3 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 40, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: "easeOut" as const } },
+};
 
 export default function Hero() {
   const [i, setI] = useState(0);
@@ -47,26 +69,15 @@ export default function Hero() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-center lg:text-left"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-sm font-medium text-orange-700 dark:bg-orange-500/10 dark:border-orange-500/30 dark:text-orange-300"
-            >
-              <GraduationCap className="h-4 w-4" />
-              Admissions 2026 is live
-            </motion.div>
-
             <motion.h1
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.7 }}
-              className="mt-6 font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]"
+              transition={{ delay: 0.05, duration: 0.7 }}
+              className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]"
             >
-              Stop the 2am
+              From blank SOP
               <br />
-              panic scroll.
-              <br />
-              Crack{" "}
+              to final{" "}
               <span className="relative inline-block text-left align-baseline">
                 <AnimatePresence mode="wait">
                   <motion.span
@@ -86,16 +97,16 @@ export default function Hero() {
             <motion.p
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.22, duration: 0.7 }}
+              transition={{ delay: 0.18, duration: 0.7 }}
               className="mx-auto lg:mx-0 mt-5 max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed"
             >
-              1:1 mentorship from IIM &amp; XLRI alumni, national hackathons, battle-tested playbooks, and a comparison of every MBA college in India — all in one place.
+              1:1 mentorship from IIM &amp; XLRI alumni who’ve cleared GD, PI, and placements — so you show up prepared, not panicked, and land the offer that changes your career.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.34, duration: 0.7 }}
+              transition={{ delay: 0.3, duration: 0.7 }}
               className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3"
             >
               <Button size="lg" className="btn-shine rounded-full px-8 h-12 text-base" asChild>
@@ -110,35 +121,39 @@ export default function Hero() {
               </Button>
             </motion.div>
 
-            {/* student collage + social proof */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.46, duration: 0.7 }}
+              transition={{ delay: 0.42, duration: 0.7 }}
+              className="mt-6 inline-flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 text-sm text-muted-foreground"
+            >
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-orange-500" /> Get matched</span>
+              <span className="hidden sm:inline text-stone-300">→</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-orange-500" /> Practise mocks</span>
+              <span className="hidden sm:inline text-stone-300">→</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-orange-500" /> Crack your call</span>
+            </motion.div>
+
+            {/* social proof */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.54, duration: 0.7 }}
               className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5"
             >
-              <div className="relative">
-                <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl border bg-card/80 backdrop-blur-sm shadow-sm">
-                  {[
-                    "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=120&h=120&fit=crop",
-                    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=120&h=120&fit=crop",
-                    "https://images.unsplash.com/photo-1531545514256-b1400e3f03b2?w=120&h=120&fit=crop",
-                    "https://images.unsplash.com/photo-1571260899304-425eee5c7be8?w=120&h=120&fit=crop",
-                    "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=120&h=120&fit=crop",
-                    "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=120&h=120&fit=crop",
-                  ].map((src, idx) => (
-                    <motion.img
-                      key={idx}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.6 + idx * 0.05 }}
-                      src={src}
-                      alt="student"
-                      className="h-11 w-11 rounded-xl object-cover"
-                    />
-                  ))}
-                </div>
-                <div className="absolute -bottom-2 -right-2 rounded-full bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 shadow-lg">
+              <div className="flex -space-x-3">
+                {STUDENT_PHOTOS.slice(0, 5).map((src, idx) => (
+                  <motion.img
+                    key={idx}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.7 + idx * 0.06 }}
+                    src={src}
+                    alt="student"
+                    className="h-10 w-10 rounded-full border-2 border-background object-cover"
+                  />
+                ))}
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-background bg-orange-500 text-xs font-bold text-white">
                   +4k
                 </div>
               </div>
@@ -148,7 +163,6 @@ export default function Hero() {
                   <span className="ml-1 text-sm font-semibold">4.9/5</span>
                 </div>
                 <p className="text-xs text-muted-foreground">from 1,200+ student reviews</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Trusted at 120+ campuses</p>
               </div>
             </motion.div>
           </motion.div>
@@ -159,16 +173,16 @@ export default function Hero() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
             style={{ rotateX }}
-            className="relative hidden lg:flex items-center justify-center h-[520px]"
+            className="relative hidden lg:flex items-center justify-center h-[540px]"
           >
-            {/* main floating card */}
             <motion.div
-              animate={{ y: [0, -16, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
               className="relative z-10 w-80 rounded-3xl border bg-card/90 backdrop-blur-xl p-6 shadow-2xl shadow-orange-500/10"
               style={{ transformStyle: "preserve-3d", transform: "rotateY(-8deg) rotateX(4deg)" }}
             >
-              <div className="flex items-center gap-3">
+              <motion.div variants={itemVariants} className="flex items-center gap-3">
                 <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-xl font-bold text-white">
                   RO
                 </div>
@@ -176,8 +190,8 @@ export default function Hero() {
                   <div className="font-display font-semibold">Rohan Mehta</div>
                   <div className="text-xs text-orange-600">IIM Ahmedabad · ex-McKinsey</div>
                 </div>
-              </div>
-              <div className="mt-5 space-y-3">
+              </motion.div>
+              <motion.div variants={itemVariants} className="mt-5 space-y-3">
                 <div className="rounded-2xl bg-muted/50 p-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Mock GDs</span>
@@ -190,13 +204,14 @@ export default function Hero() {
                 <div className="rounded-2xl bg-green-50 text-green-800 p-3 text-sm">
                   <span className="font-semibold">Latest feedback:</span> Strong opening. Tighten your conclusion.
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
 
             {/* floating review card */}
             <motion.div
-              animate={{ y: [0, 14, 0] }}
-              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              variants={itemVariants}
+              initial="hidden"
+              animate="show"
               className="absolute -top-4 -right-4 z-20 w-64 rounded-2xl border bg-card/90 backdrop-blur p-4 shadow-xl"
               style={{ transform: "rotateY(8deg) rotateX(-4deg) translateZ(40px)" }}
             >
@@ -213,9 +228,11 @@ export default function Hero() {
                 >
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">“{REVIEWS[slider].text}”</p>
                   <div className="mt-3 flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-orange-100 flex items-center justify-center text-xs font-bold text-orange-600">
-                      {REVIEWS[slider].name.charAt(0)}
-                    </div>
+                    <img
+                      src={`https://i.pravatar.cc/150?u=${REVIEWS[slider].name}`}
+                      alt={REVIEWS[slider].name}
+                      className="h-7 w-7 rounded-full object-cover"
+                    />
                     <div className="text-xs">
                       <div className="font-medium">{REVIEWS[slider].name}</div>
                       <div className="text-muted-foreground">{REVIEWS[slider].school}</div>
@@ -227,8 +244,9 @@ export default function Hero() {
 
             {/* floating stats card */}
             <motion.div
-              animate={{ y: [0, -12, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              variants={itemVariants}
+              initial="hidden"
+              animate="show"
               className="absolute bottom-8 -left-8 z-20 w-56 rounded-2xl border bg-card/90 backdrop-blur p-4 shadow-xl"
               style={{ transform: "rotateY(6deg) rotateX(6deg) translateZ(30px)" }}
             >
@@ -239,22 +257,41 @@ export default function Hero() {
               <div className="text-xs text-green-600 mt-1">+12% vs last year</div>
             </motion.div>
 
-            {/* floating student photo card */}
+            {/* student collage polaroid */}
             <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-              className="absolute top-24 -left-12 z-10 rounded-2xl border bg-card/90 backdrop-blur p-3 shadow-xl"
-              style={{ transform: "rotateY(-6deg) rotateX(-4deg) translateZ(20px)" }}
+              variants={itemVariants}
+              initial="hidden"
+              animate="show"
+              whileHover={{ scale: 1.05, rotate: -1 }}
+              className="absolute top-20 -left-14 z-30 rounded-2xl border bg-card p-3 shadow-2xl rotate-[-6deg]"
+              style={{ transform: "rotateY(-6deg) rotateX(-4deg) translateZ(60px)" }}
+            >
+              <div className="grid grid-cols-3 gap-1.5">
+                {STUDENT_PHOTOS.map((src, idx) => (
+                  <img key={idx} src={src} alt="student" className="h-10 w-10 rounded-lg object-cover" />
+                ))}
+              </div>
+              <p className="mt-2 text-center text-xs font-medium">+4k converts</p>
+            </motion.div>
+
+            {/* success story card */}
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="show"
+              whileHover={{ scale: 1.05 }}
+              className="absolute -bottom-2 right-0 z-30 w-64 rounded-2xl border bg-card/95 backdrop-blur p-4 shadow-2xl"
+              style={{ transform: "rotateY(4deg) rotateX(4deg) translateZ(50px)" }}
             >
               <div className="flex items-center gap-3">
                 <img
-                  src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=120&h=120&fit=crop"
+                  src="https://images.unsplash.com/photo-1531545514256-b1400e3f03b2?w=120&h=120&fit=crop"
                   alt="student"
                   className="h-12 w-12 rounded-xl object-cover"
                 />
                 <div>
-                  <div className="font-display font-bold">8 verified</div>
-                  <div className="text-xs text-muted-foreground">mentors online now</div>
+                  <div className="font-display font-bold text-green-700">₹42 LPA offer</div>
+                  <div className="text-xs text-muted-foreground">IIM B convert · 6 mentor mocks</div>
                 </div>
               </div>
             </motion.div>

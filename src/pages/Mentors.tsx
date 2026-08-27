@@ -5,6 +5,7 @@ import { Search, BadgeCheck, Linkedin, Lock } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
+import PageHero from "@/components/site/PageHero";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,40 @@ function MentorAvatar({ id, name }: { id: number; name: string | null }) {
   );
 }
 
+function MentorVisual() {
+  const mentors = [1, 2, 3, 4, 5];
+  return (
+    <div className="relative w-full h-full">
+      {mentors.map((id, i) => (
+        <motion.div
+          key={id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
+          className="absolute rounded-full border-4 border-stone-900 shadow-2xl overflow-hidden"
+          style={{
+            width: i === 0 ? 180 : i === 1 ? 120 : 80,
+            height: i === 0 ? 180 : i === 1 ? 120 : 80,
+            top: i === 0 ? 40 : i === 1 ? 180 : i === 2 ? 60 : i === 3 ? 220 : 140,
+            left: i === 0 ? 100 : i === 1 ? 320 : i === 2 ? 300 : i === 3 ? 30 : 380,
+            zIndex: mentors.length - i,
+          }}
+        >
+          <MentorAvatar id={id} name={`Mentor ${id}`} />
+        </motion.div>
+      ))}
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.8 }}
+        className="absolute top-0 right-12 rounded-2xl bg-orange-500 text-white px-4 py-2 text-sm font-bold shadow-lg"
+      >
+        Verified mentors
+      </motion.div>
+    </div>
+  );
+}
+
 export default function Mentors() {
   const { data: mentors, isLoading } = trpc.catalog.mentors.useQuery();
   const { isAuthenticated } = useAuth();
@@ -36,18 +71,20 @@ export default function Mentors() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-14">
-        <div className="max-w-2xl">
-          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
-            Find your <span className="text-gradient-orange">mentor</span>
-          </h1>
-          <p className="mt-3 text-muted-foreground">
-            Verified alumni from India's top B-schools. Pay on Embark, connect on
-            WhatsApp, convert your call.
-          </p>
-        </div>
+      <PageHero
+        eyebrow="Mentors"
+        title="Learn from people who"
+        highlight="made it."
+        subtitle="Verified IIM & XLRI alumni who’ve cracked the exact GD, PI and placement process you’re about to face."
+        cta="Find your mentor"
+        ctaHref="/login?mode=register"
+        secondaryCta="Become a mentor"
+        secondaryHref="/login?mode=register&role=mentor"
+        visual={<MentorVisual />}
+      />
 
-        <div className="mt-8 relative max-w-md">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-14">
+        <div className="relative max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={q}
@@ -66,7 +103,8 @@ export default function Mentors() {
             <motion.div
               key={m.profile.id}
               initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
               className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-xl transition-all flex flex-col"
             >

@@ -361,8 +361,8 @@ function SubmissionsTab() {
 
 // ------------------------------------------------------------- playbooks
 
-type PbForm = { id?: number; title: string; description: string; category: string; price: string; pages: string; emoji: string; isPublished: boolean };
-const emptyPb: PbForm = { title: "", description: "", category: "GDPI", price: "499", pages: "40", emoji: "📘", isPublished: true };
+type PbForm = { id?: number; title: string; description: string; category: string; price: string; pages: string; emoji: string; coverImage: string; isPublished: boolean };
+const emptyPb: PbForm = { title: "", description: "", category: "GDPI", price: "499", pages: "40", emoji: "📘", coverImage: "", isPublished: true };
 
 function PlaybooksTab() {
   const { data, isLoading } = trpc.admin.listPlaybooks.useQuery();
@@ -395,7 +395,11 @@ function PlaybooksTab() {
         {data?.map((p) => (
           <div key={p.id} className="rounded-3xl border bg-card p-6 shadow-sm flex items-start justify-between gap-3">
             <div className="flex gap-3">
-              <span className="text-3xl">{p.emoji}</span>
+              {p.coverImage ? (
+                <img src={p.coverImage} alt={p.title} className="h-12 w-12 rounded-xl object-cover" />
+              ) : (
+                <span className="text-3xl">{p.emoji}</span>
+              )}
               <div>
                 <h3 className="font-display font-semibold">{p.title}</h3>
                 <p className="text-xs text-muted-foreground">{p.category} · {p.pages} pages · {formatINR(p.price)}</p>
@@ -407,7 +411,7 @@ function PlaybooksTab() {
             <div className="flex gap-1.5">
               <Button size="icon" variant="outline" className="rounded-full h-8 w-8" onClick={() => setEditing({
                 id: p.id, title: p.title, description: p.description ?? "", category: p.category,
-                price: p.price.toString(), pages: p.pages.toString(), emoji: p.emoji, isPublished: p.isPublished,
+                price: p.price.toString(), pages: p.pages.toString(), emoji: p.emoji, coverImage: p.coverImage ?? "", isPublished: p.isPublished,
               })}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
@@ -440,6 +444,10 @@ function PlaybooksTab() {
                 <div className="space-y-1.5"><Label>Pages</Label>
                   <Input type="number" value={editing.pages} onChange={(e) => setEditing({ ...editing, pages: e.target.value })} /></div>
               </div>
+              <div className="space-y-1.5">
+                <Label>Cover image URL</Label>
+                <Input placeholder="https://images.unsplash.com/photo-..." value={editing.coverImage} onChange={(e) => setEditing({ ...editing, coverImage: e.target.value })} />
+              </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={editing.isPublished} onChange={(e) => setEditing({ ...editing, isPublished: e.target.checked })} />
                 Published (visible in store)
@@ -451,7 +459,7 @@ function PlaybooksTab() {
                   const payload = {
                     title: editing.title, description: editing.description, category: editing.category,
                     price: Number(editing.price), pages: Number(editing.pages), emoji: editing.emoji,
-                    isPublished: editing.isPublished,
+                    coverImage: editing.coverImage || undefined, isPublished: editing.isPublished,
                   };
                   if (editing.id) update.mutate({ id: editing.id, ...payload });
                   else create.mutate(payload);

@@ -185,7 +185,7 @@ export function EventsPreview() {
           <div>
             <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Compete</span>
             <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
-              Live hackathons & case comps
+              Live events & case comps
             </h2>
           </div>
           <Button variant="outline" className="rounded-full" asChild>

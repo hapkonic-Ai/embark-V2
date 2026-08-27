@@ -121,6 +121,7 @@ export const playbooks = mysqlTable("playbooks", {
   price: int("price").notNull(),
   pages: int("pages").default(40).notNull(),
   emoji: varchar("emoji", { length: 16 }).default("📘").notNull(),
+  coverImage: varchar("coverImage", { length: 512 }),
   isPublished: boolean("isPublished").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

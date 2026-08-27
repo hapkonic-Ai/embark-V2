@@ -80,7 +80,7 @@ export default function DashboardShell({
               <h4 className="font-display font-semibold">Explore</h4>
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <li><Link to="/mentors" className="hover:text-orange-600">Mentors</Link></li>
-                <li><Link to="/events" className="hover:text-orange-600">Hackathons</Link></li>
+                <li><Link to="/events" className="hover:text-orange-600">Events</Link></li>
                 <li><Link to="/playbooks" className="hover:text-orange-600">Playbooks</Link></li>
                 <li><Link to="/colleges" className="hover:text-orange-600">Compare Colleges</Link></li>
               </ul>

@@ -34,6 +34,7 @@ const playbookInput = z.object({
   price: z.number().int().min(0).max(100000),
   pages: z.number().int().min(1).max(2000).default(40),
   emoji: z.string().max(16).default("📘"),
+  coverImage: z.string().max(512).optional().or(z.literal("")),
   isPublished: z.boolean().default(true),
 });
 
@@ -152,7 +153,10 @@ export const adminRouter = createRouter({
   }),
 
   createPlaybook: admin.input(playbookInput).mutation(async ({ input }) => {
-    await getDb().insert(playbooks).values(input);
+    await getDb().insert(playbooks).values({
+      ...input,
+      coverImage: input.coverImage || null,
+    });
     return { success: true };
   }),
 
@@ -160,7 +164,9 @@ export const adminRouter = createRouter({
     .input(playbookInput.partial().extend({ id: z.number() }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await getDb().update(playbooks).set(data).where(eq(playbooks.id, id));
+      const set: Partial<typeof playbooks.$inferInsert> = { ...data };
+      if (data.coverImage === "") set.coverImage = null;
+      await getDb().update(playbooks).set(set).where(eq(playbooks.id, id));
       return { success: true };
     }),
 

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDownWideNarrow, Building2, GitCompareArrows, GraduationCap, MapPin, Plus, Search, Wallet, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import SiteLayout from "@/components/site/SiteLayout";
+import PageHero from "@/components/site/PageHero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,42 +68,58 @@ export default function Colleges() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-14">
-        <div className="rounded-3xl border bg-card p-8 sm:p-10 shadow-sm mb-8">
-          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
-            College <span className="text-gradient-orange">Compass</span>
-          </h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            Compare every major MBA college in India — fees, packages, cutoffs, NIRF rank and more. Pick up to 3 colleges and compare them side by side.
-          </p>
-          <p className="mt-1.5 text-xs text-muted-foreground/70">
-            Figures are indicative (placement reports / NIRF 2024-25). Verify on official sites.
-          </p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border bg-muted/40 p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600"><Building2 className="h-5 w-5" /></div>
-              <div>
-                <div className="font-display text-2xl font-bold">{(colleges ?? []).length}</div>
-                <div className="text-xs text-muted-foreground">Colleges listed</div>
+      <PageHero
+        eyebrow="College Compass"
+        title="Compare every top MBA college in"
+        highlight="India"
+        subtitle="Fees, NIRF rank, average and highest packages, cutoffs, location — everything you need to shortlist your dream B-school in one place."
+        cta="Start comparing"
+        ctaHref="#colleges-filters"
+        secondaryCta="View mentors"
+        secondaryHref="/mentors"
+        visual={
+          <div className="grid gap-4 w-full max-w-md">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm"
+            >
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400"><Building2 className="h-6 w-6" /></div>
+                <div>
+                  <div className="font-display text-3xl font-bold">{(colleges ?? []).length}</div>
+                  <div className="text-sm text-stone-400">Colleges listed</div>
+                </div>
               </div>
-            </div>
-            <div className="rounded-2xl border bg-muted/40 p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600"><GraduationCap className="h-5 w-5" /></div>
-              <div>
-                <div className="font-display text-2xl font-bold">{(colleges ?? []).filter((c) => c.type === "IIM").length}</div>
-                <div className="text-xs text-muted-foreground">IIMs</div>
-              </div>
-            </div>
-            <div className="rounded-2xl border bg-muted/40 p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600"><Wallet className="h-5 w-5" /></div>
-              <div>
-                <div className="font-display text-2xl font-bold">{formatLPA(Math.max(...(colleges ?? []).map((c) => c.avgPackage ?? 0)))}</div>
-                <div className="text-xs text-muted-foreground">Highest avg package</div>
-              </div>
+            </motion.div>
+            <div className="grid grid-cols-2 gap-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm"
+              >
+                <div className="h-10 w-10 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-400"><GraduationCap className="h-5 w-5" /></div>
+                <div className="mt-3 font-display text-2xl font-bold">{(colleges ?? []).filter((c) => c.type === "IIM").length}</div>
+                <div className="text-xs text-stone-400">IIMs</div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm"
+              >
+                <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center text-green-400"><Wallet className="h-5 w-5" /></div>
+                <div className="mt-3 font-display text-2xl font-bold">{formatLPA(Math.max(...(colleges ?? []).map((c) => c.avgPackage ?? 0)))}</div>
+                <div className="text-xs text-stone-400">Highest avg package</div>
+              </motion.div>
             </div>
           </div>
-        </div>
+        }
+      />
 
+      <div id="colleges-filters" className="mx-auto max-w-7xl px-4 sm:px-6 py-14">
         <div className="rounded-3xl border bg-card p-6 shadow-sm mb-6">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="relative flex-1 min-w-56">
