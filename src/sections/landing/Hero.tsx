@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, CheckCircle2, Play, Star, TrendingUp } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Play, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const WORDS = ["CAT", "GDPI", "Case Comps", "Interviews", "Dream B-School"];
@@ -51,10 +51,6 @@ export default function Hero() {
   const [i, setI] = useState(0);
   const [slider, setSlider] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, -120]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, 80]);
-  const rotateX = useTransform(scrollYProgress, [0, 0.5], [0, 8]);
 
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % WORDS.length), 2200);
@@ -68,10 +64,7 @@ export default function Hero() {
 
   return (
     <section ref={containerRef} className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ perspective: "1200px" }}>
-      {/* animated background blobs */}
-      <motion.div style={{ y: y1 }} className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-orange-300/30 blur-[120px] animate-blob" />
-      <motion.div style={{ y: y2 }} className="absolute top-20 -right-40 h-[32rem] w-[32rem] rounded-full bg-amber-300/30 blur-[120px] animate-blob [animation-delay:3s]" />
-      <div className="absolute top-1/2 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-radial from-orange-200/20 to-transparent blur-3xl" />
+      {/* subtle warm tint background only — no radial orbs */}
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid gap-12 lg:grid-cols-2 items-center">
@@ -113,7 +106,7 @@ export default function Hero() {
               transition={{ delay: 0.18, duration: 0.7 }}
               className="mx-auto lg:mx-0 mt-5 max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed"
             >
-              1:1 mentorship from IIM &amp; XLRI alumni who’ve cleared GD, PI, and placements — so you show up prepared, not panicked, and land the offer that changes your career.
+              1:1 mentorship from IIM &amp; XLRI alumni who’ve cleared GD, PI, and placements. Show up prepared, not panicked, and land the offer that changes your career.
             </motion.p>
 
             <motion.div
@@ -138,13 +131,11 @@ export default function Hero() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.42, duration: 0.7 }}
-              className="mt-6 inline-flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 text-sm text-muted-foreground"
+              className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-sm text-stone-600"
             >
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-orange-500" /> Get matched</span>
-              <span className="hidden sm:inline text-stone-300">→</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-orange-500" /> Practise mocks</span>
-              <span className="hidden sm:inline text-stone-300">→</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-orange-500" /> Crack your call</span>
+              <span className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded bg-orange-500 text-[10px] font-bold text-white">1</span> Get matched</span>
+              <span className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded bg-orange-500 text-[10px] font-bold text-white">2</span> Practise mocks</span>
+              <span className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded bg-orange-500 text-[10px] font-bold text-white">3</span> Crack your call</span>
             </motion.div>
 
             {/* social proof */}
@@ -188,7 +179,6 @@ export default function Hero() {
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
-            style={{ rotateX }}
             className="relative hidden lg:flex items-center justify-center h-[540px]"
           >
             {/* main mentor card */}

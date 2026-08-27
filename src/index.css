@@ -6,9 +6,9 @@
   :root {
     --background: 30 33% 98%;
     --foreground: 24 10% 10%;
-    --card: 0 0% 100%;
+    --card: 34 40% 99%;
     --card-foreground: 24 10% 10%;
-    --popover: 0 0% 100%;
+    --popover: 34 40% 99%;
     --popover-foreground: 24 10% 10%;
     --primary: 20 90% 48%;
     --primary-foreground: 0 0% 100%;
@@ -71,10 +71,10 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "DM Sans", system-ui, -apple-system, sans-serif;
   }
   h1, h2, h3, h4, .font-display {
-    font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+    font-family: "Syne", "DM Sans", system-ui, sans-serif;
   }
 }
 

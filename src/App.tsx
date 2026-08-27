@@ -18,6 +18,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import CampusDashboard from "./pages/CampusDashboard";
 import GuestLecturer from "./pages/GuestLecturer";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -35,6 +37,8 @@ export default function App() {
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/colleges" element={<Colleges />} />
         <Route path="/guest-lecturer" element={<GuestLecturer />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route
           path="/dashboard"
           element={
