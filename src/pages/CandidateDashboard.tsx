@@ -22,7 +22,7 @@ import { downloadBase64 } from "@/lib/format";
 const subStatus: Record<string, { label: string; cls: string }> = {
   submitted: { label: "Submitted", cls: "bg-blue-100 text-blue-700" },
   shortlisted: { label: "Shortlisted", cls: "bg-purple-100 text-purple-700" },
-  winner: { label: "Winner 🏆", cls: "bg-amber-100 text-amber-700" },
+  winner: { label: "Winner", cls: "bg-amber-100 text-amber-700" },
   rejected: { label: "Not selected", cls: "bg-stone-200 text-stone-600" },
 };
 
@@ -70,7 +70,7 @@ function Overview() {
   const nextSteps = [
     { label: "Complete your profile", desc: "Add LinkedIn & phone so mentors can vet you.", done: false, to: "/dashboard" },
     { label: "Book a mentor", desc: "Pick a verified mentor and start your GD/PI prep.", done: active.length > 0, to: "/mentors" },
-    { label: "Join a hackathon", desc: "Build your B-school resume with real case wins.", done: (subs?.length ?? 0) > 0, to: "/events" },
+    { label: "Join an event", desc: "Build your B-school resume with real case wins.", done: (subs?.length ?? 0) > 0, to: "/events" },
     { label: "Read a playbook", desc: "GD frameworks, PI questions, WAT templates.", done: (pbs?.length ?? 0) > 0, to: "/playbooks" },
   ];
 

@@ -31,7 +31,7 @@ export default function EventDetail() {
   const submit = trpc.candidate.submitEvent.useMutation({
     onSuccess: (r) => {
       fireConfetti(true);
-      toast.success(r.updated ? "Submission updated! 🔄" : "Submission received! 🚀", {
+      toast.success(r.updated ? "Submission updated" : "Submission received", {
         description: "Track its status and score in your dashboard.",
       });
       utils.catalog.event.invalidate();

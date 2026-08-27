@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar, Trophy, Users } from "lucide-react";
+import { ArrowRight, Calendar, Rocket, Trophy, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import SiteLayout from "@/components/site/SiteLayout";
 import PageHero from "@/components/site/PageHero";
@@ -30,7 +30,7 @@ function EventsVisual() {
         transition={{ delay: 0.3 }}
         className="absolute left-16 top-12 w-56 h-72 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 shadow-2xl rotate-[-6deg] flex flex-col justify-end p-5 text-white"
       >
-        <span className="text-4xl">🏆</span>
+        <Trophy className="h-10 w-10" />
         <div className="mt-2 font-display font-bold">Case Sprint</div>
         <div className="text-sm opacity-80">₹50,000 prize</div>
       </motion.div>
@@ -40,7 +40,7 @@ function EventsVisual() {
         transition={{ delay: 0.45 }}
         className="absolute right-16 top-24 w-56 h-72 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-2xl rotate-[6deg] flex flex-col justify-end p-5 text-white"
       >
-        <span className="text-4xl">🚀</span>
+        <Rocket className="h-10 w-10" />
         <div className="mt-2 font-display font-bold">Startup Hack</div>
         <div className="text-sm opacity-80">Build your B-plan</div>
       </motion.div>
@@ -96,7 +96,9 @@ export default function Events() {
                       {e.status === "live" ? "● Live" : "Closed"}
                     </Badge>
                   </div>
-                  <div className="text-5xl">{e.emoji}</div>
+                  <div className="text-white/90">
+                    {e.type === "hackathon" ? <Rocket className="h-10 w-10" /> : <Trophy className="h-10 w-10" />}
+                  </div>
                   <div className="absolute bottom-4 left-6 right-6">
                     <div className="text-white/90 text-sm font-medium">{e.type === "hackathon" ? "Event" : "Case Competition"}</div>
                   </div>

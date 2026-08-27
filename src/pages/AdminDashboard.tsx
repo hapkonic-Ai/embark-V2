@@ -23,7 +23,7 @@ import { downloadBase64, formatINR } from "@/lib/format";
 export default function AdminDashboard() {
   return (
     <DashboardShell
-      title="Admin HQ 🛠️"
+      title="Admin HQ"
       subtitle="Events, submissions, playbooks and students."
       roles={["admin", "superadmin"]}
       tabs={[
@@ -76,7 +76,7 @@ type EventForm = {
 };
 const emptyEvent: EventForm = {
   title: "", description: "", rules: "", type: "hackathon",
-  prize: "", emoji: "🏆", startAt: "", endAt: "", status: "draft",
+  prize: "", emoji: "", startAt: "", endAt: "", status: "draft",
 };
 
 function EventsTab() {
@@ -334,7 +334,7 @@ function SubmissionsTab() {
                   <SelectContent>
                     <SelectItem value="submitted">Submitted</SelectItem>
                     <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                    <SelectItem value="winner">🏆 Winner</SelectItem>
+                    <SelectItem value="winner">Winner</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
@@ -497,7 +497,11 @@ function UsersTab() {
               <td className="px-5 py-3 font-medium">{u.name}</td>
               <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
               <td className="px-4 py-3"><Badge variant="secondary" className="capitalize">{u.role}</Badge></td>
-              <td className="px-4 py-3">{u.isActive ? "✅" : "🚫"}</td>
+              <td className="px-4 py-3">
+                <Badge variant="secondary" className={u.isActive ? "bg-green-100 text-green-700" : "bg-stone-200 text-stone-600"}>
+                  {u.isActive ? "Active" : "Inactive"}
+                </Badge>
+              </td>
             </tr>
           ))}
         </tbody>
