@@ -1,17 +1,21 @@
 # Embark — Backlog / Todo
 
 ## High Priority
-- [ ] Production deployment setup (Docker, CI/CD, environment checklist)
-- [ ] Replace simulated payment modal with real payment gateway (Razorpay / Stripe India)
-- [ ] File upload migration: move base64 file storage to S3 / presigned URLs
-- [ ] Add Terms & Conditions and Privacy Policy actual content pages
-- [ ] Email notifications (welcome, booking confirmation, event updates)
+- [ ] Landing page polish — depicter-style hero animations, parallax, scroll-triggered reveals, loading animation
+- [ ] Landing page copy — panic state of MBA, running counters, student outcomes story
+- [ ] Footer redesign — more links, social proof, newsletter, trust badges
+- [ ] Remove remaining AI-looking emojis across all dashboards and cards
+- [ ] Mentor carousel redesign — professional photos, hover reveals details, pricing gated behind login
+- [ ] Student images collage on hero with in/out stagger animation
+- [ ] Campus role dashboard — manage guest lecture requests, view statuses (pending/accepted/rejected)
+- [ ] Mentor guest lecture management — accept/reject requests + confirm date
+- [ ] Public mentor profile LinkedIn sharing for Embark + view mentor LinkedIn as student
+- [ ] Terms & Conditions page with actual legal copy and signature/acceptance tracking
 - [ ] Candidate profile page to add LinkedIn, phone, resume
-- [ ] Mentor public profile analytics (views, bookings)
-- [ ] Admin analytics dashboard (revenue, active mentorships, event participation)
-- [ ] Search + filters on mentors (by expertise, price, B-school)
+- [ ] Add student to mentor relationship view (mentor can see assigned students)
 
 ## Medium Priority
+- [ ] Compare Colleges bigger UI + better comparison popup with logos and extracted details
 - [ ] Playbook PDF reader / download with watermark
 - [ ] Event submissions with file validation and size limits
 - [ ] Candidate can cancel / request refund on mentorship
@@ -39,18 +43,21 @@
 - [ ] DB foreign key constraints and indexes
 - [ ] Rate limiting on public routes
 - [ ] Audit logging for admin/superadmin actions
-- [ ] Replace `any` types in legacy code
+- [ ] Replace remaining `any` types in legacy code
 - [ ] Move backend env validation to a typed schema (e.g. Zod)
 
 ## Done
 - [x] Database schema + migrations + seed
 - [x] Auth (register, login, logout, role-based access)
-- [x] Candidate / Mentor / Admin / SuperAdmin dashboards
+- [x] Candidate / Mentor / Campus / Admin / SuperAdmin dashboards
 - [x] Mentor marketplace with detail pages
 - [x] Event listing and submissions
 - [x] Playbook store and purchases
 - [x] Compare Colleges with filters and side-by-side comparison
 - [x] LinkedIn profile URLs and public mentor profile pages
 - [x] Terms & Conditions acceptance in registration
-- [x] Footer, dashboard filler content, emoji cleanup
+- [x] Footer, dashboard filler content, emoji cleanup (partial)
 - [x] Lint, type-check, Vitest, Playwright passing
+- [x] PageHero added to Mentors, Events, Guest Lecturer, Playbooks, Colleges
+- [x] Playbook cover image support in admin + store
+- [x] Rebrand Hackathons → Events across the UI
