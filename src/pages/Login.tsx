@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, GraduationCap, Loader2, MapPinned, Star, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, GraduationCap, Loader2, MapPinned, School, Star, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
@@ -34,8 +34,12 @@ export default function Login() {
   const [mode, setMode] = useState<"login" | "register">(
     params.get("mode") === "register" ? "register" : "login",
   );
-  const [role, setRole] = useState<"candidate" | "mentor">(
-    params.get("role") === "mentor" ? "mentor" : "candidate",
+  const [role, setRole] = useState<"candidate" | "mentor" | "campus">(
+    params.get("role") === "mentor"
+      ? "mentor"
+      : params.get("role") === "campus"
+        ? "campus"
+        : "candidate",
   );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -219,27 +223,33 @@ export default function Login() {
           <form onSubmit={submit} className="mt-8 space-y-4">
             {mode === "register" && (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["candidate", "mentor"] as const).map((r) => (
-                    <button
-                      type="button"
-                      key={r}
-                      onClick={() => setRole(r)}
-                      className={`rounded-2xl border-2 p-4 text-left transition-all ${
-                        role === r
-                          ? "border-orange-500 bg-orange-50 dark:bg-orange-500/10"
-                          : "border-border hover:border-orange-200"
-                      }`}
-                    >
-                      <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
-                        {r === "candidate" ? <GraduationCap className="h-5 w-5" /> : <MapPinned className="h-5 w-5" />}
-                      </div>
-                      <div className="mt-2 font-display font-semibold capitalize">{r}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {r === "candidate" ? "I want to get mentored" : "I want to mentor"}
-                      </div>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-2">
+                  {(["candidate", "mentor", "campus"] as const).map((r) => {
+                    const meta = {
+                      candidate: { icon: GraduationCap, label: "Student", desc: "I want to get mentored" },
+                      mentor: { icon: MapPinned, label: "Mentor", desc: "I want to mentor" },
+                      campus: { icon: School, label: "Campus", desc: "I run a college club" },
+                    } as const;
+                    const Icon = meta[r].icon;
+                    return (
+                      <button
+                        type="button"
+                        key={r}
+                        onClick={() => setRole(r)}
+                        className={`rounded-2xl border-2 p-4 text-left transition-all ${
+                          role === r
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-500/10"
+                            : "border-border hover:border-orange-200"
+                        }`}
+                      >
+                        <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="mt-2 font-display font-semibold">{meta[r].label}</div>
+                        <div className="text-xs text-muted-foreground">{meta[r].desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Full name</Label>
@@ -279,7 +289,7 @@ export default function Login() {
             </div>
             <Button type="submit" className="w-full btn-shine h-11 rounded-full" disabled={pending}>
               {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === "login" ? "Sign in" : `Create ${role} account`}
+              {mode === "login" ? "Sign in" : `Create ${role === "campus" ? "campus" : role} account`}
             </Button>
 
             {mode === "login" && buildOAuthUrl() && (

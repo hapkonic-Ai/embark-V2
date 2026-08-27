@@ -70,9 +70,12 @@ export default function MentorDetail() {
         <div className="grid gap-8 md:grid-cols-[1fr_360px]">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-5">
-              <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-4xl font-bold text-white shadow-xl shadow-orange-500/25">
-                {data.name?.slice(0, 2).toUpperCase()}
-              </div>
+              <img
+                src={`https://i.pravatar.cc/300?u=${p.id}`}
+                alt={data.name ?? "Mentor"}
+                className="h-24 w-24 rounded-3xl object-cover shadow-xl shadow-orange-500/25"
+                onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name ?? "EM")}&background=f97316&color=fff`; }}
+              />
               <div>
                 <h1 className="font-display text-3xl font-bold flex items-center gap-2">
                   {data.name}
@@ -130,17 +133,32 @@ export default function MentorDetail() {
             transition={{ delay: 0.1 }}
             className="h-fit rounded-3xl border bg-card p-7 shadow-lg sticky top-24"
           >
-            <div className="font-display text-4xl font-bold">{formatINR(p.price)}</div>
-            <p className="text-sm text-muted-foreground">complete mentorship package</p>
+            {isAuthenticated ? (
+              <>
+                <div className="font-display text-4xl font-bold">{formatINR(p.price)}</div>
+                <p className="text-sm text-muted-foreground">complete mentorship package</p>
+              </>
+            ) : (
+              <>
+                <div className="font-display text-4xl font-bold text-muted-foreground">₹ —</div>
+                <p className="text-sm text-muted-foreground">Sign in to view pricing</p>
+              </>
+            )}
             <ul className="mt-6 space-y-3 text-sm">
               <li className="flex justify-between"><span>Mock GDs included</span><b>{p.mockGds}</b></li>
               <li className="flex justify-between"><span>Mock interviews included</span><b>{p.mockPis}</b></li>
               <li className="flex justify-between"><span>1:1 guidance</span><b>∞</b></li>
               <li className="flex justify-between"><span>Channel</span><b className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5 text-green-600" /> WhatsApp</b></li>
             </ul>
-            <Button onClick={cta} className="mt-7 w-full btn-shine rounded-full h-11">
-              Book this mentor
-            </Button>
+            {isAuthenticated ? (
+              <Button onClick={cta} className="mt-7 w-full btn-shine rounded-full h-11">
+                Book this mentor
+              </Button>
+            ) : (
+              <Button asChild className="mt-7 w-full rounded-full h-11">
+                <Link to="/login">Sign in to book</Link>
+              </Button>
+            )}
             <p className="mt-3 text-center text-xs text-muted-foreground">
               WhatsApp number revealed right after booking.
             </p>

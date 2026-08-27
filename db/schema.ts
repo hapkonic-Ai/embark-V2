@@ -24,7 +24,7 @@ export const users = mysqlTable("users", {
   linkedinUrl: varchar("linkedinUrl", { length: 320 }),
   termsAcceptedAt: timestamp("termsAcceptedAt"),
   termsVersion: varchar("termsVersion", { length: 16 }),
-  role: mysqlEnum("role", ["candidate", "mentor", "admin", "superadmin"])
+  role: mysqlEnum("role", ["candidate", "mentor", "campus", "admin", "superadmin"])
     .default("candidate")
     .notNull(),
   isActive: boolean("isActive").default(true).notNull(),
@@ -215,3 +215,25 @@ export const colleges = mysqlTable("colleges", {
 });
 
 export type College = typeof colleges.$inferSelect;
+
+// ------------------------------------------------------- guest lectures
+
+export const guestLectureRequests = mysqlTable("guest_lecture_requests", {
+  id: serial("id").primaryKey(),
+  campusId: bigint("campusId", { mode: "number", unsigned: true }).notNull(),
+  mentorProfileId: bigint("mentorProfileId", { mode: "number", unsigned: true }).notNull(),
+  status: mysqlEnum("status", ["pending", "accepted", "rejected"])
+    .default("pending")
+    .notNull(),
+  proposedDate: timestamp("proposedDate"),
+  confirmedDate: timestamp("confirmedDate"),
+  campusNote: text("campusNote"),
+  mentorNote: text("mentorNote"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export type GuestLectureRequest = typeof guestLectureRequests.$inferSelect;

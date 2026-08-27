@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { mentorProfiles, mentorships, mockSessions, users } from "@db/schema";
+import { guestLectureRequests, mentorProfiles, mentorships, mockSessions, users } from "@db/schema";
 import { getDb } from "../queries/connection";
 import { createRouter } from "../middleware";
 import { roleQuery } from "../rbac";
@@ -174,6 +174,62 @@ export const mentorRouter = createRouter({
             eq(mentorships.mentorProfileId, profile.id),
           ),
         );
+      return { success: true };
+    }),
+
+  myGuestRequests: mentor.query(async ({ ctx }) => {
+    const db = getDb();
+    const profile = await getMyProfile(ctx.user.id);
+    if (!profile) return [];
+    const rows = await db
+      .select({
+        request: guestLectureRequests,
+        campusName: users.name,
+        campusEmail: users.email,
+      })
+      .from(guestLectureRequests)
+      .innerJoin(users, eq(users.id, guestLectureRequests.campusId))
+      .where(eq(guestLectureRequests.mentorProfileId, profile.id))
+      .orderBy(desc(guestLectureRequests.createdAt));
+    return rows;
+  }),
+
+  respondToGuestRequest: mentor
+    .input(
+      z.object({
+        requestId: z.number(),
+        status: z.enum(["accepted", "rejected"]),
+        confirmedDate: z.string().datetime().optional(),
+        mentorNote: z.string().max(2000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const profile = await getMyProfile(ctx.user.id);
+      if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
+      const row = await db
+        .select()
+        .from(guestLectureRequests)
+        .where(
+          and(
+            eq(guestLectureRequests.id, input.requestId),
+            eq(guestLectureRequests.mentorProfileId, profile.id),
+          ),
+        )
+        .limit(1);
+      const req = row[0];
+      if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+      if (req.status !== "pending") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Request already responded to" });
+      }
+      await db
+        .update(guestLectureRequests)
+        .set({
+          status: input.status,
+          confirmedDate: input.confirmedDate ? new Date(input.confirmedDate) : req.proposedDate,
+          mentorNote: input.mentorNote,
+        })
+        .where(eq(guestLectureRequests.id, input.requestId));
       return { success: true };
     }),
 });

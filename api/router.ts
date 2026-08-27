@@ -3,6 +3,7 @@ import { accountRouter } from "./routers/account";
 import { catalogRouter } from "./routers/catalog";
 import { candidateRouter } from "./routers/candidate";
 import { mentorRouter } from "./routers/mentor";
+import { campusRouter } from "./routers/campus";
 import { adminRouter } from "./routers/admin";
 import { createRouter, publicQuery } from "./middleware";
 
@@ -13,6 +14,7 @@ export const appRouter = createRouter({
   catalog: catalogRouter,
   candidate: candidateRouter,
   mentor: mentorRouter,
+  campus: campusRouter,
   admin: adminRouter,
 });
 

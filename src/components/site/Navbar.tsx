@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, LayoutDashboard, LogOut, Sparkles } from "lucide-react";
+import { ArrowRight, Menu, X, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const LINKS = [
   { to: "/mentors", label: "Mentors" },
+  { to: "/guest-lecturer", label: "Guest Lecturer" },
   { to: "/events", label: "Hackathons" },
   { to: "/playbooks", label: "Playbooks" },
   { to: "/colleges", label: "Compare Colleges" },
@@ -25,6 +26,7 @@ const LINKS = [
 export function dashboardPath(role?: string) {
   switch (role) {
     case "mentor": return "/mentor/dashboard";
+    case "campus": return "/campus/dashboard";
     case "admin": return "/admin";
     case "superadmin": return "/superadmin";
     default: return "/dashboard";
@@ -119,7 +121,7 @@ export default function Navbar() {
                 </Button>
                 <Button size="sm" className="btn-shine rounded-full px-4" asChild>
                   <Link to="/login?mode=register">
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Get started
+                    Get started <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                   </Link>
                 </Button>
               </>
@@ -165,7 +167,7 @@ export default function Navbar() {
                       <Link to="/login">Sign in</Link>
                     </Button>
                     <Button className="flex-1" asChild>
-                      <Link to="/login?mode=register">Get started</Link>
+                      <Link to="/login?mode=register">Get started <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
                     </Button>
                   </>
                 )}

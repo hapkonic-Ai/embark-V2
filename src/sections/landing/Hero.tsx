@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Play, Sparkles, Star, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, GraduationCap, Play, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { fireConfetti } from "@/components/site/EasterEggs";
 
 const WORDS = ["CAT", "GDPI", "Case Comps", "Interviews", "Your Dream Campus"];
 
@@ -11,14 +10,6 @@ const REVIEWS = [
   { name: "Ayesha K.", school: "IIM K '27", text: "My PI mentor asked questions that came up in my actual panel.", rating: 5 },
   { name: "Rahul N.", school: "XLRI '27", text: "Won the case comp and put it straight on my resume.", rating: 5 },
   { name: "Priya M.", school: "FMS '27", text: "From blank SOP to final draft in 4 mentor calls.", rating: 5 },
-];
-
-const AVATARS = [
-  "https://i.pravatar.cc/150?u=a",
-  "https://i.pravatar.cc/150?u=b",
-  "https://i.pravatar.cc/150?u=c",
-  "https://i.pravatar.cc/150?u=d",
-  "https://i.pravatar.cc/150?u=e",
 ];
 
 export default function Hero() {
@@ -56,15 +47,14 @@ export default function Hero() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-center lg:text-left"
           >
-            <motion.button
+            <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              onClick={() => fireConfetti()}
-              className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors dark:bg-orange-500/10 dark:border-orange-500/30 dark:text-orange-300"
+              className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-sm font-medium text-orange-700 dark:bg-orange-500/10 dark:border-orange-500/30 dark:text-orange-300"
             >
-              <Sparkles className="h-4 w-4" />
-              Admissions 2026 is live — click for luck
-            </motion.button>
+              <GraduationCap className="h-4 w-4" />
+              Admissions 2026 is live
+            </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 24 }}
@@ -120,25 +110,37 @@ export default function Hero() {
               </Button>
             </motion.div>
 
-            {/* social proof */}
+            {/* student collage + social proof */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.46, duration: 0.7 }}
-              className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
+              className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5"
             >
-              <div className="flex -space-x-3">
-                {AVATARS.map((src, idx) => (
-                  <motion.img
-                    key={idx}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.6 + idx * 0.08 }}
-                    src={src}
-                    alt="student"
-                    className="h-10 w-10 rounded-full border-2 border-background object-cover"
-                  />
-                ))}
+              <div className="relative">
+                <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl border bg-card/80 backdrop-blur-sm shadow-sm">
+                  {[
+                    "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=120&h=120&fit=crop",
+                    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=120&h=120&fit=crop",
+                    "https://images.unsplash.com/photo-1531545514256-b1400e3f03b2?w=120&h=120&fit=crop",
+                    "https://images.unsplash.com/photo-1571260899304-425eee5c7be8?w=120&h=120&fit=crop",
+                    "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=120&h=120&fit=crop",
+                    "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=120&h=120&fit=crop",
+                  ].map((src, idx) => (
+                    <motion.img
+                      key={idx}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.6 + idx * 0.05 }}
+                      src={src}
+                      alt="student"
+                      className="h-11 w-11 rounded-xl object-cover"
+                    />
+                  ))}
+                </div>
+                <div className="absolute -bottom-2 -right-2 rounded-full bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 shadow-lg">
+                  +4k
+                </div>
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1 text-orange-600">
@@ -146,6 +148,7 @@ export default function Hero() {
                   <span className="ml-1 text-sm font-semibold">4.9/5</span>
                 </div>
                 <p className="text-xs text-muted-foreground">from 1,200+ student reviews</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Trusted at 120+ campuses</p>
               </div>
             </motion.div>
           </motion.div>
@@ -236,18 +239,24 @@ export default function Hero() {
               <div className="text-xs text-green-600 mt-1">+12% vs last year</div>
             </motion.div>
 
-            {/* floating people card */}
+            {/* floating student photo card */}
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
               className="absolute top-24 -left-12 z-10 rounded-2xl border bg-card/90 backdrop-blur p-3 shadow-xl"
               style={{ transform: "rotateY(-6deg) rotateX(-4deg) translateZ(20px)" }}
             >
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-orange-600" />
-                <span className="font-display font-bold">8 verified</span>
+              <div className="flex items-center gap-3">
+                <img
+                  src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=120&h=120&fit=crop"
+                  alt="student"
+                  className="h-12 w-12 rounded-xl object-cover"
+                />
+                <div>
+                  <div className="font-display font-bold">8 verified</div>
+                  <div className="text-xs text-muted-foreground">mentors online now</div>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">mentors online now</div>
             </motion.div>
           </motion.div>
         </div>

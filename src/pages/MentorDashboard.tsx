@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarCheck, Globe, Link2, Linkedin, Loader2, Settings, Users } from "lucide-react";
+import { CalendarCheck, CalendarDays, Globe, Link2, Linkedin, Loader2, Settings, Users } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import DashboardShell from "@/components/DashboardShell";
@@ -22,10 +22,17 @@ export default function MentorDashboard() {
       roles={["mentor"]}
       tabs={[
         { id: "mentees", label: "My Mentees", icon: Users },
+        { id: "guest", label: "Guest Lectures", icon: CalendarDays },
         { id: "profile", label: "My Profile", icon: Settings },
       ]}
     >
-      {(tab) => (tab === "mentees" ? <MenteesTab /> : <ProfileTab />)}
+      {(tab) => (
+        <>
+          {tab === "mentees" && <MenteesTab />}
+          {tab === "guest" && <GuestLecturesTab />}
+          {tab === "profile" && <ProfileTab />}
+        </>
+      )}
     </DashboardShell>
   );
 }
@@ -148,6 +155,153 @@ function MenteesTab() {
               {complete.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save feedback
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function GuestLecturesTab() {
+  const { data, isLoading } = trpc.mentor.myGuestRequests.useQuery();
+  const utils = trpc.useUtils();
+  const [respondFor, setRespondFor] = useState<{
+    id: number;
+    status: "accepted" | "rejected";
+    confirmedDate: string;
+    mentorNote: string;
+  } | null>(null);
+
+  const respond = trpc.mentor.respondToGuestRequest.useMutation({
+    onSuccess: () => {
+      toast.success("Response saved");
+      setRespondFor(null);
+      utils.mentor.myGuestRequests.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
+  if (!data || data.length === 0) {
+    return (
+      <div className="rounded-3xl border bg-card p-12 text-center">
+        <h3 className="font-display text-xl font-semibold">No guest lecture invites yet</h3>
+        <p className="mt-2 text-sm text-muted-foreground">Campuses will send requests here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {data.map(({ request, campusName, campusEmail }) => {
+        const statusMeta = {
+          pending: { label: "Pending", cls: "bg-amber-100 text-amber-700" },
+          accepted: { label: "Accepted", cls: "bg-green-100 text-green-700" },
+          rejected: { label: "Declined", cls: "bg-red-100 text-red-700" },
+        }[request.status];
+        const date = request.confirmedDate ?? request.proposedDate;
+        return (
+          <div key={request.id} className="rounded-3xl border bg-card p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="font-display font-semibold text-lg">{campusName}</h3>
+                <p className="text-xs text-muted-foreground">{campusEmail}</p>
+              </div>
+              <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
+            </div>
+            {date && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Date:</span>{" "}
+                {new Date(date).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+              </p>
+            )}
+            {request.campusNote && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Campus note:</span> {request.campusNote}
+              </p>
+            )}
+            {request.mentorNote && (
+              <p className="mt-2 text-sm text-muted-foreground border-l-2 border-orange-400 pl-3">{request.mentorNote}</p>
+            )}
+            {request.status === "pending" && (
+              <div className="mt-4 flex gap-2">
+                <Button
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() =>
+                    setRespondFor({
+                      id: request.id,
+                      status: "accepted",
+                      confirmedDate: request.proposedDate ? new Date(request.proposedDate).toISOString().slice(0, 16) : "",
+                      mentorNote: "",
+                    })
+                  }
+                >
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() =>
+                    setRespondFor({
+                      id: request.id,
+                      status: "rejected",
+                      confirmedDate: "",
+                      mentorNote: "",
+                    })
+                  }
+                >
+                  Decline
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <Dialog open={!!respondFor} onOpenChange={(v) => !v && setRespondFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              {respondFor?.status === "accepted" ? "Confirm guest lecture" : "Decline invite"}
+            </DialogTitle>
+          </DialogHeader>
+          {respondFor && (
+            <div className="space-y-4">
+              {respondFor.status === "accepted" && (
+                <div className="space-y-1.5">
+                  <Label>Confirmed date & time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={respondFor.confirmedDate}
+                    onChange={(e) => setRespondFor({ ...respondFor, confirmedDate: e.target.value })}
+                  />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>Note to campus</Label>
+                <Input
+                  value={respondFor.mentorNote}
+                  onChange={(e) => setRespondFor({ ...respondFor, mentorNote: e.target.value })}
+                  placeholder="Format, topic, logistics…"
+                />
+              </div>
+              <Button
+                className="w-full rounded-full"
+                disabled={respond.isPending}
+                onClick={() =>
+                  respond.mutate({
+                    requestId: respondFor.id,
+                    status: respondFor.status,
+                    confirmedDate: respondFor.confirmedDate || undefined,
+                    mentorNote: respondFor.mentorNote || undefined,
+                  })
+                }
+              >
+                {respond.isPending ? "Saving…" : respondFor.status === "accepted" ? "Confirm" : "Decline"}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

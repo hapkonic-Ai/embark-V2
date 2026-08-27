@@ -58,7 +58,7 @@ export const accountRouter = createRouter({
       creds.extend({
         name: z.string().min(2).max(120),
         phone: z.string().max(32).optional(),
-        role: z.enum(["candidate", "mentor"]).default("candidate"),
+        role: z.enum(["candidate", "mentor", "campus"]).default("candidate"),
         linkedinUrl: z.string().regex(linkedinRegex, "Enter a valid LinkedIn profile URL like https://linkedin.com/in/your-handle").optional(),
         termsAccepted: z.boolean().refine((v) => v === true, "You must accept the Terms & Conditions"),
       }),

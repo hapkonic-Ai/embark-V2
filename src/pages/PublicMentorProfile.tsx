@@ -1,7 +1,8 @@
 import { useParams } from "react-router";
 import { Link } from "react-router";
-import { Check, Linkedin, MessageCircle, Users } from "lucide-react";
+import { Check, Linkedin, Lock, MessageCircle, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/site/Navbar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +11,7 @@ import { formatINR } from "@/lib/format";
 
 export default function PublicMentorProfile() {
   const { slug } = useParams<{ slug: string }>();
+  const { isAuthenticated } = useAuth();
   const { data, isLoading } = trpc.catalog.mentorBySlug.useQuery({ slug: slug ?? "" }, { enabled: !!slug });
 
   if (isLoading) {
@@ -47,9 +49,12 @@ export default function PublicMentorProfile() {
         <div className="rounded-3xl border bg-card p-8 shadow-sm overflow-hidden">
           <div className="h-32 bg-gradient-to-r from-orange-500 to-amber-500 -mx-8 -mt-8" />
           <div className="relative -mt-14 flex items-end justify-between gap-4">
-            <div className="h-28 w-28 rounded-3xl border-4 border-card bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-3xl font-bold text-white">
-              {name?.slice(0, 2).toUpperCase()}
-            </div>
+            <img
+              src={`https://i.pravatar.cc/300?u=${profile.id}`}
+              alt={name ?? "Mentor"}
+              className="h-28 w-28 rounded-3xl border-4 border-card object-cover"
+              onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name ?? "EM")}&background=f97316&color=fff`; }}
+            />
             {profile.isVerified && (
               <Badge className="mb-4 bg-green-100 text-green-700 border-0">
                 <Check className="mr-1 h-3 w-3" /> Verified
@@ -84,7 +89,13 @@ export default function PublicMentorProfile() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <div className="text-sm text-muted-foreground">Full mentorship package</div>
-                <div className="font-display text-3xl font-bold">{formatINR(profile.price)}</div>
+                {isAuthenticated ? (
+                  <div className="font-display text-3xl font-bold">{formatINR(profile.price)}</div>
+                ) : (
+                  <div className="font-display text-3xl font-bold text-muted-foreground flex items-center gap-2">
+                    <Lock className="h-5 w-5" /> —
+                  </div>
+                )}
                 <div className="text-xs text-muted-foreground mt-1">Includes {profile.mockGds} mock GDs + {profile.mockPis} mock PIs</div>
               </div>
               <div className="flex flex-wrap gap-2">

@@ -8,6 +8,7 @@ import {
   playbookPurchases,
   events,
   submissions,
+  guestLectureRequests,
 } from "./schema";
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -19,6 +20,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   playbookPurchases: many(playbookPurchases),
   submissions: many(submissions),
   createdEvents: many(events),
+  guestLectureRequests: many(guestLectureRequests),
 }));
 
 export const mentorProfilesRelations = relations(mentorProfiles, ({ one, many }) => ({
@@ -79,5 +81,16 @@ export const submissionsRelations = relations(submissions, ({ one }) => ({
   user: one(users, {
     fields: [submissions.userId],
     references: [users.id],
+  }),
+}));
+
+export const guestLectureRequestsRelations = relations(guestLectureRequests, ({ one }) => ({
+  campus: one(users, {
+    fields: [guestLectureRequests.campusId],
+    references: [users.id],
+  }),
+  mentorProfile: one(mentorProfiles, {
+    fields: [guestLectureRequests.mentorProfileId],
+    references: [mentorProfiles.id],
   }),
 }));

@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Trophy } from "lucide-react";
+import { ArrowRight, Check, Lock, Trophy } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/format";
@@ -89,8 +90,22 @@ export function Programs() {
   );
 }
 
+function MentorAvatar({ id, name }: { id: number; name: string | null }) {
+  return (
+    <img
+      src={`https://i.pravatar.cc/300?u=${id}`}
+      alt={name ?? "Mentor"}
+      className="h-full w-full object-cover"
+      onError={(e) => {
+        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name ?? "EM")}&background=f97316&color=fff`;
+      }}
+    />
+  );
+}
+
 export function MentorsPreview() {
   const { data: mentors } = trpc.catalog.mentors.useQuery();
+  const { isAuthenticated } = useAuth();
   const top = mentors?.slice(0, 4) ?? [];
   return (
     <section className="py-20 bg-orange-50/60 dark:bg-transparent">
@@ -115,17 +130,41 @@ export function MentorsPreview() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
               whileHover={{ y: -8 }}
-              className="rounded-3xl border bg-card p-6 shadow-sm hover:shadow-xl transition-shadow"
+              className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-xl transition-all"
             >
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-xl font-bold text-white">
-                {m.name?.slice(0, 2).toUpperCase()}
+              <div className="h-64 overflow-hidden">
+                <MentorAvatar id={m.profile.id} name={m.name} />
               </div>
-              <h3 className="mt-4 font-display font-semibold text-lg">{m.name}</h3>
-              <p className="text-sm text-orange-600 font-medium">{m.profile.bschool}</p>
-              <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{m.profile.headline}</p>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="font-display font-bold">{formatINR(m.profile.price)}</span>
-                <Badge variant="secondary">{m.profile.mockGds} GD · {m.profile.mockPis} PI</Badge>
+              <div className="p-5">
+                <h3 className="font-display font-semibold text-lg">{m.name}</h3>
+                <p className="text-sm text-orange-600 font-medium">{m.profile.bschool}</p>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                <h3 className="font-display text-xl font-semibold text-white">{m.name}</h3>
+                <p className="text-sm text-orange-300">{m.profile.bschool}</p>
+                {m.profile.headline && (
+                  <p className="mt-2 text-xs text-stone-300 line-clamp-2">{m.profile.headline}</p>
+                )}
+                {m.profile.expertise && (
+                  <p className="mt-2 text-xs text-stone-400">
+                    {m.profile.expertise.split(",").slice(0, 3).map((t) => t.trim()).join(" · ")}
+                  </p>
+                )}
+                <div className="mt-4 flex items-center justify-between">
+                  {isAuthenticated ? (
+                    <span className="font-display font-bold text-white">{formatINR(m.profile.price)}</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs text-stone-300">
+                      <Lock className="h-3 w-3" /> Login for pricing
+                    </span>
+                  )}
+                  <Badge variant="secondary" className="bg-white/10 text-white border-white/10">
+                    {m.profile.mockGds} GD · {m.profile.mockPis} PI
+                  </Badge>
+                </div>
+                <Button size="sm" className="mt-4 w-full rounded-full" asChild>
+                  <Link to={`/mentors/${m.profile.id}`}>View profile</Link>
+                </Button>
               </div>
             </motion.div>
           ))}

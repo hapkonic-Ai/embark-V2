@@ -16,6 +16,8 @@ import CandidateDashboard from "./pages/CandidateDashboard";
 import MentorDashboard from "./pages/MentorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import CampusDashboard from "./pages/CampusDashboard";
+import GuestLecturer from "./pages/GuestLecturer";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -32,6 +34,7 @@ export default function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/colleges" element={<Colleges />} />
+        <Route path="/guest-lecturer" element={<GuestLecturer />} />
         <Route
           path="/dashboard"
           element={
@@ -45,6 +48,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={["mentor"]}>
               <MentorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/campus/dashboard"
+          element={
+            <ProtectedRoute roles={["campus"]}>
+              <CampusDashboard />
             </ProtectedRoute>
           }
         />
