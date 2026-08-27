@@ -14,7 +14,7 @@ export function LoadingScreen() {
   const [taglineIndex, setTaglineIndex] = useState(0);
 
   useEffect(() => {
-    const t = setTimeout(() => setShow(false), 2400);
+    const t = setTimeout(() => setShow(false), 1200);
     return () => clearTimeout(t);
   }, []);
 
@@ -112,7 +112,7 @@ export function LoadingScreen() {
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ duration: 2.2, ease: "easeInOut" }}
+            transition={{ duration: 1.1, ease: "easeInOut" }}
             className="absolute bottom-0 left-0 h-1 w-full origin-left bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500"
           />
         </motion.div>

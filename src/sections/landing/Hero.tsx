@@ -96,7 +96,7 @@ function FloatingCard({
     <motion.div
       initial={{ opacity: 0, ...initial }}
       animate={entrance}
-      transition={{ delay, type: "spring", stiffness: 95, damping: 16, mass: 0.8 }}
+      transition={{ delay, type: "spring", stiffness: 110, damping: 15, mass: 0.75 }}
       onAnimationComplete={() => setFloating(true)}
       whileHover={hover}
       className={className}
@@ -242,15 +242,12 @@ export default function Hero() {
 
           {/* right 3D scene */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
             className="relative hidden lg:flex items-center justify-center h-[540px]"
           >
             {/* main mentor card */}
             <FloatingCard
-              delay={0.35}
-              initial={{ x: 140, rotateY: -18, scale: 0.9 }}
+              delay={1.35}
+              initial={{ x: 200, rotateY: -24, scale: 0.88 }}
               floatDuration={4.5}
               floatDistance={4}
               hover={{ y: -6, rotateY: -6, transition: { duration: 0.3 } }}
@@ -274,7 +271,7 @@ export default function Hero() {
                       <span className="font-semibold">3 of 5 done</span>
                     </div>
                     <div className="mt-2 h-2 rounded-full bg-orange-100 overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: "60%" }} transition={{ duration: 1.2, delay: 0.8 }} className="h-full bg-orange-500 rounded-full" />
+                      <motion.div initial={{ width: 0 }} animate={{ width: "60%" }} transition={{ duration: 1.2, delay: 1.8 }} className="h-full bg-orange-500 rounded-full" />
                     </div>
                   </div>
                   <div className="rounded-2xl bg-green-50 text-green-800 p-3 text-sm">
@@ -286,8 +283,8 @@ export default function Hero() {
 
             {/* floating review card */}
             <FloatingCard
-              delay={0.15}
-              initial={{ x: 120, y: -100, rotate: 14, scale: 0.85 }}
+              delay={1.15}
+              initial={{ x: 180, y: -160, rotate: 18, scale: 0.82 }}
               floatDuration={3.8}
               floatDistance={5}
               hover={{ y: -8, rotateZ: -2, transition: { duration: 0.3 } }}
@@ -323,8 +320,8 @@ export default function Hero() {
 
             {/* floating stats card */}
             <FloatingCard
-              delay={0.55}
-              initial={{ y: 120, rotate: -10, scale: 0.85 }}
+              delay={1.55}
+              initial={{ y: 180, rotate: -14, scale: 0.82 }}
               floatDuration={4.2}
               floatDistance={4}
               hover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
@@ -340,8 +337,8 @@ export default function Hero() {
 
             {/* student collage polaroid */}
             <FloatingCard
-              delay={0.85}
-              initial={{ y: -80, x: -60, rotate: -18, scale: 0.85 }}
+              delay={1.85}
+              initial={{ y: -140, x: -100, rotate: -22, scale: 0.82 }}
               floatDuration={4.0}
               floatDistance={5}
               hover={{ scale: 1.05, rotate: -2, transition: { duration: 0.3 } }}
@@ -354,7 +351,7 @@ export default function Hero() {
                     key={idx}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1 + idx * 0.08, type: "spring", stiffness: 250 }}
+                    transition={{ delay: 2.2 + idx * 0.08, type: "spring", stiffness: 250 }}
                   >
                     <SafeImg
                       src={src}
@@ -369,8 +366,8 @@ export default function Hero() {
 
             {/* success story card */}
             <FloatingCard
-              delay={0.75}
-              initial={{ x: 120, y: 120, rotate: 10, scale: 0.85 }}
+              delay={1.75}
+              initial={{ x: 180, y: 180, rotate: 14, scale: 0.82 }}
               floatDuration={3.6}
               floatDistance={5}
               hover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
