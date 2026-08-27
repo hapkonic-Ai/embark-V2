@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Play, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -47,6 +47,72 @@ const itemVariants = {
   show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: "easeOut" as const } },
 };
 
+function FloatingCard({
+  children,
+  className,
+  initial,
+  delay,
+  floatDuration = 4,
+  floatDistance = 5,
+  hover,
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  initial: { opacity?: number; x?: number; y?: number; rotate?: number; rotateY?: number; scale?: number };
+  delay: number;
+  floatDuration?: number;
+  floatDistance?: number;
+  hover?: Parameters<typeof motion.div>[0]["whileHover"];
+  style?: React.CSSProperties;
+}) {
+  const reduced = useReducedMotion();
+  const [floating, setFloating] = useState(false);
+
+  const entrance = {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    rotate: 0,
+    rotateY: 0,
+    scale: 1,
+  };
+
+  if (reduced) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: delay * 0.3, duration: 0.4 }}
+        className={className}
+        style={style}
+      >
+        {children}
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, ...initial }}
+      animate={entrance}
+      transition={{ delay, type: "spring", stiffness: 95, damping: 16, mass: 0.8 }}
+      onAnimationComplete={() => setFloating(true)}
+      whileHover={hover}
+      className={className}
+      style={style}
+    >
+      <motion.div
+        animate={floating ? { y: [0, -floatDistance, 0] } : { y: 0 }}
+        transition={{ duration: floatDuration, repeat: Infinity, ease: "easeInOut" }}
+        className="h-full w-full"
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function Hero() {
   const [i, setI] = useState(0);
   const [slider, setSlider] = useState(0);
@@ -70,9 +136,9 @@ export default function Hero() {
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           {/* left copy */}
           <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
             className="text-center lg:text-left"
           >
             <motion.h1
@@ -176,23 +242,24 @@ export default function Hero() {
 
           {/* right 3D scene */}
           <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
             className="relative hidden lg:flex items-center justify-center h-[540px]"
           >
             {/* main mentor card */}
-            <motion.div
-              initial={{ opacity: 0, x: -80, rotateY: -20, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, rotateY: -8, scale: 1 }}
-              transition={{ delay: 0.35, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -6, rotateY: -6, transition: { duration: 0.3 } }}
+            <FloatingCard
+              delay={0.35}
+              initial={{ x: 140, rotateY: -18, scale: 0.9 }}
+              floatDuration={4.5}
+              floatDistance={4}
+              hover={{ y: -6, rotateY: -6, transition: { duration: 0.3 } }}
               className="relative z-10 w-80 rounded-3xl border bg-card/90 backdrop-blur-xl p-6 shadow-2xl shadow-orange-500/10"
               style={{ transformStyle: "preserve-3d", transform: "rotateY(-8deg) rotateX(4deg)" }}
             >
               <motion.div variants={containerVariants} initial="hidden" animate="show">
                 <motion.div variants={itemVariants} className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-xl font-bold text-white">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-display text-xl font-bold text-white">
                     RO
                   </div>
                   <div>
@@ -215,14 +282,15 @@ export default function Hero() {
                   </div>
                 </motion.div>
               </motion.div>
-            </motion.div>
+            </FloatingCard>
 
             {/* floating review card */}
-            <motion.div
-              initial={{ opacity: 0, x: 100, y: -40, rotateZ: 8 }}
-              animate={{ opacity: 1, x: 0, y: 0, rotateZ: 0 }}
-              transition={{ delay: 0.55, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -8, rotateZ: -2, transition: { duration: 0.3 } }}
+            <FloatingCard
+              delay={0.15}
+              initial={{ x: 120, y: -100, rotate: 14, scale: 0.85 }}
+              floatDuration={3.8}
+              floatDistance={5}
+              hover={{ y: -8, rotateZ: -2, transition: { duration: 0.3 } }}
               className="absolute -top-4 -right-4 z-20 w-64 rounded-2xl border bg-card/90 backdrop-blur p-4 shadow-xl"
               style={{ transform: "rotateY(8deg) rotateX(-4deg) translateZ(40px)" }}
             >
@@ -251,14 +319,15 @@ export default function Hero() {
                   </div>
                 </motion.div>
               </AnimatePresence>
-            </motion.div>
+            </FloatingCard>
 
             {/* floating stats card */}
-            <motion.div
-              initial={{ opacity: 0, x: -80, y: 60 }}
-              animate={{ opacity: 1, x: 0, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
+            <FloatingCard
+              delay={0.55}
+              initial={{ y: 120, rotate: -10, scale: 0.85 }}
+              floatDuration={4.2}
+              floatDistance={4}
+              hover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
               className="absolute bottom-8 -left-8 z-20 w-56 rounded-2xl border bg-card/90 backdrop-blur p-4 shadow-xl"
               style={{ transform: "rotateY(6deg) rotateX(6deg) translateZ(30px)" }}
             >
@@ -267,14 +336,15 @@ export default function Hero() {
               </div>
               <div className="mt-1 font-display text-3xl font-bold">₹35.3 LPA</div>
               <div className="text-xs text-green-600 mt-1">+12% vs last year</div>
-            </motion.div>
+            </FloatingCard>
 
             {/* student collage polaroid */}
-            <motion.div
-              initial={{ opacity: 0, y: -80, rotate: -20, scale: 0.85 }}
-              animate={{ opacity: 1, y: 0, rotate: -6, scale: 1 }}
-              transition={{ delay: 0.85, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ scale: 1.05, rotate: -2, transition: { duration: 0.3 } }}
+            <FloatingCard
+              delay={0.85}
+              initial={{ y: -80, x: -60, rotate: -18, scale: 0.85 }}
+              floatDuration={4.0}
+              floatDistance={5}
+              hover={{ scale: 1.05, rotate: -2, transition: { duration: 0.3 } }}
               className="absolute top-20 -left-14 z-30 rounded-2xl border bg-card p-3 shadow-2xl"
               style={{ transform: "rotateY(-6deg) rotateX(-4deg) translateZ(60px)" }}
             >
@@ -295,14 +365,15 @@ export default function Hero() {
                 ))}
               </div>
               <p className="mt-2 text-center text-xs font-medium">+4k converts</p>
-            </motion.div>
+            </FloatingCard>
 
             {/* success story card */}
-            <motion.div
-              initial={{ opacity: 0, y: 80, x: 60, rotate: 8 }}
-              animate={{ opacity: 1, y: 0, x: 0, rotate: 0 }}
-              transition={{ delay: 1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
+            <FloatingCard
+              delay={0.75}
+              initial={{ x: 120, y: 120, rotate: 10, scale: 0.85 }}
+              floatDuration={3.6}
+              floatDistance={5}
+              hover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
               className="absolute -bottom-2 right-0 z-30 w-64 rounded-2xl border bg-card/95 backdrop-blur p-4 shadow-2xl"
               style={{ transform: "rotateY(4deg) rotateX(4deg) translateZ(50px)" }}
             >
@@ -317,7 +388,7 @@ export default function Hero() {
                   <div className="text-xs text-muted-foreground">IIM B convert · 6 mentor mocks</div>
                 </div>
               </div>
-            </motion.div>
+            </FloatingCard>
           </motion.div>
         </div>
       </div>
