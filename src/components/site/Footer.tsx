@@ -22,6 +22,7 @@ export default function Footer() {
             <h4 className="font-display font-semibold text-white mb-3">Platform</h4>
             <ul className="space-y-2 text-sm">
               <li><Link className="hover:text-orange-400 transition-colors" to="/mentors">Find a mentor</Link></li>
+              <li><Link className="hover:text-orange-400 transition-colors" to="/guest-lecturer">Guest Lecturer</Link></li>
               <li><Link className="hover:text-orange-400 transition-colors" to="/events">Events & case comps</Link></li>
               <li><Link className="hover:text-orange-400 transition-colors" to="/playbooks">Playbooks</Link></li>
               <li><Link className="hover:text-orange-400 transition-colors" to="/colleges">Compare colleges</Link></li>

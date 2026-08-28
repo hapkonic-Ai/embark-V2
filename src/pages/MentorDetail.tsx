@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
+import { mentorImage, fallbackFace } from "@/lib/images";
 
 export default function MentorDetail() {
   const { id } = useParams();
@@ -71,10 +72,10 @@ export default function MentorDetail() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-5">
               <img
-                src={`https://i.pravatar.cc/300?u=${p.id}`}
+                src={mentorImage(data.name ?? "Mentor", p.bschool ?? "IIM")}
                 alt={data.name ?? "Mentor"}
                 className="h-24 w-24 rounded-3xl object-cover shadow-xl shadow-orange-500/25"
-                onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name ?? "EM")}&background=f97316&color=fff`; }}
+                onError={(e) => { e.currentTarget.src = fallbackFace(data.name ?? "Mentor"); }}
               />
               <div>
                 <h1 className="font-display text-3xl font-bold flex items-center gap-2">

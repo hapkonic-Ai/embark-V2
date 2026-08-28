@@ -33,21 +33,10 @@ function RunningNumber({ to, suffix = "" }: { to: number; suffix?: string }) {
 
 export function PanicState() {
   return (
-    <section className="relative overflow-hidden py-20 sm:py-28 bg-stone-950 text-stone-100">
-      <div className="absolute inset-0 bg-grid-dark opacity-50" />
-      <div className="absolute -top-40 left-1/2 h-80 w-[50rem] -translate-x-1/2 rounded-full bg-orange-600/25 blur-3xl" />
-
+    <section className="section-dark py-20 sm:py-28">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           <div>
-            <motion.span
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-sm font-semibold text-orange-400 uppercase tracking-widest"
-            >
-              The panic state
-            </motion.span>
             <motion.h2
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}

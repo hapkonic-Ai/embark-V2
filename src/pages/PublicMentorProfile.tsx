@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/format";
+import { mentorImage, fallbackFace } from "@/lib/images";
 
 export default function PublicMentorProfile() {
   const { slug } = useParams<{ slug: string }>();
@@ -50,10 +51,10 @@ export default function PublicMentorProfile() {
           <div className="h-32 bg-gradient-to-r from-orange-500 to-amber-500 -mx-8 -mt-8" />
           <div className="relative -mt-14 flex items-end justify-between gap-4">
             <img
-              src={`https://i.pravatar.cc/300?u=${profile.id}`}
+              src={mentorImage(name ?? "Mentor", profile.bschool ?? "IIM")}
               alt={name ?? "Mentor"}
               className="h-28 w-28 rounded-3xl border-4 border-card object-cover"
-              onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name ?? "EM")}&background=f97316&color=fff`; }}
+              onError={(e) => { e.currentTarget.src = fallbackFace(name ?? "Mentor"); }}
             />
             {profile.isVerified && (
               <Badge className="mb-4 bg-green-100 text-green-700 border-0">

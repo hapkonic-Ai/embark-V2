@@ -1,29 +1,42 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { BookOpen, Check } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
-import PageHero from "@/components/site/PageHero";
+import { EditorialHero } from "@/components/site/EditorialHero";
+import { BookStack } from "@/components/site/BookStack";
+import { StorySection } from "@/components/site/StorySection";
+import { JourneySteps } from "@/components/site/JourneySteps";
 import PaymentModal from "@/components/PaymentModal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
+import { playbookCoverImage } from "@/lib/images";
 
-const UNSPLASH_COVERS = [
-  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop",
+function fallbackCover(_id: number, title: string) {
+  return playbookCoverImage(title);
+}
+
+const HERO_BOOKS = [
+  { title: "Crack the GD", subtitle: "Group discussion scripts that win", color: "#ea580c" },
+  { title: "Build your MBA profile", subtitle: "Shape your story for top b-schools", color: "#1c1917" },
+  { title: "Master the PI", subtitle: "Interview answers with intent", color: "#c2410c" },
+  { title: "Consulting case framework", subtitle: "Solve cases like a consultant", color: "#44403c" },
+  { title: "Placement preparation", subtitle: "A plan that survives pressure", color: "#f97316" },
+  { title: "Career switch", subtitle: "Move with clarity, not guesswork", color: "#57534e" },
+  { title: "SOP that converts", subtitle: "From blank page to final admit", color: "#7c2d12" },
+  { title: "WAT essay mastery", subtitle: "Write under pressure", color: "#92400e" },
 ];
 
-function fallbackCover(id: number) {
-  return UNSPLASH_COVERS[id % UNSPLASH_COVERS.length];
-}
+const PLAYBOOK_STEPS = [
+  { number: "01", title: "QUESTION", description: "Start with the exact problem the playbook is built to solve." },
+  { number: "02", title: "FRAMEWORK", description: "Get a reusable structure distilled from real interviews." },
+  { number: "03", title: "EXAMPLE", description: "See how the framework played out in actual situations." },
+  { number: "04", title: "PRACTICE", description: "Apply it yourself with guided prompts and exercises." },
+  { number: "05", title: "FEEDBACK", description: "Refine your response until it sounds like your own." },
+];
 
 type Playbook = {
   id: number;
@@ -38,6 +51,7 @@ type Playbook = {
 
 export default function Playbooks() {
   const { user, isAuthenticated } = useAuth();
+  const reduce = useReducedMotion();
   const { data: playbooks, isLoading } = trpc.catalog.playbooks.useQuery();
   const { data: owned } = trpc.candidate.myPlaybooks.useQuery(undefined, {
     enabled: isAuthenticated && user?.role === "candidate",
@@ -69,112 +83,141 @@ export default function Playbooks() {
 
   return (
     <SiteLayout>
-      <PageHero
-        eyebrow="Curated by MBA converts"
-        title="Playbooks that punch above their"
-        highlight="price"
+      <EditorialHero
+        title="The playbook for"
+        highlight="getting where you want to go."
         subtitle="Real frameworks, case shortcuts and GD/PI scripts written by students who cracked IIMs, XLRI and ISB. No fluff — just what moves the needle."
-        cta="Browse below"
+        cta="Browse playbooks"
         ctaHref="#playbooks-grid"
         secondaryCta="Become a contributor"
         secondaryHref="/mentors"
-        visual={
-          <div className="relative w-full max-w-md">
-            <motion.div
-              animate={{ y: [0, -12, 0], rotate: [0, 2, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm shadow-2xl"
-            >
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-16 rounded-lg bg-gradient-to-br from-orange-400 to-rose-500" />
-                <div>
-                  <div className="font-display text-2xl font-bold">GD-PI Bible</div>
-                  <div className="text-sm text-stone-300">87 pages · 4.9/5</div>
-                </div>
-              </div>
-              <div className="mt-4 h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                <motion.div
-                  className="h-full bg-orange-400"
-                  initial={{ width: "0%" }}
-                  animate={{ width: "78%" }}
-                  transition={{ duration: 1.5, delay: 0.4 }}
-                />
-              </div>
-            </motion.div>
-            <motion.div
-              animate={{ y: [0, 10, 0], rotate: [0, -2, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-              className="absolute -bottom-8 -right-8 rounded-2xl border border-white/10 bg-stone-900/80 p-4 shadow-xl"
-            >
-              <div className="text-xs text-stone-400">Student saved</div>
-              <div className="font-display text-xl font-bold text-green-400">₹24,000</div>
-              <div className="text-xs text-stone-500">vs offline classes</div>
-            </motion.div>
-          </div>
+        dark={false}
+      >
+        <BookStack books={HERO_BOOKS} />
+      </EditorialHero>
+
+      <StorySection
+        dark={true}
+        statement="Built from real interviews, real mistakes and real outcomes."
+        body={
+          <>
+            Every playbook is experience distilled into something usable. They are not textbooks — they are the notes you would have taken if you had sat in the room with candidates who converted their calls.
+            <br className="hidden sm:block" />
+            <span className="mt-4 block">
+              Use them to prepare faster, avoid common traps, and walk into rooms with answers that sound like yours.
+            </span>
+          </>
         }
       />
 
-      <div id="playbooks-grid" className="mx-auto max-w-7xl px-4 sm:px-6 py-14">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-2xl font-bold">All playbooks</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Buy once, keep forever. Updates included.</p>
+      <JourneySteps title="How a playbook works" steps={PLAYBOOK_STEPS} className="section-light" />
+
+      <section id="playbooks-grid" className="section-dark py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-2xl font-bold text-stone-100">All playbooks</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Buy once, keep forever. Updates included.</p>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {isLoading &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-80 rounded-3xl bg-stone-800" />
+              ))}
+            {playbooks?.map((p, i) => {
+              const isOwned = ownedIds.has(p.id);
+              const cover = p.coverImage || fallbackCover(p.id, p.title);
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.5, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={reduce ? undefined : { y: -12, scale: 1.03, transition: { duration: 0.3 } }}
+                  className="group flex flex-col overflow-hidden rounded-3xl border border-stone-800 bg-card shadow-sm transition-shadow duration-300 hover:shadow-2xl hover:shadow-orange-500/10 cursor-pointer"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={cover}
+                      alt={p.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    <div className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      <h4 className="font-display text-xl font-bold text-white">{p.title}</h4>
+                      <p className="mt-1 line-clamp-2 text-sm text-white/80">{p.description}</p>
+                    </div>
+
+                  </div>
+                  <div className="flex flex-1 flex-col p-6">
+                    <h3 className="font-display text-xl font-semibold text-stone-100 transition-colors group-hover:text-orange-400">{p.title}</h3>
+                    <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">{p.description}</p>
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <BookOpen className="h-3.5 w-3.5" /> {p.pages} pages
+                    </div>
+                    <div className="mt-5 flex items-center justify-between border-t border-stone-800 pt-4">
+                      <span className="font-display text-xl font-bold text-stone-100">{formatINR(p.price)}</span>
+                      {isOwned ? (
+                        <Button size="sm" variant="secondary" disabled className="rounded-full bg-card text-muted-foreground">
+                          <Check className="mr-1.5 h-3.5 w-3.5" /> Owned
+                        </Button>
+                      ) : (
+                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={() => buy(p)}>
+                          Get it
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
+      </section>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {isLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-80 rounded-3xl" />)}
-          {playbooks?.map((p, i) => {
-            const isOwned = ownedIds.has(p.id);
-            const cover = p.coverImage || fallbackCover(p.id);
-            return (
+      <section className="section-light py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight">Choose how you want to learn</h2>
+            <p className="mt-4 text-muted-foreground">Buy single playbooks or unlock the full library.</p>
+          </div>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {[
+              { name: "Single", price: "₹499", desc: "One playbook of your choice", features: ["1 playbook", "Lifetime access", "Free updates"] },
+              { name: "Bundle", price: "₹1,999", desc: "Any 5 playbooks", features: ["5 playbooks", "Lifetime access", "Free updates", "Save 20%"], hot: true },
+              { name: "Library", price: "₹4,999", desc: "Every playbook we publish", features: ["All current & future playbooks", "Lifetime access", "Priority support", "Best value"] },
+            ].map((plan, i) => (
               <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="group rounded-3xl border bg-card shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all flex flex-col overflow-hidden"
+                key={plan.name}
+                initial={reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+                whileHover={reduce ? undefined : { y: -8, transition: { duration: 0.25 } }}
+                className={`relative rounded-3xl border p-7 ${plan.hot ? "bg-stone-950 text-white border-stone-800 shadow-2xl shadow-orange-500/10" : "bg-card shadow-sm"}`}
               >
-                <div className="relative h-44 overflow-hidden">
-                  <img
-                    src={cover}
-                    alt={p.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute left-4 bottom-4 flex items-center gap-2">
-                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-stone-900 backdrop-blur-sm">
-                      {p.emoji}
-                    </span>
-                    <Badge variant="secondary" className="bg-white/90 text-stone-900 backdrop-blur-sm">
-                      {p.category}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex flex-1 flex-col p-6">
-                  <h3 className="font-display text-xl font-semibold">{p.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-3 flex-1">{p.description}</p>
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <BookOpen className="h-3.5 w-3.5" /> {p.pages} pages
-                  </div>
-                  <div className="mt-5 flex items-center justify-between border-t pt-4">
-                    <span className="font-display text-xl font-bold">{formatINR(p.price)}</span>
-                    {isOwned ? (
-                      <Button size="sm" variant="secondary" disabled className="rounded-full">
-                        <Check className="mr-1.5 h-3.5 w-3.5" /> Owned
-                      </Button>
-                    ) : (
-                      <Button size="sm" className="rounded-full" onClick={() => buy(p)}>
-                        Get it
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                <h3 className="font-display text-xl font-semibold">{plan.name}</h3>
+                <p className={`mt-1 text-sm ${plan.hot ? "text-stone-400" : "text-muted-foreground"}`}>{plan.desc}</p>
+                <div className="mt-4 font-display text-4xl font-bold">{plan.price}</div>
+                <ul className="mt-6 space-y-3">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm">
+                      <Check className={`h-4 w-4 ${plan.hot ? "text-orange-400" : "text-orange-500"}`} />
+                      <span className={plan.hot ? "text-stone-300" : ""}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button className={`mt-6 w-full rounded-full ${plan.hot ? "btn-shine" : ""}`} variant={plan.hot ? "default" : "outline"}>
+                  Choose {plan.name}
+                </Button>
               </motion.div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
       {selected && (
         <PaymentModal
@@ -182,7 +225,9 @@ export default function Playbooks() {
           onOpenChange={(v) => !v && setSelected(null)}
           amount={selected.price}
           title={selected.title}
-          onConfirm={async () => { await purchase.mutateAsync({ playbookId: selected.id }); }}
+          onConfirm={async () => {
+            await purchase.mutateAsync({ playbookId: selected.id });
+          }}
         />
       )}
     </SiteLayout>

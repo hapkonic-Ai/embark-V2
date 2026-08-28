@@ -1,48 +1,104 @@
 import { Link } from "react-router";
-import { motion } from "framer-motion";
-import { ArrowRight, Calendar, Rocket, Trophy, Users } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import SiteLayout from "@/components/site/SiteLayout";
-import PageHero from "@/components/site/PageHero";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { EditorialHero } from "@/components/site/EditorialHero";
+import { StorySection } from "@/components/site/StorySection";
+import { EventCard, EventSkeleton } from "@/components/site/EventCard";
+import { eventCoverImage } from "@/lib/images";
 
-const GRADIENTS = [
-  "from-purple-600 to-indigo-600",
-  "from-emerald-500 to-teal-600",
-  "from-orange-500 to-rose-500",
-  "from-blue-500 to-cyan-500",
-  "from-pink-500 to-fuchsia-600",
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+const EVENT_PHOTOS = [
+  eventCoverImage("hackathon", "Students collaborating"),
+  eventCoverImage("case_competition", "Audience watching speaker"),
+  eventCoverImage("hackathon", "Conference session"),
+  eventCoverImage("case_competition", "Students working on laptops"),
+  eventCoverImage("hackathon", "Event audience from above"),
+  eventCoverImage("case_competition", "Team presenting"),
 ];
 
-const statusStyle: Record<string, string> = {
-  live: "bg-green-100 text-green-700",
-  closed: "bg-stone-200 text-stone-600",
-};
+const CATEGORIES = [
+  "Career",
+  "MBA",
+  "Product",
+  "Consulting",
+  "Technology",
+  "Entrepreneurship",
+  "Leadership",
+];
 
-function EventsVisual() {
+function EventsCollage() {
+  const reduce = useReducedMotion();
+
   return (
-    <div className="relative w-full h-full min-h-[320px]">
+    <div className="relative h-full w-full min-h-[480px]">
+      {/* main event poster */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="absolute left-16 top-12 w-56 h-72 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 shadow-2xl rotate-[-6deg] flex flex-col justify-end p-5 text-white"
+        initial={reduce ? { opacity: 1, y: 0, rotate: -5 } : { opacity: 0, y: 30, rotate: -10 }}
+        animate={{ opacity: 1, y: 0, rotate: -5 }}
+        transition={{ duration: 0.8, delay: 0.2, ease: EASE }}
+        whileHover={!reduce ? { y: -8, rotate: -3, scale: 1.02 } : undefined}
+        className="absolute left-0 top-2 h-80 w-60 overflow-hidden rounded-3xl border-4 border-white shadow-2xl"
       >
-        <Trophy className="h-10 w-10" />
-        <div className="mt-2 font-display font-bold">Case Sprint</div>
-        <div className="text-sm opacity-80">₹50,000 prize</div>
+        <img
+          src={eventCoverImage("hackathon", "Startup Hack")}
+          alt="Startup Hack"
+          className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/30 to-transparent" />
+        <div className="absolute bottom-5 left-5 right-5 text-white">
+          <div className="font-display text-lg font-bold">Startup Hack</div>
+          <div className="text-sm text-white/80">Build your B-plan</div>
+        </div>
       </motion.div>
+
+      {/* second event poster */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45 }}
-        className="absolute right-16 top-24 w-56 h-72 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-2xl rotate-[6deg] flex flex-col justify-end p-5 text-white"
+        initial={reduce ? { opacity: 1, y: 0, rotate: 5 } : { opacity: 0, y: 30, rotate: 10 }}
+        animate={{ opacity: 1, y: 0, rotate: 5 }}
+        transition={{ duration: 0.8, delay: 0.35, ease: EASE }}
+        whileHover={!reduce ? { y: -8, rotate: 3, scale: 1.02 } : undefined}
+        className="absolute right-0 top-14 h-72 w-56 overflow-hidden rounded-3xl border-4 border-white shadow-2xl"
       >
-        <Rocket className="h-10 w-10" />
-        <div className="mt-2 font-display font-bold">Startup Hack</div>
-        <div className="text-sm opacity-80">Build your B-plan</div>
+        <img
+          src={eventCoverImage("case_competition", "Case Sprint")}
+          alt="Case Sprint"
+          className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/30 to-transparent" />
+        <div className="absolute bottom-5 left-5 right-5 text-white">
+          <div className="font-display text-lg font-bold">Case Sprint</div>
+          <div className="text-sm text-white/80">₹50,000 prize</div>
+        </div>
+      </motion.div>
+
+      {/* stats card */}
+      <motion.div
+        initial={reduce ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.85 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.55, ease: EASE }}
+        whileHover={!reduce ? { y: -6, scale: 1.05 } : undefined}
+        className="absolute bottom-8 left-16 flex h-28 w-56 items-center gap-4 rounded-2xl border border-stone-200 bg-white p-4 text-stone-900 shadow-xl"
+      >
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+          <Users className="h-7 w-7" />
+        </div>
+        <div>
+          <div className="font-display text-2xl font-bold">1,200+</div>
+          <div className="text-xs text-stone-500">students joined events</div>
+        </div>
+      </motion.div>
+
+      {/* date chip */}
+      <motion.div
+        initial={reduce ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, delay: 0.7, ease: EASE }}
+        className="absolute bottom-28 right-4 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-900 shadow-lg"
+      >
+        Next: 12 Sept
       </motion.div>
     </div>
   );
@@ -50,85 +106,162 @@ function EventsVisual() {
 
 export default function Events() {
   const { data: events, isLoading } = trpc.catalog.events.useQuery();
-  const liveCount = events?.filter((e) => e.status === "live").length ?? 0;
+  const liveEvents = events?.filter(e => e.status === "live") ?? [];
+  const closedEvents = events?.filter(e => e.status === "closed") ?? [];
 
   return (
     <SiteLayout>
-      <PageHero
-        eyebrow="Events"
-        title="Events &"
-        highlight="case competitions"
+      <EditorialHero
+        dark={false}
+        title="Don't just attend events."
+        highlight="Be in the room when something happens."
         subtitle="Build your resume with real wins. Compete in national events judged by mentors, founders, and B-school alumni."
         cta="Browse live events"
-        ctaHref="#events"
+        ctaHref="#whats-happening"
         secondaryCta="Host with us"
         secondaryHref="/guest-lecturer"
-        visual={<EventsVisual />}
-      />
+      >
+        <EventsCollage />
+      </EditorialHero>
 
-      <div id="events" className="mx-auto max-w-7xl px-4 sm:px-6 py-14">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-3xl font-bold">Live events</h2>
-            <p className="mt-2 text-muted-foreground">
-              {liveCount > 0 ? `${liveCount} event${liveCount === 1 ? "" : "s"} open for submissions.` : "No live events right now. Check back soon."}
-            </p>
+      <section id="whats-happening" className="section-dark py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-3xl sm:text-4xl font-bold">
+                What's happening
+              </h2>
+              <p className="mt-2 text-muted-foreground">
+                {isLoading
+                  ? "Loading events..."
+                  : liveEvents.length > 0
+                    ? `${liveEvents.length} event${liveEvents.length === 1 ? "" : "s"} open for submissions.`
+                    : "No live events right now. Check back soon."}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {isLoading &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <EventSkeleton key={i} />
+              ))}
+
+            {!isLoading && liveEvents.length === 0 && (
+              <p className="col-span-full text-muted-foreground">
+                No live events right now. Check back soon.
+              </p>
+            )}
+
+            {liveEvents.map((e, i) => (
+              <EventCard key={e.id} e={e} index={i} />
+            ))}
           </div>
         </div>
+      </section>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading && Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-96 rounded-3xl" />)}
-          {events?.map((e, i) => {
-            const gradient = GRADIENTS[i % GRADIENTS.length];
-            return (
-              <motion.div
-                key={e.id}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                whileHover={{ y: -8 }}
-                className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-2xl transition-all flex flex-col"
-              >
-                <div className={`relative h-40 bg-gradient-to-br ${gradient} p-6`}>
-                  <div className="absolute top-4 right-4">
-                    <Badge className={statusStyle[e.status] ?? ""} variant="secondary">
-                      {e.status === "live" ? "● Live" : "Closed"}
-                    </Badge>
-                  </div>
-                  <div className="text-white/90">
-                    {e.type === "hackathon" ? <Rocket className="h-10 w-10" /> : <Trophy className="h-10 w-10" />}
-                  </div>
-                  <div className="absolute bottom-4 left-6 right-6">
-                    <div className="text-white/90 text-sm font-medium">{e.type === "hackathon" ? "Event" : "Case Competition"}</div>
-                  </div>
-                </div>
-                <div className="p-6 flex-1 flex flex-col">
-                  <h3 className="font-display text-xl font-semibold leading-snug flex-1">{e.title}</h3>
-                  <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                    <p className="flex items-center gap-2 text-orange-600 font-medium">
-                      <Trophy className="h-4 w-4" /> {e.prize}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Users className="h-4 w-4" /> {e.submissionCount} submissions
-                    </p>
-                    {e.endAt && (
-                      <p className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" /> Deadline {new Date(e.endAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    )}
-                  </div>
-                  <Button className="mt-5 w-full rounded-full" variant={e.status === "live" ? "default" : "outline"} size="sm" asChild>
-                    <Link to={`/events/${e.id}`}>
-                      {e.status === "live" ? "Participate" : "View results"} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                </div>
-              </motion.div>
-            );
-          })}
+      <section className="section-light py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-10">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold">
+              What you missed
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              Past events and closed competitions. Results are still live.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {isLoading &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <EventSkeleton key={i} />
+              ))}
+
+            {!isLoading && closedEvents.length === 0 && (
+              <p className="col-span-full text-muted-foreground">
+                No past events yet.
+              </p>
+            )}
+
+            {closedEvents.map((e, i) => (
+              <EventCard key={e.id} e={e} index={i} />
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
+
+      <StorySection
+        dark={true}
+        statement="Moments from the community"
+        body={
+          <>
+            Real students, real campuses, real energy. Every event is a chance
+            to meet the people who will shape your next chapter.
+          </>
+        }
+        reverse
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 h-56 overflow-hidden rounded-3xl">
+            <img
+              src={EVENT_PHOTOS[0]}
+              alt="Students collaborating at an event"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="h-44 overflow-hidden rounded-3xl">
+            <img
+              src={EVENT_PHOTOS[1]}
+              alt="Audience watching a speaker"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="h-44 overflow-hidden rounded-3xl">
+            <img
+              src={EVENT_PHOTOS[2]}
+              alt="Conference session in progress"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="h-44 overflow-hidden rounded-3xl">
+            <img
+              src={EVENT_PHOTOS[3]}
+              alt="Students working on laptops"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="h-44 overflow-hidden rounded-3xl">
+            <img
+              src={EVENT_PHOTOS[4]}
+              alt="Event audience from above"
+              className="h-full w-full object-cover"
+            />
+          </div>
+        </div>
+      </StorySection>
+
+      <section className="section-light py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 text-center">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-4">
+            Find your room
+          </h2>
+          <p className="mx-auto max-w-2xl text-muted-foreground mb-10">
+            Pick a lane that matches where you are headed. We are building
+            events for every kind of ambition.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {CATEGORIES.map(category => (
+              <Link
+                key={category}
+                to={`/events?category=${category.toLowerCase()}`}
+                className="inline-flex items-center rounded-full border border-stone-200 bg-card px-5 py-2.5 text-sm font-medium text-stone-900 transition-colors hover:border-orange-500 hover:text-orange-600"
+              >
+                {category}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
     </SiteLayout>
   );
 }

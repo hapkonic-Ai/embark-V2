@@ -3,8 +3,9 @@ import { Link } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Play, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reviewPersonImage, fallbackFace } from "@/lib/images";
 
-const WORDS = ["CAT", "GDPI", "Case Comps", "Interviews", "Dream B-School"];
+const WORDS = ["GDPI", "Cases", "Interviews", "IIM calls", "Placements"];
 
 const REVIEWS = [
   { name: "Ayesha K.", school: "IIM K '27", text: "My PI mentor asked questions that came up in my actual panel.", rating: 5, gender: "women" as const },
@@ -13,22 +14,23 @@ const REVIEWS = [
 ];
 
 const STUDENT_PHOTOS = [
-  "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&h=120&fit=crop&crop=faces&auto=format",
-  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=120&h=120&fit=crop&crop=faces&auto=format",
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=faces&auto=format",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=faces&auto=format",
-  "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&h=120&fit=crop&crop=faces&auto=format",
-  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=faces&auto=format",
+  reviewPersonImage("Ayesha"),
+  reviewPersonImage("Rahul"),
+  reviewPersonImage("Priya"),
+  reviewPersonImage("Dev"),
+  reviewPersonImage("Neha"),
+  reviewPersonImage("Arjun"),
 ];
 
 function SafeImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [error, setError] = useState(false);
-  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(alt)}&background=f97316&color=fff&size=128`;
+  const fallback = fallbackFace(alt);
   return (
     <img
       src={error ? fallback : src}
       alt={alt}
       className={className}
+      loading="lazy"
       onError={() => setError(true)}
     />
   );
@@ -129,7 +131,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section ref={containerRef} className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ perspective: "1200px" }}>
+    <section ref={containerRef} className="section-light pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ perspective: "1200px" }}>
       {/* subtle warm tint background only — no radial orbs */}
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
@@ -145,12 +147,11 @@ export default function Hero() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05, duration: 0.7 }}
-              className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]"
+              className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.12]"
             >
-              From blank SOP
+              From blank SOP to final
               <br />
-              to final{" "}
-              <span className="relative inline-flex h-[1.1em] min-w-[180px] sm:min-w-[280px] lg:min-w-[360px] items-center whitespace-nowrap text-left align-baseline overflow-visible">
+              <span className="relative inline-flex h-[1.15em] items-center whitespace-nowrap align-baseline overflow-visible">
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={i}
@@ -242,53 +243,90 @@ export default function Hero() {
 
           {/* right 3D scene */}
           <motion.div
-            className="relative hidden lg:flex items-center justify-center h-[540px]"
+            className="relative hidden lg:flex items-center justify-center h-[600px]"
           >
-            {/* main mentor card */}
-            <FloatingCard
-              delay={1.35}
-              initial={{ x: 200, rotateY: -24, scale: 0.88 }}
-              floatDuration={4.5}
-              floatDistance={4}
-              hover={{ y: -6, rotateY: -6, transition: { duration: 0.3 } }}
-              className="relative z-10 w-80 rounded-3xl border bg-card/90 backdrop-blur-xl p-6 shadow-2xl shadow-orange-500/10"
-              style={{ transformStyle: "preserve-3d", transform: "rotateY(-8deg) rotateX(4deg)" }}
+            {/* hand-drawn arrow pointing to student */}
+            <motion.svg
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 1, delay: 1.1, ease: "easeInOut" }}
+              className="absolute top-16 left-8 z-0 h-40 w-40 text-orange-500"
+              viewBox="0 0 160 160"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
             >
-              <motion.div variants={containerVariants} initial="hidden" animate="show">
-                <motion.div variants={itemVariants} className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-display text-xl font-bold text-white">
-                    RO
-                  </div>
-                  <div>
-                    <div className="font-display font-semibold">Rohan Mehta</div>
-                    <div className="text-xs text-orange-600">IIM Ahmedabad · ex-McKinsey</div>
-                  </div>
-                </motion.div>
-                <motion.div variants={itemVariants} className="mt-5 space-y-3">
-                  <div className="rounded-2xl bg-muted/50 p-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Mock GDs</span>
-                      <span className="font-semibold">3 of 5 done</span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-orange-100 overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: "60%" }} transition={{ duration: 1.2, delay: 1.8 }} className="h-full bg-orange-500 rounded-full" />
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-green-50 text-green-800 p-3 text-sm">
-                    <span className="font-semibold">Latest feedback:</span> Strong opening. Tighten your conclusion.
-                  </div>
-                </motion.div>
-              </motion.div>
-            </FloatingCard>
+              <motion.path
+                d="M20 20 C 50 20, 60 80, 120 100 S 130 140, 100 130"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1, delay: 1.1 }}
+              />
+              <motion.path
+                d="M90 120 L100 132 L115 118"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.3, delay: 2 }}
+              />
+            </motion.svg>
+
+            {/* sparkle / dot decorations */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 1.3, type: "spring" }}
+              className="absolute top-10 right-20 h-3 w-3 rounded-full bg-orange-500"
+            />
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 1.45, type: "spring" }}
+              className="absolute bottom-24 right-12 h-2 w-2 rounded-full bg-amber-400"
+            />
+            <motion.div
+              initial={{ scale: 0, opacity: 0, rotate: -15 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              transition={{ delay: 1.6, type: "spring" }}
+              className="absolute top-1/3 left-10 text-orange-300"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L14.4 9.6H22L16 14.4L18.4 22L12 17.2L5.6 22L8 14.4L2 9.6H9.6L12 2Z" />
+              </svg>
+            </motion.div>
+            <motion.div
+              initial={{ scale: 0, opacity: 0, rotate: 20 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              transition={{ delay: 1.75, type: "spring" }}
+              className="absolute bottom-1/3 right-8 text-amber-400"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L14.4 9.6H22L16 14.4L18.4 22L12 17.2L5.6 22L8 14.4L2 9.6H9.6L12 2Z" />
+              </svg>
+            </motion.div>
+
+            {/* central student image */}
+            <motion.div
+              initial={{ opacity: 0, y: 160, scale: 0.82 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.95, ease: [0.22, 1.4, 0.36, 1] }}
+              className="relative z-10 h-[500px] w-[340px]"
+            >
+              <img
+                src="/student-hero.png"
+                alt="Student with books and headphones"
+                className="h-full w-full object-contain object-bottom drop-shadow-2xl"
+              />
+            </motion.div>
 
             {/* floating review card */}
             <FloatingCard
-              delay={1.15}
-              initial={{ x: 180, y: -160, rotate: 18, scale: 0.82 }}
+              delay={0.35}
+              initial={{ x: 80, y: 160, rotate: 12, scale: 0.82 }}
               floatDuration={3.8}
               floatDistance={5}
               hover={{ y: -8, rotateZ: -2, transition: { duration: 0.3 } }}
-              className="absolute -top-4 -right-4 z-20 w-64 rounded-2xl border bg-card/90 backdrop-blur p-4 shadow-xl"
+              className="absolute top-0 right-0 z-20 w-64 rounded-2xl border bg-white p-4 shadow-xl shadow-stone-900/10"
               style={{ transform: "rotateY(8deg) rotateX(-4deg) translateZ(40px)" }}
             >
               <div className="flex gap-0.5 text-orange-500">
@@ -305,7 +343,7 @@ export default function Hero() {
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">“{REVIEWS[slider].text}”</p>
                   <div className="mt-3 flex items-center gap-2">
                     <SafeImg
-                      src={`https://images.unsplash.com/photo-${slider === 0 ? "1573496359142-b8d87734a5a2" : slider === 1 ? "1507003211169-0a1dd7228f2d" : "1534528741775-53994a69daeb"}?w=120&h=120&fit=crop&crop=faces&auto=format`}
+                      src={reviewPersonImage(REVIEWS[slider].name)}
                       alt={REVIEWS[slider].name}
                       className="h-7 w-7 rounded-full object-cover"
                     />
@@ -318,14 +356,51 @@ export default function Hero() {
               </AnimatePresence>
             </FloatingCard>
 
+            {/* main mentor card */}
+            <FloatingCard
+              delay={0.5}
+              initial={{ x: 120, y: 200, rotateY: -12, scale: 0.88 }}
+              floatDuration={4.5}
+              floatDistance={4}
+              hover={{ y: -6, rotateY: -6, transition: { duration: 0.3 } }}
+              className="absolute top-1/2 -right-4 -translate-y-1/2 z-20 w-72 rounded-3xl border bg-white p-5 shadow-2xl shadow-stone-900/10"
+              style={{ transformStyle: "preserve-3d", transform: "rotateY(-8deg) rotateX(4deg)" }}
+            >
+              <motion.div variants={containerVariants} initial="hidden" animate="show">
+                <motion.div variants={itemVariants} className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-display text-lg font-bold text-white">
+                    RO
+                  </div>
+                  <div>
+                    <div className="font-display font-semibold">Rohan Mehta</div>
+                    <div className="text-xs text-orange-600">IIM Ahmedabad · ex-McKinsey</div>
+                  </div>
+                </motion.div>
+                <motion.div variants={itemVariants} className="mt-4 space-y-3">
+                  <div className="rounded-2xl bg-muted/50 p-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Mock GDs</span>
+                      <span className="font-semibold">3 of 5 done</span>
+                    </div>
+                    <div className="mt-2 h-2 rounded-full bg-orange-100 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: "60%" }} transition={{ duration: 1.2, delay: 0.9 }} className="h-full bg-orange-500 rounded-full" />
+                    </div>
+                  </div>
+                  <div className="rounded-2xl bg-green-50 text-green-800 p-2.5 text-xs">
+                    <span className="font-semibold">Latest feedback:</span> Strong opening. Tighten your conclusion.
+                  </div>
+                </motion.div>
+              </motion.div>
+            </FloatingCard>
+
             {/* floating stats card */}
             <FloatingCard
-              delay={1.55}
-              initial={{ y: 180, rotate: -14, scale: 0.82 }}
+              delay={0.65}
+              initial={{ x: -80, y: 180, rotate: -10, scale: 0.82 }}
               floatDuration={4.2}
               floatDistance={4}
               hover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
-              className="absolute bottom-8 -left-8 z-20 w-56 rounded-2xl border bg-card/90 backdrop-blur p-4 shadow-xl"
+              className="absolute bottom-16 -left-4 z-20 w-56 rounded-2xl border bg-white p-4 shadow-xl shadow-stone-900/10"
               style={{ transform: "rotateY(6deg) rotateX(6deg) translateZ(30px)" }}
             >
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -337,12 +412,12 @@ export default function Hero() {
 
             {/* student collage polaroid */}
             <FloatingCard
-              delay={1.85}
-              initial={{ y: -140, x: -100, rotate: -22, scale: 0.82 }}
+              delay={0.8}
+              initial={{ x: -100, y: 160, rotate: -14, scale: 0.82 }}
               floatDuration={4.0}
               floatDistance={5}
               hover={{ scale: 1.05, rotate: -2, transition: { duration: 0.3 } }}
-              className="absolute top-20 -left-14 z-30 rounded-2xl border bg-card p-3 shadow-2xl"
+              className="absolute top-24 -left-12 z-30 rounded-2xl border bg-white p-3 shadow-2xl shadow-stone-900/10"
               style={{ transform: "rotateY(-6deg) rotateX(-4deg) translateZ(60px)" }}
             >
               <div className="grid grid-cols-3 gap-1.5">
@@ -351,7 +426,7 @@ export default function Hero() {
                     key={idx}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 2.2 + idx * 0.08, type: "spring", stiffness: 250 }}
+                    transition={{ delay: 1.8 + idx * 0.08, type: "spring", stiffness: 250 }}
                   >
                     <SafeImg
                       src={src}
@@ -366,17 +441,17 @@ export default function Hero() {
 
             {/* success story card */}
             <FloatingCard
-              delay={1.75}
-              initial={{ x: 180, y: 180, rotate: 14, scale: 0.82 }}
+              delay={0.95}
+              initial={{ x: 100, y: 200, rotate: 10, scale: 0.82 }}
               floatDuration={3.6}
               floatDistance={5}
               hover={{ y: -8, rotateZ: 2, transition: { duration: 0.3 } }}
-              className="absolute -bottom-2 right-0 z-30 w-64 rounded-2xl border bg-card/95 backdrop-blur p-4 shadow-2xl"
+              className="absolute bottom-4 right-4 z-30 w-60 rounded-2xl border bg-white p-4 shadow-2xl shadow-stone-900/10"
               style={{ transform: "rotateY(4deg) rotateX(4deg) translateZ(50px)" }}
             >
               <div className="flex items-center gap-3">
                 <SafeImg
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&h=120&fit=crop&crop=faces&auto=format"
+                  src={reviewPersonImage("Ishita")}
                   alt="IIM B convert"
                   className="h-12 w-12 rounded-xl object-cover"
                 />

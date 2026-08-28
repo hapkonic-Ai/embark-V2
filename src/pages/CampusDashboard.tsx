@@ -6,6 +6,7 @@ import DashboardShell from "@/components/DashboardShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { mentorImage, fallbackFace } from "@/lib/images";
 
 export default function CampusDashboard() {
   const { user } = useAuth();
@@ -100,10 +101,10 @@ function RequestsTab() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <img
-                  src={`https://i.pravatar.cc/120?u=${profile.id}`}
+                  src={mentorImage(mentorName ?? "Mentor", profile.bschool ?? "IIM")}
                   alt={mentorName ?? ""}
                   className="h-14 w-14 rounded-2xl object-cover"
-                  onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(mentorName ?? "EM")}&background=f97316&color=fff`; }}
+                  onError={(e) => { e.currentTarget.src = fallbackFace(mentorName ?? "Mentor"); }}
                 />
                 <div>
                   <h3 className="font-display font-semibold text-lg">{mentorName}</h3>

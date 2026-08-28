@@ -1,12 +1,14 @@
 import { Link } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Lock, Trophy } from "lucide-react";
+import { ArrowRight, Check, Lock } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/format";
+import { mentorImage, fallbackFace } from "@/lib/images";
 import { ParallaxBox } from "@/components/site/Parallax";
+import { EventCard, EventSkeleton } from "@/components/site/EventCard";
 
 const PLANS = [
   {
@@ -34,11 +36,10 @@ const PLANS = [
 
 export function Programs() {
   return (
-    <section className="py-20">
+    <section className="section-dark py-20">
       <ParallaxBox offset={40} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Programs</span>
-          <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
+          <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
             Pick a plan, meet your mentor
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
@@ -59,11 +60,6 @@ export function Programs() {
                   : "bg-card shadow-sm"
               }`}
             >
-              {p.hot && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-                  Most popular
-                </span>
-              )}
               <h3 className="font-display text-xl font-semibold">{p.name}</h3>
               <p className={`text-sm ${p.hot ? "text-stone-400" : "text-muted-foreground"}`}>{p.tagline}</p>
               <div className="mt-5 font-display text-4xl font-bold">{p.price}</div>
@@ -90,14 +86,14 @@ export function Programs() {
   );
 }
 
-function MentorAvatar({ id, name }: { id: number; name: string | null }) {
+function MentorAvatar({ name, bschool }: { name: string | null; bschool: string | null }) {
   return (
     <img
-      src={`https://i.pravatar.cc/300?u=${id}`}
+      src={mentorImage(name ?? "Mentor", bschool ?? "IIM")}
       alt={name ?? "Mentor"}
       className="h-full w-full object-cover"
       onError={(e) => {
-        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name ?? "EM")}&background=f97316&color=fff`;
+        e.currentTarget.src = fallbackFace(name ?? "Mentor");
       }}
     />
   );
@@ -108,12 +104,11 @@ export function MentorsPreview() {
   const { isAuthenticated } = useAuth();
   const top = mentors?.slice(0, 4) ?? [];
   return (
-    <section className="py-20 bg-orange-50/60 dark:bg-transparent">
+    <section className="section-light py-20">
       <ParallaxBox offset={35} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Mentors</span>
-            <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
+            <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
               Learn from people who made it
             </h2>
           </div>
@@ -133,7 +128,7 @@ export function MentorsPreview() {
               className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-xl transition-all"
             >
               <div className="h-64 overflow-hidden">
-                <MentorAvatar id={m.profile.id} name={m.name} />
+                <MentorAvatar name={m.name} bschool={m.profile.bschool} />
               </div>
               <div className="p-5">
                 <h3 className="font-display font-semibold text-lg">{m.name}</h3>
@@ -175,16 +170,15 @@ export function MentorsPreview() {
 }
 
 export function EventsPreview() {
-  const { data: events } = trpc.catalog.events.useQuery();
+  const { data: events, isLoading } = trpc.catalog.events.useQuery();
   const live = events?.filter((e) => e.status === "live").slice(0, 3) ?? [];
-  if (live.length === 0) return null;
+  if (!isLoading && live.length === 0) return null;
   return (
-    <section className="py-20">
+    <section className="section-dark py-20">
       <ParallaxBox offset={40} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Compete</span>
-            <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
+            <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
               Live events & case comps
             </h2>
           </div>
@@ -193,30 +187,12 @@ export function EventsPreview() {
           </Button>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {isLoading &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <EventSkeleton key={i} />
+            ))}
           {live.map((e, i) => (
-            <motion.div
-              key={e.id}
-              initial={{ opacity: 0, y: 32 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="group rounded-3xl border bg-card p-7 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1"
-            >
-              <div className="text-4xl">{e.emoji}</div>
-              <div className="mt-4 flex items-center gap-2">
-                <Badge className="bg-green-100 text-green-700 hover:bg-green-100">● Live</Badge>
-                <Badge variant="secondary">
-                  {e.type === "hackathon" ? "Hackathon" : "Case Competition"}
-                </Badge>
-              </div>
-              <h3 className="mt-3 font-display text-xl font-semibold leading-snug">{e.title}</h3>
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-orange-600 font-medium">
-                <Trophy className="h-4 w-4" /> {e.prize}
-              </p>
-              <Button className="mt-5 rounded-full" size="sm" asChild>
-                <Link to={`/events/${e.id}`}>Participate <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
-              </Button>
-            </motion.div>
+            <EventCard key={e.id} e={e} index={i} />
           ))}
         </div>
       </ParallaxBox>

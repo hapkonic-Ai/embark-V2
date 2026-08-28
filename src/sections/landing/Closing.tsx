@@ -30,11 +30,10 @@ const TESTIMONIALS = [
 
 export function Testimonials() {
   return (
-    <section className="py-20 bg-orange-50/60 dark:bg-transparent">
+    <section className="section-light py-20">
       <ParallaxBox offset={35} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">Converts</span>
-          <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
+          <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
             They embarked. They converted.
           </h2>
         </div>
@@ -89,7 +88,7 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <section className="py-20">
+    <section className="section-dark py-20">
       <ParallaxBox offset={30} className="mx-auto max-w-3xl px-4 sm:px-6">
         <h2 className="text-center font-display text-4xl sm:text-5xl font-bold tracking-tight">
           Questions? Good sign.
@@ -111,22 +110,20 @@ export function FAQ() {
 
 export function FinalCTA() {
   return (
-    <section className="px-4 sm:px-6 pb-20">
+    <section className="section-light px-4 sm:px-6 py-20">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-stone-950 px-6 py-20 text-center text-white"
+        className="section-dark relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] px-6 py-20 text-center"
       >
-        <div className="absolute inset-0 bg-grid-dark opacity-50" />
-        <div className="absolute -bottom-32 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-orange-600/30 blur-3xl" />
         <div className="relative">
           <h2 className="font-display text-4xl sm:text-6xl font-bold tracking-tight">
             Your convert story
             <br />
             <span className="text-gradient-orange">starts here.</span>
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-stone-400">
+          <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
             Join thousands of aspirants who stopped preparing alone.
           </p>
           <Button size="lg" className="btn-shine mt-8 rounded-full px-10 h-12 text-base" asChild>

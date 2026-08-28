@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/site/Logo";
 import { dashboardPath } from "@/components/site/Navbar";
 import { fireConfetti } from "@/components/site/EasterEggs";
+import { reviewPersonImage } from "@/lib/images";
 
 function buildOAuthUrl() {
   const authUrl = import.meta.env.VITE_KIMI_AUTH_URL;
@@ -87,11 +88,7 @@ export default function Login() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* left panel */}
-      <div className="relative hidden lg:flex flex-col bg-stone-950 p-12 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-grid-dark opacity-40" />
-        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-orange-600/30 blur-3xl" />
-        <div className="absolute top-1/3 right-0 h-80 w-80 rounded-full bg-indigo-600/20 blur-3xl" />
-
+      <div className="section-dark relative hidden lg:flex flex-col p-12">
         <div className="relative [&_span]:text-white">
           <Logo />
         </div>
@@ -123,23 +120,42 @@ export default function Login() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.35, duration: 0.7 }}
-            className="mt-10 relative h-72 w-full max-w-md"
+            className="mt-10 relative h-[420px] w-full max-w-md"
           >
+            {/* central student image */}
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.45, duration: 0.8, ease: [0.22, 1.4, 0.36, 1] }}
+              className="absolute left-1/2 top-1/2 h-[300px] w-[220px] -translate-x-1/2 -translate-y-1/2 z-10"
+            >
+              <img
+                src="/login-student.png"
+                alt="Student holding books"
+                className="h-full w-full object-contain drop-shadow-2xl"
+              />
+            </motion.div>
+
             {/* floating avatar stack */}
             <motion.div
               animate={{ y: [-8, 8, -8] }}
               transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-              className="absolute left-0 top-0 rounded-2xl border border-stone-800 bg-stone-900/70 p-4 backdrop-blur-sm"
+              className="absolute left-0 top-4 rounded-2xl border border-stone-800 bg-card p-4 z-20"
             >
               <div className="flex -space-x-3">
-                {["https://i.pravatar.cc/150?u=l1", "https://i.pravatar.cc/150?u=l2", "https://i.pravatar.cc/150?u=l3", "https://i.pravatar.cc/150?u=l4"].map((src, i) => (
+                {[
+                  reviewPersonImage("Ayesha"),
+                  reviewPersonImage("Rahul"),
+                  reviewPersonImage("Priya"),
+                  reviewPersonImage("Vikram"),
+                ].map((src, i) => (
                   <img key={i} src={src} alt="" className="h-10 w-10 rounded-full border-2 border-stone-950 object-cover" />
                 ))}
                 <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-950 bg-orange-500 text-xs font-bold">
                   +4k
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-1 text-xs text-stone-300">
+              <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
                 <Users className="h-3.5 w-3.5 text-orange-400" />
                 <span>Students cracked IIMs this season</span>
               </div>
@@ -149,21 +165,21 @@ export default function Login() {
             <motion.div
               animate={{ y: [8, -8, 8] }}
               transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
-              className="absolute right-0 top-8 max-w-[260px] rounded-2xl border border-stone-800 bg-stone-900/70 p-4 backdrop-blur-sm"
+              className="absolute right-0 top-12 max-w-[260px] rounded-2xl border border-stone-800 bg-card p-4 z-20"
             >
               <div className="flex gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className="h-3.5 w-3.5 fill-orange-400 text-orange-400" />
                 ))}
               </div>
-              <p className="mt-3 text-sm text-stone-300 leading-snug">
+              <p className="mt-3 text-sm text-muted-foreground leading-snug">
                 “My PI mentor asked the exact questions that came up in my actual IIM panel. Unreal.”
               </p>
               <div className="mt-3 flex items-center gap-2">
-                <img src="https://i.pravatar.cc/150?u=l5" alt="" className="h-8 w-8 rounded-full object-cover" />
+                <img src={reviewPersonImage("Ayesha")} alt="" className="h-8 w-8 rounded-full object-cover" />
                 <div className="text-xs">
-                  <div className="font-semibold text-white">Ayesha K.</div>
-                  <div className="text-stone-500">IIM K '27</div>
+                  <div className="font-semibold text-stone-100">Ayesha K.</div>
+                  <div className="text-muted-foreground">IIM K '27</div>
                 </div>
               </div>
             </motion.div>
@@ -172,7 +188,7 @@ export default function Login() {
             <motion.div
               animate={{ y: [-6, 6, -6] }}
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-              className="absolute left-6 bottom-6 rounded-2xl border border-stone-800 bg-stone-900/70 p-4 backdrop-blur-sm"
+              className="absolute left-6 bottom-6 rounded-2xl border border-stone-800 bg-card p-4 z-20"
             >
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/20 text-orange-400">
@@ -180,7 +196,7 @@ export default function Login() {
                 </div>
                 <div>
                   <div className="font-display text-2xl font-bold">₹35.3 LPA</div>
-                  <div className="text-xs text-stone-400">Average top-10 package</div>
+                  <div className="text-xs text-muted-foreground">Average top-10 package</div>
                 </div>
               </div>
             </motion.div>
@@ -189,7 +205,7 @@ export default function Login() {
             <motion.div
               animate={{ x: [-6, 6, -6] }}
               transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
-              className="absolute right-4 bottom-0 rounded-full border border-stone-800 bg-stone-900/80 px-4 py-2 text-xs text-stone-300"
+              className="absolute right-4 bottom-0 rounded-full border border-stone-800 bg-card px-4 py-2 text-xs text-muted-foreground z-20"
             >
               <span className="inline-flex items-center gap-1">
                 Join the waitlist <ArrowRight className="h-3 w-3 text-orange-400" />
@@ -198,7 +214,7 @@ export default function Login() {
           </motion.div>
         </div>
 
-        <p className="relative mt-6 text-xs text-stone-600">
+        <p className="relative mt-6 text-xs text-muted-foreground">
           “Embark” — because “panic-scroll Quora at 2am” was taken.
         </p>
       </div>
@@ -213,6 +229,7 @@ export default function Login() {
           <div className="lg:hidden mb-8 flex justify-center">
             <Logo />
           </div>
+
           <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Sign in</TabsTrigger>

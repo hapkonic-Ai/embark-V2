@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fileToBase64 } from "@/lib/format";
+import { eventCoverImage } from "@/lib/images";
 import { fireConfetti } from "@/components/site/EasterEggs";
 
 export default function EventDetail() {
@@ -81,7 +82,13 @@ export default function EventDetail() {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="text-6xl">{event.emoji}</div>
+            <div className="overflow-hidden rounded-3xl border border-stone-200">
+              <img
+                src={eventCoverImage(event.type, event.title)}
+                alt={event.title}
+                className="h-56 w-full object-cover"
+              />
+            </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Badge className={isLive ? "bg-green-100 text-green-700" : "bg-stone-200 text-stone-600"}>
                 {isLive ? "● Live" : "Closed"}

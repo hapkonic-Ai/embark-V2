@@ -14,7 +14,7 @@ export function LoadingScreen() {
   const [taglineIndex, setTaglineIndex] = useState(0);
 
   useEffect(() => {
-    const t = setTimeout(() => setShow(false), 1200);
+    const t = setTimeout(() => setShow(false), 800);
     return () => clearTimeout(t);
   }, []);
 

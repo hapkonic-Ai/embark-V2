@@ -95,6 +95,23 @@
       linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
     background-size: 44px 44px;
   }
+
+  /* alternating section backgrounds */
+  .section-dark {
+    @apply relative overflow-hidden bg-stone-950 text-stone-100 dark;
+  }
+  .section-dark::before {
+    content: "";
+    @apply pointer-events-none absolute inset-0 bg-grid-dark opacity-40;
+  }
+  .section-dark::after {
+    content: "";
+    @apply pointer-events-none absolute -top-40 left-1/2 h-80 w-[50rem] -translate-x-1/2 rounded-full bg-orange-600/25 blur-3xl;
+  }
+  .section-light {
+    @apply relative overflow-hidden bg-[#faf8f5] text-stone-900;
+  }
+
   .mask-fade-b {
     -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
     mask-image: linear-gradient(to bottom, black 55%, transparent 100%);

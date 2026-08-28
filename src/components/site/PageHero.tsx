@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PageHero({
-  eyebrow,
   title,
   highlight,
   subtitle,
@@ -14,7 +13,6 @@ export default function PageHero({
   secondaryHref,
   visual,
 }: {
-  eyebrow?: string;
   title: string;
   highlight?: string;
   subtitle: string;
@@ -37,12 +35,7 @@ export default function PageHero({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {eyebrow && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-sm font-medium text-orange-300">
-                {eyebrow}
-              </span>
-            )}
-            <h1 className="mt-5 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
               {title}{" "}
               {highlight && <span className="text-gradient-orange">{highlight}</span>}
             </h1>

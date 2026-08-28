@@ -9,7 +9,7 @@ const SCHOOLS = ["IIM Ahmedabad", "IIM Bangalore", "IIM Calcutta", "XLRI", "FMS 
 
 export function Marquee() {
   return (
-    <div className="border-y bg-stone-950 py-4 overflow-hidden">
+    <div className="section-dark border-y border-stone-800 py-4">
       <div className="flex w-max animate-marquee gap-10">
         {[...SCHOOLS, ...SCHOOLS].map((s, i) => (
           <span key={i} className="flex items-center gap-10 text-sm font-display font-medium text-stone-400 whitespace-nowrap">
@@ -54,7 +54,7 @@ export function Stats() {
     { illustration: Illustrations.aspirants, value: (data?.candidates ?? 0) + 500, suffix: "+", label: "Aspirants on board" },
   ];
   return (
-    <section className="py-16">
+    <section className="section-light py-16">
       <ParallaxBox offset={30} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {items.map((it, idx) => (
@@ -108,11 +108,10 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section className="py-20">
+    <section className="section-dark py-20">
       <ParallaxBox offset={40} className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-2xl mx-auto">
-          <span className="text-sm font-semibold text-orange-600 uppercase tracking-widest">The whole toolkit</span>
-          <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
+          <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
             Everything after the CAT score
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
@@ -152,11 +151,10 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="py-20 bg-stone-950 text-stone-100 relative overflow-hidden">
+    <section className="section-light py-20">
       <ParallaxBox offset={35} className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="text-sm font-semibold text-orange-400 uppercase tracking-widest">How it works</span>
-          <h2 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight">
+          <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
             Four steps. Zero fluff.
           </h2>
         </div>
@@ -168,12 +166,12 @@ export function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.12 }}
-              className="relative rounded-3xl border border-stone-800 bg-stone-900/70 p-7 backdrop-blur"
+              className="relative rounded-3xl border border-stone-200 bg-card p-7 shadow-sm"
             >
-              <span className="font-display text-5xl font-bold text-stone-800">{s.step}</span>
-              <s.icon className="mt-4 h-6 w-6 text-orange-400" />
-              <h3 className="mt-3 font-display text-lg font-semibold text-white">{s.title}</h3>
-              <p className="mt-2 text-sm text-stone-400 leading-relaxed">{s.desc}</p>
+              <span className="font-display text-5xl font-bold text-stone-200">{s.step}</span>
+              <s.icon className="mt-4 h-6 w-6 text-orange-500" />
+              <h3 className="mt-3 font-display text-lg font-semibold text-stone-900">{s.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
             </motion.div>
           ))}
         </div>
