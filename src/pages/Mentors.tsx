@@ -217,7 +217,9 @@ export default function Mentors() {
                         </Button>
                       )}
                       <Button size="sm" className="rounded-full" asChild>
-                        <Link to={`/mentors/${m.profile.id}`}>View profile</Link>
+                        <Link to={m.profile.publicSlug ? `/m/${m.profile.publicSlug}` : `/mentors/${m.profile.id}`}>
+                          {m.profile.publicSlug ? "Public page" : "View profile"}
+                        </Link>
                       </Button>
                     </div>
                   </div>

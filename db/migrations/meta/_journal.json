@@ -36,6 +36,41 @@
       "when": 1787840843848,
       "tag": "0004_eminent_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1788005905660,
+      "tag": "0005_thin_thing",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1788019579263,
+      "tag": "0006_clammy_mac_gargan",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1788026273007,
+      "tag": "0007_absurd_puppet_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1788030600111,
+      "tag": "0008_redundant_surge",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1788033127267,
+      "tag": "0009_phase6_expert_operations",
+      "breakpoints": true
     }
   ]
 }

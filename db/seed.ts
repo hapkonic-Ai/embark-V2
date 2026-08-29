@@ -3,6 +3,8 @@ import { getDb } from "../api/queries/connection";
 import {
   users,
   mentorProfiles,
+  mentorServices,
+  expertOnboarding,
   mentorships,
   mockSessions,
   playbooks,
@@ -36,6 +38,7 @@ async function seed() {
     { name: "Priya Deshmukh", email: "priya@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/priyadeshmukh" },
     { name: "Kabir Singh Chauhan", email: "kabir@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/kabirchauhan" },
     { name: "Ishita Banerjee", email: "ishita@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/ishitabanerjee" },
+    { name: "Expert User", email: "expert@embark.in", role: "expert" as const, linkedinUrl: "https://linkedin.com/in/expertuser" },
   ];
 
   const userIds: Record<string, number> = {};
@@ -195,6 +198,114 @@ async function seed() {
     });
   }
   console.log("mentors done");
+
+  // ------------------------------------------------------------- demo expert
+  const expertUid = userIds["expert@embark.in"];
+  if (expertUid) {
+    await db
+      .insert(mentorProfiles)
+      .values({
+        userId: expertUid,
+        publicSlug: "expert-user",
+        displayName: "Expert User",
+        headline: "Product leader · ex-Flipkart · Strategy & Ops",
+        bio: "15+ years in product and strategy across consumer internet and fintech.",
+        company: "Independent",
+        currentRole: "Product Leader",
+        expertise: "Product Management, Strategy, Growth, Analytics",
+        industries: "Consumer Internet, Fintech",
+        location: "Bangalore",
+        country: "India",
+        timezone: "Asia/Kolkata",
+        linkedinUrl: "https://linkedin.com/in/expertuser",
+        profileImage: "",
+        status: "active",
+        onboardingStatus: "completed",
+        verificationStatus: "verified",
+        isVerified: true,
+        profileCompletionPercent: 100,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          publicSlug: "expert-user",
+          displayName: "Expert User",
+          headline: "Product leader · ex-Flipkart · Strategy & Ops",
+          bio: "15+ years in product and strategy across consumer internet and fintech.",
+          company: "Independent",
+          currentRole: "Product Leader",
+          expertise: "Product Management, Strategy, Growth, Analytics",
+          industries: "Consumer Internet, Fintech",
+          location: "Bangalore",
+          country: "India",
+          timezone: "Asia/Kolkata",
+          linkedinUrl: "https://linkedin.com/in/expertuser",
+          profileImage: "",
+          status: "active",
+          onboardingStatus: "completed",
+          verificationStatus: "verified",
+          isVerified: true,
+          profileCompletionPercent: 100,
+        },
+      });
+
+    await db
+      .insert(expertOnboarding)
+      .values({
+        userId: expertUid,
+        currentStep: "complete",
+        status: "completed",
+        completedAt: new Date(),
+        lastCompletedStep: "complete",
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          currentStep: "complete",
+          status: "completed",
+          completedAt: new Date(),
+          lastCompletedStep: "complete",
+        },
+      });
+
+    const existingServices = await db.query.mentorServices.findFirst({
+      where: (t, { eq }) => eq(t.userId, expertUid),
+    });
+    if (!existingServices) {
+      await db.insert(mentorServices).values([
+        {
+          userId: expertUid,
+          title: "1:1 Product Management Mentorship",
+          slug: "product-management-mentorship",
+          description:
+            "Get personalized guidance on product strategy, interviews, and career planning. Ideal for aspiring PMs and early-career product managers.",
+          serviceType: "one_on_one",
+          price: 1499,
+          currency: "INR",
+          durationMinutes: 60,
+          deliveryMode: "online",
+          requirements: "Please share your resume and 2 target companies or roles.",
+          outcomes: "Career assessment\nInterview guidance\nAction plan",
+          status: "published",
+          displayOrder: 0,
+        },
+        {
+          userId: expertUid,
+          title: "Resume & LinkedIn Review",
+          slug: "resume-linkedin-review",
+          description:
+            "Detailed feedback on your resume and LinkedIn profile to position yourself for top B-schools and product roles.",
+          serviceType: "review",
+          price: 799,
+          currency: "INR",
+          durationMinutes: 45,
+          deliveryMode: "async",
+          requirements: "Upload your current resume and LinkedIn URL.",
+          outcomes: "Edited resume\nLinkedIn optimization tips\nMessaging framework",
+          status: "published",
+          displayOrder: 1,
+        },
+      ]);
+    }
+  }
 
   // ------------------------------------------------------------- playbooks
   const pbs = [

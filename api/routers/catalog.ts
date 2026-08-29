@@ -1,15 +1,24 @@
-import { desc, eq, sql, and, ne } from "drizzle-orm";
+import { desc, eq, sql, and, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import {
   colleges,
   events,
+  expertPages,
   mentorProfiles,
+  mentorServices,
   playbooks,
   submissions,
   users,
 } from "@db/schema";
 import { getDb } from "../queries/connection";
 import { createRouter, publicQuery } from "../middleware";
+import { getPublishedExpertPageBySlug } from "../lib/expert-page";
+import { resolveAssetFields } from "../lib/file-assets";
+import {
+  computeAvailableSlots,
+  getExpertTimezone,
+  parseIsoDateTime,
+} from "../lib/calendar";
 
 export const catalogRouter = createRouter({
   stats: publicQuery.query(async () => {
@@ -39,19 +48,32 @@ export const catalogRouter = createRouter({
 
   mentors: publicQuery.query(async () => {
     const db = getDb();
-    return db
+    const rows = await db
       .select({
         profile: mentorProfiles,
         name: users.name,
         email: users.email,
+        role: users.role,
         isActive: users.isActive,
       })
       .from(mentorProfiles)
       .innerJoin(users, eq(users.id, mentorProfiles.userId))
       .where(
-        and(eq(mentorProfiles.isVerified, true), eq(users.isActive, true)),
+        and(
+          or(
+            eq(mentorProfiles.isVerified, true),
+            eq(mentorProfiles.verificationStatus, "verified"),
+          ),
+          eq(users.isActive, true),
+        ),
       )
       .orderBy(desc(mentorProfiles.createdAt));
+    return Promise.all(
+      rows.map(async (row) => ({
+        ...row,
+        profile: await resolveAssetFields(row.profile, ["profileImage", "coverImage"], db),
+      })),
+    );
   }),
 
   mentor: publicQuery
@@ -64,7 +86,12 @@ export const catalogRouter = createRouter({
         .innerJoin(users, eq(users.id, mentorProfiles.userId))
         .where(eq(mentorProfiles.id, input.id))
         .limit(1);
-      return rows[0] ?? null;
+      const row = rows[0] ?? null;
+      if (!row) return null;
+      return {
+        ...row,
+        profile: await resolveAssetFields(row.profile, ["profileImage", "coverImage"], db),
+      };
     }),
 
   mentorBySlug: publicQuery
@@ -72,17 +99,19 @@ export const catalogRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const rows = await db
-        .select({ profile: mentorProfiles, name: users.name, email: users.email })
+        .select({ profile: mentorProfiles, name: users.name, email: users.email, role: users.role })
         .from(mentorProfiles)
         .innerJoin(users, eq(users.id, mentorProfiles.userId))
         .where(eq(mentorProfiles.publicSlug, input.slug))
         .limit(1);
       const row = rows[0];
       if (!row) return null;
-      if (!row.profile.isVerified || !row.email) {
-        return { ...row, email: null };
+      const resolvedProfile = await resolveAssetFields(row.profile, ["profileImage", "coverImage"], db);
+      const isVerified = row.profile.isVerified || row.profile.verificationStatus === "verified";
+      if (!isVerified || !row.email) {
+        return { ...row, profile: resolvedProfile, email: null };
       }
-      return row;
+      return { ...row, profile: resolvedProfile };
     }),
 
   playbooks: publicQuery.query(async () => {
@@ -146,4 +175,169 @@ export const catalogRouter = createRouter({
       .from(colleges)
       .orderBy(sql`coalesce(${colleges.nirfRank}, 999)`, colleges.name);
   }),
+
+  expertPageBySlug: publicQuery
+    .input(z.object({ slug: z.string().max(64) }))
+    .query(async ({ input }) => {
+      const page = await getPublishedExpertPageBySlug(input.slug);
+      if (!page) return null;
+      return page;
+    }),
+
+  expertServicesBySlug: publicQuery
+    .input(z.object({ slug: z.string().max(64) }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const page = await db
+        .select({ userId: expertPages.userId })
+        .from(expertPages)
+        .where(eq(expertPages.slug, input.slug))
+        .limit(1)
+        .then((r) => r[0]);
+      if (!page) return [];
+      return db
+        .select({
+          id: mentorServices.id,
+          title: mentorServices.title,
+          slug: mentorServices.slug,
+          description: mentorServices.description,
+          serviceType: mentorServices.serviceType,
+          price: mentorServices.price,
+          currency: mentorServices.currency,
+          durationMinutes: mentorServices.durationMinutes,
+          deliveryMode: mentorServices.deliveryMode,
+          requirements: mentorServices.requirements,
+          outcomes: mentorServices.outcomes,
+          image: mentorServices.image,
+          displayOrder: mentorServices.displayOrder,
+          communicationMode: mentorServices.communicationMode,
+        })
+        .from(mentorServices)
+        .where(
+          and(
+            eq(mentorServices.userId, page.userId),
+            eq(mentorServices.status, "published"),
+          ),
+        )
+        .orderBy(mentorServices.displayOrder);
+    }),
+
+  expertServiceBySlug: publicQuery
+    .input(
+      z.object({
+        expertSlug: z.string().max(64),
+        serviceSlug: z.string().max(64),
+      }),
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const page = await db
+        .select({ userId: expertPages.userId })
+        .from(expertPages)
+        .where(eq(expertPages.slug, input.expertSlug))
+        .limit(1)
+        .then((r) => r[0]);
+      if (!page) return null;
+      return db
+        .select({
+          id: mentorServices.id,
+          title: mentorServices.title,
+          slug: mentorServices.slug,
+          description: mentorServices.description,
+          serviceType: mentorServices.serviceType,
+          price: mentorServices.price,
+          currency: mentorServices.currency,
+          durationMinutes: mentorServices.durationMinutes,
+          deliveryMode: mentorServices.deliveryMode,
+          requirements: mentorServices.requirements,
+          outcomes: mentorServices.outcomes,
+          image: mentorServices.image,
+          displayOrder: mentorServices.displayOrder,
+          communicationMode: mentorServices.communicationMode,
+        })
+        .from(mentorServices)
+        .where(
+          and(
+            eq(mentorServices.userId, page.userId),
+            eq(mentorServices.slug, input.serviceSlug),
+            eq(mentorServices.status, "published"),
+          ),
+        )
+        .limit(1)
+        .then((r) => r[0] ?? null);
+    }),
+
+  expertServiceSlots: publicQuery
+    .input(
+      z.object({
+        expertSlug: z.string().max(64),
+        serviceSlug: z.string().max(64),
+        from: z.string().datetime(),
+        to: z.string().datetime(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const page = await db
+        .select({
+          userId: expertPages.userId,
+          publishedAt: expertPages.publishedAt,
+        })
+        .from(expertPages)
+        .where(eq(expertPages.slug, input.expertSlug))
+        .limit(1)
+        .then((r) => r[0]);
+      if (!page || !page.publishedAt) return [];
+
+      const profile = await db
+        .select({
+          isVerified: mentorProfiles.isVerified,
+          verificationStatus: mentorProfiles.verificationStatus,
+        })
+        .from(mentorProfiles)
+        .where(eq(mentorProfiles.userId, page.userId))
+        .limit(1)
+        .then((r) => r[0]);
+      if (
+        !profile ||
+        (!profile.isVerified && profile.verificationStatus !== "verified")
+      ) {
+        return [];
+      }
+
+      const service = await db
+        .select({
+          id: mentorServices.id,
+          durationMinutes: mentorServices.durationMinutes,
+          status: mentorServices.status,
+        })
+        .from(mentorServices)
+        .where(
+          and(
+            eq(mentorServices.userId, page.userId),
+            eq(mentorServices.slug, input.serviceSlug),
+            eq(mentorServices.status, "published"),
+          ),
+        )
+        .limit(1)
+        .then((r) => r[0]);
+      if (!service?.durationMinutes) return [];
+
+      const from = parseIsoDateTime(input.from);
+      const to = parseIsoDateTime(input.to);
+      if (!from || !to) return [];
+
+      const tz = await getExpertTimezone(page.userId);
+      const slots = await computeAvailableSlots({
+        userId: page.userId,
+        timezone: tz,
+        durationMinutes: service.durationMinutes,
+        from,
+        to,
+      });
+      return slots.map((s) => ({
+        startAt: s.startAt.toISOString(),
+        endAt: s.endAt.toISOString(),
+      }));
+    }),
 });

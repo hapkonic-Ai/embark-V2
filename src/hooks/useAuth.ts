@@ -1,6 +1,7 @@
 import { trpc } from "@/providers/trpc";
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { LOGIN_PATH } from "@/const";
 
 type UseAuthOptions = {
@@ -27,9 +28,14 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: async () => {
-      await utils.invalidate();
-      navigate(redirectPath);
+    onSuccess: () => {
+      // Redirect immediately so the user is not blocked waiting for cache invalidation.
+      navigate(redirectPath, { replace: true });
+      // Clear cached queries after the redirect so the next session starts fresh.
+      setTimeout(() => utils.invalidate(), 0);
+    },
+    onError: () => {
+      toast.error("Logout failed. Please try again.");
     },
   });
 

@@ -1,5 +1,9 @@
 node_modules
 dist
 .git
+.env
+.env.*
 *.swp
 *.log
+agent config
+

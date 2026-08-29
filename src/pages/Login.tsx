@@ -35,12 +35,14 @@ export default function Login() {
   const [mode, setMode] = useState<"login" | "register">(
     params.get("mode") === "register" ? "register" : "login",
   );
-  const [role, setRole] = useState<"candidate" | "mentor" | "campus">(
+  const [role, setRole] = useState<"candidate" | "mentor" | "expert" | "campus">(
     params.get("role") === "mentor"
       ? "mentor"
-      : params.get("role") === "campus"
-        ? "campus"
-        : "candidate",
+      : params.get("role") === "expert"
+        ? "expert"
+        : params.get("role") === "campus"
+          ? "campus"
+          : "candidate",
   );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -240,11 +242,12 @@ export default function Login() {
           <form onSubmit={submit} className="mt-8 space-y-4">
             {mode === "register" && (
               <>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["candidate", "mentor", "campus"] as const).map((r) => {
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {(["candidate", "mentor", "expert", "campus"] as const).map((r) => {
                     const meta = {
                       candidate: { icon: GraduationCap, label: "Student", desc: "I want to get mentored" },
                       mentor: { icon: MapPinned, label: "Mentor", desc: "I want to mentor" },
+                      expert: { icon: Star, label: "Expert", desc: "I want to offer services" },
                       campus: { icon: School, label: "Campus", desc: "I run a college club" },
                     } as const;
                     const Icon = meta[r].icon;

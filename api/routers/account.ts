@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { Session } from "@contracts/constants";
-import { users, mentorProfiles } from "@db/schema";
+import { users, mentorProfiles, expertOnboarding } from "@db/schema";
 import { getDb } from "../queries/connection";
 import { getSessionCookieOptions } from "../lib/cookies";
 import { signSessionToken } from "../kimi/session";
@@ -58,7 +58,7 @@ export const accountRouter = createRouter({
       creds.extend({
         name: z.string().min(2).max(120),
         phone: z.string().max(32).optional(),
-        role: z.enum(["candidate", "mentor", "campus"]).default("candidate"),
+        role: z.enum(["candidate", "mentor", "expert", "campus"]).default("candidate"),
         linkedinUrl: z.string().regex(linkedinRegex, "Enter a valid LinkedIn profile URL like https://linkedin.com/in/your-handle").optional(),
         termsAccepted: z.boolean().refine((v) => v === true, "You must accept the Terms & Conditions"),
       }),
@@ -96,13 +96,25 @@ export const accountRouter = createRouter({
         .where(eq(users.unionId, unionId))
         .limit(1);
       const user = created[0];
-      if (input.role === "mentor") {
+      if (input.role === "mentor" || input.role === "expert") {
         const handle = input.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
         await db.insert(mentorProfiles).values({
           userId: user.id,
           publicSlug: `${handle}-${user.id}`,
           linkedinUrl: input.linkedinUrl,
         });
+      }
+      if (input.role === "expert") {
+        await db.insert(expertOnboarding).values({
+          userId: user.id,
+          currentStep: "account",
+          status: "in_progress",
+          startedAt: new Date(),
+        });
+        await db
+          .update(mentorProfiles)
+          .set({ status: "onboarding", onboardingStatus: "in_progress" })
+          .where(eq(mentorProfiles.userId, user.id));
       }
       await issueSession(ctx.resHeaders, ctx.req.headers, unionId);
       const { passwordHash: _ph, ...safe } = user;

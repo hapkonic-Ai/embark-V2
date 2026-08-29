@@ -1,0 +1,55 @@
+services:
+  db:
+    image: mysql:8
+    container_name: embark-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: embark
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: embark-app
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-mysql://root:rootpassword@db:3306/embark}
+      APP_ID: ${APP_ID:-embark-dev}
+      APP_SECRET: ${APP_SECRET:-dev-secret-replace-in-production}
+      VITE_KIMI_AUTH_URL: ${VITE_KIMI_AUTH_URL:-https://auth.kimi.com}
+      VITE_APP_ID: ${VITE_APP_ID:-embark-dev}
+      KIMI_AUTH_URL: ${KIMI_AUTH_URL:-https://auth.kimi.com}
+      KIMI_OPEN_URL: ${KIMI_OPEN_URL:-https://open.kimi.com}
+      OWNER_UNION_ID: ${OWNER_UNION_ID:-dev-owner}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: embark-migrate
+    command: sh -c "npx drizzle-kit push --force"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-mysql://root:rootpassword@db:3306/embark}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

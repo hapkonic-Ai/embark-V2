@@ -1,10 +1,11 @@
 import { useState } from "react";
 import {
   BookOpen, CalendarPlus, Crown, Download, LayoutDashboard, Loader2,
-  Pencil, Star, Trash2, Trophy, Users,
+  Pencil, ShieldCheck, Star, Trash2, Trophy, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardShell from "@/components/DashboardShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,18 +22,23 @@ import {
 import { downloadBase64, formatINR } from "@/lib/format";
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const isSuper = user?.role === "superadmin";
+  const tabs = [
+    { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "events", label: "Events", icon: CalendarPlus },
+    { id: "submissions", label: "Submissions", icon: Trophy },
+    { id: "playbooks", label: "Playbooks", icon: BookOpen },
+    { id: "users", label: "Users", icon: Users },
+    ...(isSuper ? [{ id: "verifications", label: "Expert Verifications", icon: ShieldCheck }] : []),
+  ];
+
   return (
     <DashboardShell
       title="Admin HQ"
       subtitle="Events, submissions, playbooks and students."
       roles={["admin", "superadmin"]}
-      tabs={[
-        { id: "overview", label: "Overview", icon: LayoutDashboard },
-        { id: "events", label: "Events", icon: CalendarPlus },
-        { id: "submissions", label: "Submissions", icon: Trophy },
-        { id: "playbooks", label: "Playbooks", icon: BookOpen },
-        { id: "users", label: "Users", icon: Users },
-      ]}
+      tabs={tabs}
     >
       {(tab) => (
         <>
@@ -41,6 +47,7 @@ export default function AdminDashboard() {
           {tab === "submissions" && <SubmissionsTab />}
           {tab === "playbooks" && <PlaybooksTab />}
           {tab === "users" && <UsersTab />}
+          {tab === "verifications" && <VerificationsTab />}
         </>
       )}
     </DashboardShell>
@@ -506,6 +513,136 @@ function UsersTab() {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+
+// ----------------------------------------------------- expert verifications
+
+function VerificationsTab() {
+  const { data, isLoading } = trpc.admin.listExpertVerifications.useQuery();
+  const utils = trpc.useUtils();
+  const [reviewing, setReviewing] = useState<{ id: number; status: "approved" | "rejected"; reason: string } | null>(null);
+
+  const review = trpc.admin.reviewExpertVerification.useMutation({
+    onSuccess: () => {
+      toast.success("Verification reviewed");
+      setReviewing(null);
+      utils.admin.listExpertVerifications.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
+
+  const pending = data?.filter((v) => v.verification.status === "pending") ?? [];
+  const others = data?.filter((v) => v.verification.status !== "pending") ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-3xl border bg-card p-7 shadow-sm">
+        <h3 className="font-display text-lg font-semibold">Pending expert verifications</h3>
+        <div className="mt-4 space-y-4">
+          {pending.length === 0 && (
+            <p className="text-sm text-muted-foreground">No pending verification requests.</p>
+          )}
+          {pending.map(({ verification, name, email }) => (
+            <div key={verification.id} className="rounded-2xl border bg-muted/40 p-4 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="font-semibold">{name}</div>
+                <div className="text-sm text-muted-foreground">{email}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Submitted {verification.submittedAt ? new Date(verification.submittedAt).toLocaleDateString("en-IN") : "—"}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => setReviewing({ id: verification.id, status: "approved", reason: "" })}
+                >
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setReviewing({ id: verification.id, status: "rejected", reason: "" })}
+                >
+                  Reject
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {others.length > 0 && (
+        <div className="rounded-3xl border bg-card p-7 shadow-sm">
+          <h3 className="font-display text-lg font-semibold">History</h3>
+          <div className="mt-4 space-y-3">
+            {others.map(({ verification, name, email }) => (
+              <div key={verification.id} className="rounded-2xl border bg-muted/40 p-4 flex items-center justify-between">
+                <div>
+                  <div className="font-semibold">{name}</div>
+                  <div className="text-sm text-muted-foreground">{email}</div>
+                </div>
+                <Badge
+                  className={
+                    verification.status === "approved"
+                      ? "bg-green-100 text-green-700"
+                      : verification.status === "rejected"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-stone-100 text-stone-600"
+                  }
+                >
+                  {verification.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Dialog open={!!reviewing} onOpenChange={(v) => !v && setReviewing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              {reviewing?.status === "approved" ? "Approve verification" : "Reject verification"}
+            </DialogTitle>
+          </DialogHeader>
+          {reviewing && (
+            <div className="space-y-4">
+              {reviewing.status === "rejected" && (
+                <div className="space-y-1.5">
+                  <Label>Rejection reason</Label>
+                  <Textarea
+                    value={reviewing.reason}
+                    onChange={(e) => setReviewing({ ...reviewing, reason: e.target.value })}
+                    placeholder="Tell the expert why their application was rejected."
+                  />
+                </div>
+              )}
+              <Button
+                className="w-full rounded-full"
+                disabled={review.isPending}
+                variant={reviewing.status === "rejected" ? "destructive" : "default"}
+                onClick={() =>
+                  review.mutate({
+                    verificationId: reviewing.id,
+                    status: reviewing.status,
+                    rejectionReason: reviewing.reason || undefined,
+                  })
+                }
+              >
+                {review.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {reviewing.status === "approved" ? "Approve expert" : "Reject expert"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

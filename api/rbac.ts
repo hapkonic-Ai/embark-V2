@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { authedQuery } from "./middleware";
 
-type Role = "candidate" | "mentor" | "campus" | "admin" | "superadmin";
+type Role = "candidate" | "mentor" | "expert" | "campus" | "admin" | "superadmin";
 
 /** Procedure builder that requires the user to have one of the given roles. */
 export function roleQuery(...roles: Role[]) {

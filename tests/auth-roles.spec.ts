@@ -19,6 +19,15 @@ test.describe("Embark auth & role flows", () => {
     await expect(page.locator('text=Mentor cockpit')).toBeVisible();
   });
 
+  test("expert can sign in and reach expert dashboard", async ({ page }) => {
+    await page.goto("http://localhost:3000/login");
+    await page.fill('input#email', "expert@embark.in");
+    await page.fill('input#password', "Embark@123");
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/expert\/dashboard/);
+    await expect(page.locator('text=Expert dashboard')).toBeVisible();
+  });
+
   test("admin can sign in and reach admin dashboard", async ({ page }) => {
     await page.goto("http://localhost:3000/login");
     await page.fill('input#email', "admin@embark.in");

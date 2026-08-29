@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
   events,
+  expertPages,
+  expertVerifications,
   mentorProfiles,
   playbooks,
   submissions,
@@ -11,6 +13,7 @@ import {
 import { getDb } from "../queries/connection";
 import { createRouter } from "../middleware";
 import { roleQuery } from "../rbac";
+import { generateUniqueSlug, getOrCreateExpertPage } from "../lib/expert-page";
 
 const admin = roleQuery("admin", "superadmin");
 const superadmin = roleQuery("superadmin");
@@ -197,19 +200,137 @@ export const adminRouter = createRouter({
   listMentorProfiles: superadmin.query(async () => {
     const db = getDb();
     return db
-      .select({ profile: mentorProfiles, name: users.name, email: users.email })
+      .select({ profile: mentorProfiles, name: users.name, email: users.email, role: users.role })
       .from(mentorProfiles)
       .innerJoin(users, eq(users.id, mentorProfiles.userId))
       .orderBy(desc(mentorProfiles.createdAt));
   }),
 
+  listExpertVerifications: superadmin.query(async () => {
+    const db = getDb();
+    return db
+      .select({
+        verification: expertVerifications,
+        name: users.name,
+        email: users.email,
+      })
+      .from(expertVerifications)
+      .innerJoin(users, eq(users.id, expertVerifications.userId))
+      .orderBy(desc(expertVerifications.createdAt));
+  }),
+
+  reviewExpertVerification: superadmin
+    .input(
+      z.object({
+        verificationId: z.number(),
+        status: z.enum(["approved", "rejected"]),
+        rejectionReason: z.string().max(4000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(expertVerifications)
+        .where(eq(expertVerifications.id, input.verificationId))
+        .limit(1);
+      const verification = rows[0];
+      if (!verification) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Verification request not found" });
+      }
+
+      await db
+        .update(expertVerifications)
+        .set({
+          status: input.status,
+          reviewedAt: new Date(),
+          reviewedBy: ctx.user.id,
+          rejectionReason: input.rejectionReason ?? null,
+        })
+        .where(eq(expertVerifications.id, input.verificationId));
+
+      await db
+        .update(mentorProfiles)
+        .set({
+          verificationStatus: input.status === "approved" ? "verified" : "rejected",
+          isVerified: input.status === "approved",
+        })
+        .where(eq(mentorProfiles.userId, verification.userId));
+
+      if (input.status === "approved") {
+        const page = await getOrCreateExpertPage(verification.userId);
+        if (page.status !== "published") {
+          const slug = page.slug || (await generateUniqueSlug("expert"));
+          await db
+            .update(expertPages)
+            .set({
+              status: "published",
+              slug,
+              publishedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(expertPages.id, page.id));
+        }
+      }
+
+      return { success: true };
+    }),
+
   verifyMentor: superadmin
     .input(z.object({ profileId: z.number(), verified: z.boolean() }))
-    .mutation(async ({ input }) => {
-      await getDb()
-        .update(mentorProfiles)
-        .set({ isVerified: input.verified })
-        .where(eq(mentorProfiles.id, input.profileId));
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const [profile] = await db
+        .select({ userId: mentorProfiles.userId, verificationStatus: mentorProfiles.verificationStatus })
+        .from(mentorProfiles)
+        .where(eq(mentorProfiles.id, input.profileId))
+        .limit(1);
+      if (!profile) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
+      }
+
+      const set: Partial<typeof mentorProfiles.$inferInsert> = {
+        isVerified: input.verified,
+      };
+      if (input.verified && profile.verificationStatus !== "verified") {
+        set.verificationStatus = "verified";
+      } else if (!input.verified && profile.verificationStatus === "verified") {
+        set.verificationStatus = "rejected";
+      }
+      await db.update(mentorProfiles).set(set).where(eq(mentorProfiles.id, input.profileId));
+
+      if (input.verified) {
+        const [verification] = await db
+          .select({ id: expertVerifications.id, status: expertVerifications.status })
+          .from(expertVerifications)
+          .where(eq(expertVerifications.userId, profile.userId))
+          .orderBy(desc(expertVerifications.createdAt))
+          .limit(1);
+        if (verification && verification.status !== "approved") {
+          await db
+            .update(expertVerifications)
+            .set({
+              status: "approved",
+              reviewedAt: new Date(),
+              reviewedBy: ctx.user.id,
+            })
+            .where(eq(expertVerifications.id, verification.id));
+        }
+        const page = await getOrCreateExpertPage(profile.userId);
+        if (page.status !== "published") {
+          const slug = page.slug || (await generateUniqueSlug("expert"));
+          await db
+            .update(expertPages)
+            .set({
+              status: "published",
+              slug,
+              publishedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(expertPages.id, page.id));
+        }
+      }
+
       return { success: true };
     }),
 
@@ -217,7 +338,7 @@ export const adminRouter = createRouter({
     .input(
       z.object({
         userId: z.number(),
-        role: z.enum(["candidate", "mentor", "admin", "superadmin"]),
+        role: z.enum(["candidate", "mentor", "expert", "admin", "superadmin"]),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -232,7 +353,7 @@ export const adminRouter = createRouter({
         .update(users)
         .set({ role: input.role })
         .where(eq(users.id, input.userId));
-      if (input.role === "mentor") {
+      if (input.role === "mentor" || input.role === "expert") {
         const existing = await db
           .select({ id: mentorProfiles.id })
           .from(mentorProfiles)

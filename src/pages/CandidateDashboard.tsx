@@ -191,7 +191,7 @@ function Overview() {
         </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {mentors.map((m) => (
-            <Link key={m.profile.id} to={`/mentors/${m.profile.id}`} className="rounded-2xl border p-4 hover:bg-muted/40 transition-colors">
+            <Link key={m.profile.id} to={m.profile.publicSlug ? `/m/${m.profile.publicSlug}` : `/mentors/${m.profile.id}`} className="rounded-2xl border p-4 hover:bg-muted/40 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display font-bold text-white text-sm">
                   {m.name?.slice(0, 2).toUpperCase()}

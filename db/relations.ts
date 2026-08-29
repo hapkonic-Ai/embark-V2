@@ -9,6 +9,24 @@ import {
   events,
   submissions,
   guestLectureRequests,
+  expertOnboarding,
+  expertResumes,
+  expertExperience,
+  expertEducation,
+  expertVerifications,
+  fileAssets,
+  expertPages,
+  expertPageConfigs,
+  expertPageSections,
+  mentorServices,
+  expertAvailabilityRules,
+  expertAvailabilityExceptions,
+  expertBookings,
+  sessions,
+  orders,
+  payments,
+  expertNotes,
+  reviews,
 } from "./schema";
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -21,6 +39,22 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   submissions: many(submissions),
   createdEvents: many(events),
   guestLectureRequests: many(guestLectureRequests),
+  expertOnboarding: one(expertOnboarding, {
+    fields: [users.id],
+    references: [expertOnboarding.userId],
+  }),
+  expertResume: one(expertResumes, {
+    fields: [users.id],
+    references: [expertResumes.userId],
+  }),
+  expertExperience: many(expertExperience),
+  expertEducation: many(expertEducation),
+  expertVerifications: many(expertVerifications),
+  ownedFileAssets: many(fileAssets),
+  expertPage: one(expertPages, {
+    fields: [users.id],
+    references: [expertPages.userId],
+  }),
 }));
 
 export const mentorProfilesRelations = relations(mentorProfiles, ({ one, many }) => ({
@@ -92,5 +126,178 @@ export const guestLectureRequestsRelations = relations(guestLectureRequests, ({ 
   mentorProfile: one(mentorProfiles, {
     fields: [guestLectureRequests.mentorProfileId],
     references: [mentorProfiles.id],
+  }),
+}));
+
+export const expertOnboardingRelations = relations(expertOnboarding, ({ one }) => ({
+  user: one(users, {
+    fields: [expertOnboarding.userId],
+    references: [users.id],
+  }),
+}));
+
+export const fileAssetsRelations = relations(fileAssets, ({ one }) => ({
+  owner: one(users, {
+    fields: [fileAssets.ownerId],
+    references: [users.id],
+  }),
+}));
+
+export const expertResumesRelations = relations(expertResumes, ({ one }) => ({
+  user: one(users, {
+    fields: [expertResumes.userId],
+    references: [users.id],
+  }),
+  fileAsset: one(fileAssets, {
+    fields: [expertResumes.fileAssetId],
+    references: [fileAssets.id],
+  }),
+}));
+
+export const expertExperienceRelations = relations(expertExperience, ({ one }) => ({
+  user: one(users, {
+    fields: [expertExperience.userId],
+    references: [users.id],
+  }),
+}));
+
+export const expertEducationRelations = relations(expertEducation, ({ one }) => ({
+  user: one(users, {
+    fields: [expertEducation.userId],
+    references: [users.id],
+  }),
+}));
+
+export const expertVerificationsRelations = relations(expertVerifications, ({ one }) => ({
+  user: one(users, {
+    fields: [expertVerifications.userId],
+    references: [users.id],
+  }),
+  reviewer: one(users, {
+    fields: [expertVerifications.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
+
+export const expertPagesRelations = relations(expertPages, ({ one, many }) => ({
+  user: one(users, {
+    fields: [expertPages.userId],
+    references: [users.id],
+  }),
+  config: one(expertPageConfigs, {
+    fields: [expertPages.id],
+    references: [expertPageConfigs.pageId],
+  }),
+  sections: many(expertPageSections),
+}));
+
+export const expertPageConfigsRelations = relations(expertPageConfigs, ({ one }) => ({
+  page: one(expertPages, {
+    fields: [expertPageConfigs.pageId],
+    references: [expertPages.id],
+  }),
+}));
+
+export const expertPageSectionsRelations = relations(expertPageSections, ({ one }) => ({
+  page: one(expertPages, {
+    fields: [expertPageSections.pageId],
+    references: [expertPages.id],
+  }),
+}));
+export const expertAvailabilityRulesRelations = relations(expertAvailabilityRules, ({ one }) => ({
+  user: one(users, {
+    fields: [expertAvailabilityRules.userId],
+    references: [users.id],
+  }),
+}));
+
+export const expertAvailabilityExceptionsRelations = relations(expertAvailabilityExceptions, ({ one }) => ({
+  user: one(users, {
+    fields: [expertAvailabilityExceptions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const expertBookingsRelations = relations(expertBookings, ({ one }) => ({
+  user: one(users, {
+    fields: [expertBookings.userId],
+    references: [users.id],
+  }),
+  student: one(users, {
+    fields: [expertBookings.studentId],
+    references: [users.id],
+  }),
+  service: one(mentorServices, {
+    fields: [expertBookings.serviceId],
+    references: [mentorServices.id],
+  }),
+  order: one(orders, {
+    fields: [expertBookings.orderId],
+    references: [orders.id],
+  }),
+  session: one(sessions, {
+    fields: [expertBookings.id],
+    references: [sessions.bookingId],
+  }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  booking: one(expertBookings, {
+    fields: [sessions.bookingId],
+    references: [expertBookings.id],
+  }),
+}));
+
+export const ordersRelations = relations(orders, ({ one }) => ({
+  booking: one(expertBookings, {
+    fields: [orders.bookingId],
+    references: [expertBookings.id],
+  }),
+  student: one(users, {
+    fields: [orders.studentId],
+    references: [users.id],
+  }),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  order: one(orders, {
+    fields: [payments.orderId],
+    references: [orders.id],
+  }),
+}));
+
+
+export const expertNotesRelations = relations(expertNotes, ({ one }) => ({
+  expert: one(users, {
+    fields: [expertNotes.userId],
+    references: [users.id],
+  }),
+  student: one(users, {
+    fields: [expertNotes.studentId],
+    references: [users.id],
+  }),
+  booking: one(expertBookings, {
+    fields: [expertNotes.bookingId],
+    references: [expertBookings.id],
+  }),
+}));
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  booking: one(expertBookings, {
+    fields: [reviews.bookingId],
+    references: [expertBookings.id],
+  }),
+  student: one(users, {
+    fields: [reviews.studentId],
+    references: [users.id],
+  }),
+  expert: one(users, {
+    fields: [reviews.expertUserId],
+    references: [users.id],
+  }),
+  service: one(mentorServices, {
+    fields: [reviews.serviceId],
+    references: [mentorServices.id],
   }),
 }));

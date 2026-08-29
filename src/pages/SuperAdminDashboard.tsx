@@ -30,7 +30,14 @@ function MentorsTab() {
   const { data, isLoading } = trpc.admin.listMentorProfiles.useQuery();
   const utils = trpc.useUtils();
   const verify = trpc.admin.verifyMentor.useMutation({
-    onSuccess: () => { toast.success("Updated"); utils.admin.listMentorProfiles.invalidate(); },
+    onSuccess: () => {
+      toast.success("Updated");
+      utils.admin.listMentorProfiles.invalidate();
+      // The affected expert's dashboard reads verification from expert.me/myProfile.
+      utils.expert.me.invalidate();
+      utils.expert.myProfile.invalidate();
+      utils.expertPage.myPage.invalidate();
+    },
     onError: (e) => toast.error(e.message),
   });
 
