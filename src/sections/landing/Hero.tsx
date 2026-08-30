@@ -258,17 +258,24 @@ export default function Hero() {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
+              <defs>
+                <marker
+                  id="hero-arrowhead"
+                  markerWidth="10"
+                  markerHeight="10"
+                  refX="8.5"
+                  refY="3.5"
+                  orient="auto"
+                >
+                  <path d="M0 0 L10 3.5 L0 7 L2 3.5 Z" fill="currentColor" />
+                </marker>
+              </defs>
               <motion.path
-                d="M24 18 C 52 18, 75 62, 108 88"
+                d="M24 18 C 52 18, 72 58, 100 82"
+                markerEnd="url(#hero-arrowhead)"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 1, delay: 1.1 }}
-              />
-              <motion.path
-                d="M96 78 L108 88 L120 74"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.3, delay: 2 }}
               />
             </motion.svg>
 
