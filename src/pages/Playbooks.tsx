@@ -14,10 +14,10 @@ import PaymentModal from "@/components/PaymentModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
-import { playbookCoverImage } from "@/lib/images";
+import { generateBookCover } from "@/lib/bookCover";
 
 function fallbackCover(_id: number, title: string) {
-  return playbookCoverImage(title);
+  return generateBookCover(title);
 }
 
 const HERO_BOOKS = [

@@ -19,7 +19,7 @@ function hashPassword(password: string): string {
   return `${salt}:${hash}`;
 }
 
-const PASS = hashPassword("Embark@123");
+const PASS = hashPassword("Arenafograds@123");
 
 async function seed() {
   const db = getDb();
