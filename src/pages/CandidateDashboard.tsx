@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import {
-  Award, BookOpen, Calendar, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
+  ArrowRight, Award, BookOpen, Calendar, Check, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
   Loader2, MessageCircle, Trophy, Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -46,7 +46,7 @@ export default function CandidateDashboard() {
     >
       {(tab) => (
         <>
-          {tab === "overview" && <Overview />}
+          {tab === "overview" && <Overview user={user} />}
           {tab === "mentorships" && <MentorshipsTab />}
           {tab === "bookings" && <BookingsTab />}
           {tab === "orders" && <OrdersTab />}
@@ -58,7 +58,7 @@ export default function CandidateDashboard() {
   );
 }
 
-function Overview() {
+function Overview({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
   const { data: ms } = trpc.candidate.myMentorships.useQuery();
   const { data: pbs } = trpc.candidate.myPlaybooks.useQuery();
   const { data: subs } = trpc.candidate.mySubmissions.useQuery();
@@ -73,8 +73,9 @@ function Overview() {
     { label: "Competition entries", value: subs?.length ?? 0, to: "/events", cta: "Join an event", icon: Trophy },
   ];
 
+  const profileComplete = !!(user?.phone && user?.linkedinUrl);
   const nextSteps = [
-    { label: "Complete your profile", desc: "Add LinkedIn & phone so mentors can vet you.", done: false, to: "/dashboard" },
+    { label: "Complete your profile", desc: "Add LinkedIn & phone so mentors can vet you.", done: profileComplete, to: "/dashboard" },
     { label: "Book a mentor", desc: "Pick a verified mentor and start your GD/PI prep.", done: active.length > 0, to: "/mentors" },
     { label: "Join an event", desc: "Build your B-school resume with real case wins.", done: (subs?.length ?? 0) > 0, to: "/events" },
     { label: "Read a playbook", desc: "GD frameworks, PI questions, WAT templates.", done: (pbs?.length ?? 0) > 0, to: "/playbooks" },
@@ -99,7 +100,7 @@ function Overview() {
               </div>
             </div>
             <Button variant="link" className="px-0 mt-3 text-orange-600" asChild>
-              <Link to={c.to}>{c.cta} →</Link>
+              <Link to={c.to} className="inline-flex items-center gap-1">{c.cta} <ArrowRight className="h-4 w-4" /></Link>
             </Button>
           </div>
         ))}
@@ -136,9 +137,9 @@ function Overview() {
                       <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
                     </div>
                     {s.done ? (
-                      <div className="h-5 w-5 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs">✓</div>
+                      <div className="h-5 w-5 rounded-full bg-green-100 text-green-700 flex items-center justify-center"><Check className="h-3 w-3" /></div>
                     ) : (
-                      <div className="h-5 w-5 rounded-full border border-orange-500 text-orange-600 flex items-center justify-center text-xs">→</div>
+                      <div className="h-5 w-5 rounded-full border border-orange-500 text-orange-600 flex items-center justify-center"><ArrowRight className="h-3 w-3" /></div>
                     )}
                   </div>
                 </Link>
@@ -178,7 +179,7 @@ function Overview() {
               )}
             </div>
             <Button variant="link" className="px-0 mt-3 text-orange-600" asChild>
-              <Link to="/events">View all events →</Link>
+              <Link to="/events" className="inline-flex items-center gap-1">View all events <ArrowRight className="h-4 w-4" /></Link>
             </Button>
           </div>
         </div>

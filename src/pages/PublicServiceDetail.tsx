@@ -18,6 +18,7 @@ import {
 } from "date-fns";
 import { trpc } from "@/providers/trpc";
 import Navbar from "@/components/site/Navbar";
+import { SafeImg } from "@/components/site/SafeImg";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -182,13 +183,11 @@ export default function PublicServiceDetail() {
         </Button>
 
         <div className="rounded-3xl border bg-card p-8 shadow-sm overflow-hidden">
-          {service.image && (
-            <img
-              src={service.image}
-              alt={service.title}
-              className="w-full h-48 sm:h-64 object-cover rounded-2xl mb-6 border"
-            />
-          )}
+          <SafeImg
+            src={service.image || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80"}
+            alt={service.title}
+            className="w-full h-48 sm:h-64 object-cover rounded-2xl mb-6 border"
+          />
 
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <Badge variant="secondary">{typeLabel}</Badge>

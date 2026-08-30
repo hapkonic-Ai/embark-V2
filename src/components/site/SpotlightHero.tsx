@@ -168,7 +168,7 @@ export function SpotlightHero({
           transition={{ delay: 0.8, duration: 0.5 }}
           className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4"
         >
-          <p className="text-xs uppercase tracking-wide text-stone-500">Topic</p>
+          <p className="text-xs text-stone-500">Topic</p>
           <p className="mt-1 font-display text-lg font-semibold">{speaker.topic}</p>
         </motion.div>
         <motion.div

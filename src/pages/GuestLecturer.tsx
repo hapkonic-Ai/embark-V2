@@ -107,7 +107,7 @@ function FilterInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <Label htmlFor={id} className="text-sm font-medium text-stone-100">
         {label}
       </Label>
       <div className="relative">

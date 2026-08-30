@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import Navbar from "@/components/site/Navbar";
+import { SafeImg } from "@/components/site/SafeImg";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,13 +72,11 @@ export default function PublicPackageDetail() {
         </Button>
 
         <div className="rounded-3xl border bg-card p-8 shadow-sm overflow-hidden">
-          {pkg.image && (
-            <img
-              src={pkg.image}
-              alt={pkg.title}
-              className="w-full h-48 sm:h-64 object-cover rounded-2xl mb-6 border"
-            />
-          )}
+          <SafeImg
+            src={pkg.image || "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80"}
+            alt={pkg.title}
+            className="w-full h-48 sm:h-64 object-cover rounded-2xl mb-6 border"
+          />
 
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <Badge variant="secondary" className="flex items-center gap-1">
@@ -95,7 +94,7 @@ export default function PublicPackageDetail() {
           </h1>
 
           <div className="mt-4 font-display text-3xl font-bold">
-            {pkg.price ? formatINR(pkg.price) : "Custom"}
+            {pkg.price != null ? formatINR(pkg.price) : "Custom"}
           </div>
 
           {pkg.description && (

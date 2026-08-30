@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const LINKS = [
   { to: "/mentors", label: "Mentors" },
@@ -95,6 +95,7 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full border bg-card px-2 py-1.5 hover:shadow-md transition-shadow">
                     <Avatar className="h-7 w-7">
+                      <AvatarImage src={user.avatar ?? undefined} alt={user.name ?? ""} />
                       <AvatarFallback className="bg-orange-500 text-white text-xs font-bold">
                         {user.name?.slice(0, 2).toUpperCase() ?? "EM"}
                       </AvatarFallback>
@@ -159,9 +160,14 @@ export default function Navbar() {
               ))}
               <div className="pt-2 flex gap-2">
                 {isAuthenticated ? (
-                  <Button className="flex-1" asChild>
-                    <Link to={dashboardPath(user?.role)}>Dashboard</Link>
-                  </Button>
+                  <>
+                    <Button className="flex-1" asChild>
+                      <Link to={dashboardPath(user?.role)}>Dashboard</Link>
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={() => logout()}>
+                      Log out
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button variant="outline" className="flex-1" asChild>

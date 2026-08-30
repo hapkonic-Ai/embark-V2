@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, GraduationCap, Loader2, MapPinned, School, Star, TrendingUp, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, GraduationCap, Loader2, MapPinned, School, Star, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/site/Logo";
 import { dashboardPath } from "@/components/site/Navbar";
 import { fireConfetti } from "@/components/site/EasterEggs";
-import { reviewPersonImage } from "@/lib/images";
+import { SafeImg } from "@/components/site/SafeImg";
+import { reviewPersonImage, fallbackFace } from "@/lib/images";
 
 function buildOAuthUrl() {
   const authUrl = import.meta.env.VITE_KIMI_AUTH_URL;
@@ -131,10 +132,11 @@ export default function Login() {
               transition={{ delay: 0.45, duration: 0.8, ease: [0.22, 1.4, 0.36, 1] }}
               className="absolute left-1/2 top-1/2 h-[300px] w-[220px] -translate-x-1/2 -translate-y-1/2 z-10"
             >
-              <img
+              <SafeImg
                 src="/login-student.png"
                 alt="Student holding books"
                 className="h-full w-full object-contain drop-shadow-2xl"
+                fallback="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=400&q=80"
               />
             </motion.div>
 
@@ -146,12 +148,12 @@ export default function Login() {
             >
               <div className="flex -space-x-3">
                 {[
-                  reviewPersonImage("Ayesha"),
-                  reviewPersonImage("Rahul"),
-                  reviewPersonImage("Priya"),
-                  reviewPersonImage("Vikram"),
-                ].map((src, i) => (
-                  <img key={i} src={src} alt="" className="h-10 w-10 rounded-full border-2 border-stone-950 object-cover" />
+                  { name: "Ayesha", src: reviewPersonImage("Ayesha") },
+                  { name: "Rahul", src: reviewPersonImage("Rahul") },
+                  { name: "Priya", src: reviewPersonImage("Priya") },
+                  { name: "Vikram", src: reviewPersonImage("Vikram") },
+                ].map((p, i) => (
+                  <SafeImg key={i} src={p.src} alt={p.name} fallback={fallbackFace(p.name)} className="h-10 w-10 rounded-full border-2 border-stone-950 object-cover" />
                 ))}
                 <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-950 bg-orange-500 text-xs font-bold">
                   +4k
@@ -178,7 +180,7 @@ export default function Login() {
                 “My PI mentor asked the exact questions that came up in my actual IIM panel. Unreal.”
               </p>
               <div className="mt-3 flex items-center gap-2">
-                <img src={reviewPersonImage("Ayesha")} alt="" className="h-8 w-8 rounded-full object-cover" />
+                <SafeImg src={reviewPersonImage("Ayesha")} alt="Ayesha" fallback={fallbackFace("Ayesha")} className="h-8 w-8 rounded-full object-cover" />
                 <div className="text-xs">
                   <div className="font-semibold text-stone-100">Ayesha K.</div>
                   <div className="text-muted-foreground">IIM K '27</div>
@@ -340,7 +342,7 @@ export default function Login() {
           <p className="mt-6 text-center text-xs text-muted-foreground">
             Demo accounts — superadmin@embark.in · admin@embark.in · candidate@embark.in
             <br />(password: Embark@123) ·{" "}
-            <Link to="/" className="text-orange-600 hover:underline">← back home</Link>
+            <Link to="/" className="inline-flex items-center gap-1 text-orange-600 hover:underline"><ArrowLeft className="h-3 w-3" /> back home</Link>
           </p>
         </motion.div>
       </div>

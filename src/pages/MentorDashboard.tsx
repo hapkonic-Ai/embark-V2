@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarCheck, CalendarDays, Globe, Link2, Linkedin, Loader2, Settings, Users } from "lucide-react";
+import { CalendarCheck, CalendarDays, Globe, Link2, Linkedin, Loader2, Settings, Sprout, Users } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import DashboardShell from "@/components/DashboardShell";
@@ -61,7 +61,9 @@ function MenteesTab() {
   if (!data || data.length === 0) {
     return (
       <div className="rounded-3xl border bg-card p-12 text-center">
-        <div className="text-5xl">🌱</div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 mx-auto">
+          <Sprout className="h-8 w-8" />
+        </div>
         <h3 className="mt-4 font-display text-xl font-semibold">No mentees yet</h3>
         <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
           Make sure your profile is complete — a superadmin verifies it before you appear on the mentors page.

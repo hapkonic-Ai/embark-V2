@@ -36,21 +36,31 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatINR } from "@/lib/format";
 
+const STATUS_LABELS: Record<string, string> = {
+  confirmed: "Confirmed",
+  completed: "Completed",
+  paid: "Paid",
+  pending: "Pending",
+  cancelled: "Cancelled",
+  no_show: "No show",
+};
+
 const statusBadge = (status: string) => {
+  const label = STATUS_LABELS[status] ?? status;
   switch (status) {
     case "confirmed":
     case "completed":
-      return <Badge className="bg-green-100 text-green-700 border-0">{status}</Badge>;
+      return <Badge className="bg-green-100 text-green-700 border-0">{label}</Badge>;
     case "paid":
-      return <Badge className="bg-green-100 text-green-700 border-0">paid</Badge>;
+      return <Badge className="bg-green-100 text-green-700 border-0">{label}</Badge>;
     case "pending":
-      return <Badge variant="secondary">pending</Badge>;
+      return <Badge variant="secondary">{label}</Badge>;
     case "cancelled":
-      return <Badge variant="destructive">cancelled</Badge>;
+      return <Badge variant="destructive">{label}</Badge>;
     case "no_show":
-      return <Badge variant="outline">no show</Badge>;
+      return <Badge variant="outline">{label}</Badge>;
     default:
-      return <Badge variant="secondary">{status}</Badge>;
+      return <Badge variant="secondary">{label}</Badge>;
   }
 };
 
