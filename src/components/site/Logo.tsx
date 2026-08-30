@@ -32,7 +32,7 @@ export function Logo({ size = "md" }: { size?: "sm" | "md" }) {
     }
   };
 
-  const dims = size === "sm" ? "h-9" : "h-11";
+  const dims = size === "sm" ? "h-11" : "h-14";
   return (
     <Link to="/" onClick={handleClick} className="flex items-center gap-2.5 group select-none">
       <motion.img
