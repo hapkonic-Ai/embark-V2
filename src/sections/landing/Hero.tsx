@@ -245,39 +245,32 @@ export default function Hero() {
           <motion.div
             className="relative hidden lg:flex items-center justify-center h-[600px]"
           >
-            {/* hand-drawn arrow pointing to student */}
+            {/* animated connection line */}
             <motion.svg
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 1.1 }}
+              transition={{ duration: 0.6, delay: 1.1 }}
               className="absolute top-16 left-8 z-0 h-40 w-40 text-orange-500"
               viewBox="0 0 160 160"
               fill="none"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeDasharray="6 6"
             >
-              <defs>
-                <marker
-                  id="hero-arrowhead"
-                  markerWidth="10"
-                  markerHeight="10"
-                  refX="8.5"
-                  refY="3.5"
-                  orient="auto"
-                >
-                  <path d="M0 0 L10 3.5 L0 7 L2 3.5 Z" fill="currentColor" />
-                </marker>
-              </defs>
               <motion.path
                 d="M24 18 C 52 18, 72 58, 100 82"
-                markerEnd="url(#hero-arrowhead)"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={{ duration: 1, delay: 1.1 }}
+                transition={{ duration: 1.2, delay: 1.1, ease: "easeInOut" }}
               />
             </motion.svg>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 2, delay: 2.2, repeat: Infinity, repeatDelay: 1 }}
+              className="absolute top-[6.8rem] left-[7.6rem] h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.6)]"
+            />
 
             {/* sparkle / dot decorations */}
             <motion.div
