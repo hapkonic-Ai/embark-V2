@@ -250,21 +250,22 @@ export default function Hero() {
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
               transition={{ duration: 1, delay: 1.1, ease: "easeInOut" }}
-              className="absolute top-16 left-8 z-0 h-40 w-40 text-orange-500"
-              viewBox="0 0 160 160"
+              className="absolute top-16 left-8 z-0 h-44 w-44 text-orange-500"
+              viewBox="0 0 176 176"
               fill="none"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="4"
               strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <motion.path
-                d="M20 20 C 50 20, 60 80, 120 100 S 130 140, 100 130"
+                d="M28 24 C 60 24, 80 72, 116 104"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 1, delay: 1.1 }}
               />
               <motion.path
-                d="M90 120 L100 132 L115 118"
+                d="M104 88 L118 106 L96 114"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 0.3, delay: 2 }}
