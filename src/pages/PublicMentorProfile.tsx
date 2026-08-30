@@ -143,7 +143,7 @@ export default function PublicMentorProfile() {
                     </Button>
                   )}
                   <Button className="rounded-full bg-orange-600 hover:bg-orange-700" asChild>
-                    <Link to={`/mentors/${profile.id}`}>Book on Embark</Link>
+                    <Link to={`/mentors/${profile.id}`}>Book on Arena for grads</Link>
                   </Button>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default function PublicMentorProfile() {
           )}
 
           <div className="mt-6 flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">Powered by Embark</p>
+            <p className="text-xs text-muted-foreground">Powered by Arena for grads</p>
             <Button variant="link" className="px-0 text-xs text-orange-600" asChild>
               <a
                 href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}

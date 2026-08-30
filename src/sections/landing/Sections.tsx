@@ -115,7 +115,7 @@ export function Features() {
             Everything after the CAT score
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Coaching teaches you the exam. Embark teaches you the game after it.
+            Coaching teaches you the exam. Arena for grads teaches you the game after it.
           </p>
         </motion.div>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

@@ -493,7 +493,7 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
             <div className={`rounded-3xl border p-6 ${cardBg}`}>
               <p className={`text-xs ${mutedText}`}>
                 Powered by{" "}
-                <span className="font-semibold text-orange-600">Embark</span>
+                <span className="font-semibold text-orange-600">Arena for grads</span>
               </p>
             </div>
           </div>

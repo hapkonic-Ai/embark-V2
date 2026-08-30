@@ -98,12 +98,12 @@ export default function DashboardShell({
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <li><a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-orange-600">LinkedIn</a></li>
                 <li><a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-orange-600">Instagram</a></li>
-                <li><a href="mailto:hello@embark.in" className="hover:text-orange-600">hello@embark.in</a></li>
+                <li><a href="mailto:hello@arenafograds.com" className="hover:text-orange-600">hello@arenafograds.com</a></li>
               </ul>
             </div>
           </div>
           <div className="mt-10 border-t pt-6 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Embark. Built for India's next B-school cohort.
+            © {new Date().getFullYear()} Arena for grads. Built for India's next B-school cohort.
           </div>
         </div>
       </footer>

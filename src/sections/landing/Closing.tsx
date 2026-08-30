@@ -34,7 +34,7 @@ export function Testimonials() {
       <ParallaxBox offset={35} className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
-            They embarked. They converted.
+            They trained. They converted.
           </h2>
         </div>
         <div className="mt-14 grid gap-6 md:grid-cols-3">

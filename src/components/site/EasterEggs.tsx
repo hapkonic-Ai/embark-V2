@@ -41,12 +41,12 @@ export default function EasterEggs() {
         });
       }
 
-      // typing "embark"
+      // typing "arena"
       if (/^[a-z]$/i.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const target = e.target as HTMLElement;
         if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
         wordBuffer = (wordBuffer + e.key.toLowerCase()).slice(-6);
-        if (wordBuffer === "embark") {
+        if (wordBuffer === "arena") {
           wordBuffer = "";
           setRocket((r) => r + 1);
           fireConfetti(true);

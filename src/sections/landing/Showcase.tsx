@@ -44,7 +44,7 @@ export function Programs() {
             Pick a plan, meet your mentor
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Final pricing is set by each mentor — these are the typical packages on Embark.
+            Final pricing is set by each mentor — these are the typical packages on Arena for grads.
           </p>
         </div>
         <div className="mt-14 grid gap-6 md:grid-cols-3">

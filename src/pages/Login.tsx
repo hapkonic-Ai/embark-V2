@@ -219,7 +219,7 @@ export default function Login() {
         </div>
 
         <p className="relative mt-6 text-xs text-muted-foreground">
-          “Embark” — because “panic-scroll Quora at 2am” was taken.
+          “Arena for grads” — because “panic-scroll Quora at 2am” was taken.
         </p>
       </div>
 
@@ -296,7 +296,7 @@ export default function Login() {
                     I agree to the{" "}
                     <Link to="/terms" target="_blank" className="text-orange-600 hover:underline">Terms & Conditions</Link>,{" "}
                     <Link to="/privacy" target="_blank" className="text-orange-600 hover:underline">Privacy Policy</Link>, and
-                    understand that mentorship is provided by independent mentors on the Embark platform.
+                    understand that mentorship is provided by independent mentors on the Arena for grads platform.
                   </Label>
                 </div>
               </>
@@ -340,8 +340,8 @@ export default function Login() {
           </form>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Demo accounts — superadmin@embark.in · admin@embark.in · candidate@embark.in
-            <br />(password: Embark@123) ·{" "}
+            Demo accounts — superadmin@arenafograds.com · admin@arenafograds.com · candidate@arenafograds.com
+            <br />(password: Arenafograds@123) ·{" "}
             <Link to="/" className="inline-flex items-center gap-1 text-orange-600 hover:underline"><ArrowLeft className="h-3 w-3" /> back home</Link>
           </p>
         </motion.div>

@@ -90,7 +90,7 @@ export function LoadingScreen() {
             className="relative z-10 mt-10 text-center"
           >
             <h1 className="font-display text-3xl font-bold tracking-tight text-stone-900">
-              embark<span className="text-orange-500">.</span>
+              ARENA<span className="text-orange-500"> FOR GRADS</span>
             </h1>
             <div className="mt-2 h-6 overflow-hidden">
               <AnimatePresence mode="wait">

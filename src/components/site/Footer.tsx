@@ -19,8 +19,8 @@ export default function Footer() {
               actually converted their calls.
             </p>
             <div className="flex flex-col gap-3 text-sm text-stone-400">
-              <a href="mailto:hello@embark.edu" className="flex items-center gap-2 hover:text-orange-400 transition-colors">
-                <Mail className="h-4 w-4" /> hello@embark.edu
+              <a href="mailto:hello@arenafograds.com" className="flex items-center gap-2 hover:text-orange-400 transition-colors">
+                <Mail className="h-4 w-4" /> hello@arenafograds.com
               </a>
               <span className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" /> Bangalore, India
@@ -95,7 +95,7 @@ export default function Footer() {
 
         {/* bottom bar */}
         <div className="mt-14 pt-8 border-t border-stone-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-stone-500">
-          <span>© 2026 Embark. Built in India.</span>
+          <span>© 2026 Arena for grads. Built in India.</span>
           <div className="flex flex-wrap items-center gap-4">
             <Link className="hover:text-orange-400 transition-colors" to="/terms">Terms of Service</Link>
             <Link className="hover:text-orange-400 transition-colors" to="/privacy">Privacy Policy</Link>

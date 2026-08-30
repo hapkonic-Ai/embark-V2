@@ -20,7 +20,7 @@ export default function Privacy() {
 
           <h2 className="font-display text-2xl font-semibold mt-8">3. Cookies and sessions</h2>
           <p className="text-muted-foreground leading-relaxed mt-3">
-            Embark uses secure HTTP-only cookies to keep you signed in. You can clear cookies from your browser to end your session.
+            Arena for grads uses secure HTTP-only cookies to keep you signed in. You can clear cookies from your browser to end your session.
           </p>
 
           <h2 className="font-display text-2xl font-semibold mt-8">4. Data sharing</h2>

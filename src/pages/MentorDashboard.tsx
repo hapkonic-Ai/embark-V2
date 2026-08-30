@@ -428,7 +428,7 @@ function ProfileTab() {
 
       {publicUrl && (
         <div className="rounded-3xl border bg-card p-7 shadow-sm max-w-2xl">
-          <h3 className="font-display font-semibold text-lg">Share your Embark profile</h3>
+          <h3 className="font-display font-semibold text-lg">Share your Arena for grads profile</h3>
           <p className="text-sm text-muted-foreground mt-1">Students can book mock sessions directly from your public page.</p>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <div className="flex-1 min-w-[240px] flex items-center gap-2 rounded-xl border px-3 py-2 bg-muted/40">
