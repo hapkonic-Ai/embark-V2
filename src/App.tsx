@@ -21,6 +21,9 @@ import ExpertProfileEdit from "./pages/ExpertProfileEdit";
 import ExpertPageBuilder from "./pages/ExpertPageBuilder";
 import ExpertServices from "./pages/ExpertServices";
 import ExpertServiceEditor from "./pages/ExpertServiceEditor";
+import ExpertServicePackageEditor from "./pages/ExpertServicePackageEditor";
+import PublicPackageDetail from "./pages/PublicPackageDetail";
+import StudentBookingDetail from "./pages/StudentBookingDetail";
 import ExpertCalendar from "./pages/ExpertCalendar";
 import ExpertBookings from "./pages/ExpertBookings";
 import ExpertBookingDetail from "./pages/ExpertBookingDetail";
@@ -46,6 +49,7 @@ export default function App() {
         <Route path="/mentors/:id" element={<MentorDetail />} />
         <Route path="/m/:slug" element={<PublicMentorProfile />} />
         <Route path="/m/:slug/services/:serviceSlug" element={<PublicServiceDetail />} />
+        <Route path="/m/:slug/packages/:packageSlug" element={<PublicPackageDetail />} />
         <Route path="/playbooks" element={<Playbooks />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetail />} />
@@ -58,6 +62,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={["candidate"]}>
               <CandidateDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/orders/:id"
+          element={
+            <ProtectedRoute roles={["candidate"]}>
+              <StudentBookingDetail />
             </ProtectedRoute>
           }
         />
@@ -114,6 +126,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={["expert"]}>
               <ExpertServiceEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/expert/service-packages/:id"
+          element={
+            <ProtectedRoute roles={["expert"]}>
+              <ExpertServicePackageEditor />
             </ProtectedRoute>
           }
         />

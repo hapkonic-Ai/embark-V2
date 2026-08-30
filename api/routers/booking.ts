@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { MySql2Database, MySql2Transaction } from "drizzle-orm/mysql2";
 import { TRPCError } from "@trpc/server";
 import { format } from "date-fns";
@@ -7,6 +7,7 @@ import {
   expertBookings,
   mentorServices,
   orders,
+  payments,
   sessions,
   users,
 } from "@db/schema";
@@ -115,6 +116,10 @@ export const bookingRouter = createRouter({
           status: mentorServices.status,
           isBookable: mentorServices.isBookable,
           requiresPayment: mentorServices.requiresPayment,
+          communicationMode: mentorServices.communicationMode,
+          whatsappDirectNumber: mentorServices.whatsappDirectNumber,
+          whatsappGroupInviteUrl: mentorServices.whatsappGroupInviteUrl,
+          whatsappGroupAccessPolicy: mentorServices.whatsappGroupAccessPolicy,
         })
         .from(mentorServices)
         .where(eq(mentorServices.id, input.serviceId))
@@ -188,6 +193,10 @@ export const bookingRouter = createRouter({
               durationMinutes: service.durationMinutes,
               price: service.price,
               currency: service.currency,
+              communicationMode: service.communicationMode,
+              whatsappDirectNumber: service.whatsappDirectNumber,
+              whatsappGroupInviteUrl: service.whatsappGroupInviteUrl,
+              whatsappGroupAccessPolicy: service.whatsappGroupAccessPolicy,
             },
           })
           .$returningId();
@@ -241,7 +250,7 @@ export const bookingRouter = createRouter({
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = getDb();
-      const { booking } = await fetchBookingWithOwnership(
+      const { booking, expertName, serviceTitle } = await fetchBookingWithOwnership(
         db,
         input.id,
         ctx.user.id,
@@ -260,7 +269,15 @@ export const bookingRouter = createRouter({
             .limit(1)
             .then((r) => r[0] ?? null)
         : null;
-      return { booking, session, order };
+      const payment = order
+        ? await db
+            .select()
+            .from(payments)
+            .where(and(eq(payments.orderId, order.id), eq(payments.status, "success")))
+            .limit(1)
+            .then((r) => r[0] ?? null)
+        : null;
+      return { booking, session, order, payment, expertName, serviceTitle };
     }),
 
   listForStudent: candidate.query(async ({ ctx }) => {

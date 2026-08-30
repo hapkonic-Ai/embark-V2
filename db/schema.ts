@@ -598,6 +598,54 @@ export const mentorServices = mysqlTable(
 export type MentorService = typeof mentorServices.$inferSelect;
 export type InsertMentorService = typeof mentorServices.$inferInsert;
 
+export const mentorServicePackages = mysqlTable(
+  "mentor_service_packages",
+  {
+    id: serial("id").primaryKey(),
+    userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    slug: varchar("slug", { length: 64 }).notNull(),
+    description: text("description"),
+    image: text("image"),
+    price: int("price"),
+    currency: varchar("currency", { length: 3 }).default("INR").notNull(),
+    status: mysqlEnum("status", ["draft", "published", "unpublished", "archived"])
+      .default("draft")
+      .notNull(),
+    displayOrder: int("displayOrder").default(0).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt")
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex("mentor_service_packages_user_slug_unique").on(t.userId, t.slug)],
+);
+
+export type MentorServicePackage = typeof mentorServicePackages.$inferSelect;
+export type InsertMentorServicePackage = typeof mentorServicePackages.$inferInsert;
+
+export const mentorServicePackageItems = mysqlTable(
+  "mentor_service_package_items",
+  {
+    id: serial("id").primaryKey(),
+    packageId: bigint("packageId", { mode: "number", unsigned: true }).notNull(),
+    serviceId: bigint("serviceId", { mode: "number", unsigned: true }).notNull(),
+    displayOrder: int("displayOrder").default(0).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt")
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("mentor_service_package_items_package_service_unique").on(t.packageId, t.serviceId),
+  ],
+);
+
+export type MentorServicePackageItem = typeof mentorServicePackageItems.$inferSelect;
+export type InsertMentorServicePackageItem = typeof mentorServicePackageItems.$inferInsert;
+
 // ============================================================ calendar & availability (phase 4)
 
 export const dayOfWeekEnum = [

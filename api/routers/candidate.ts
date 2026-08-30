@@ -39,7 +39,8 @@ export const candidateRouter = createRouter({
         .where(eq(mentorProfiles.id, input.mentorProfileId))
         .limit(1);
       const mentor = rows[0];
-      if (!mentor || !mentor.profile.isVerified) {
+      const isVerified = mentor?.profile.isVerified || mentor?.profile.verificationStatus === "verified";
+      if (!mentor || !isVerified) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Mentor not found" });
       }
       const dup = await db

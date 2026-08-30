@@ -1,10 +1,12 @@
-import { desc, eq, sql, and, ne, or } from "drizzle-orm";
+import { desc, eq, sql, and, ne, or, asc, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
   colleges,
   events,
   expertPages,
   mentorProfiles,
+  mentorServicePackageItems,
+  mentorServicePackages,
   mentorServices,
   playbooks,
   submissions,
@@ -81,9 +83,16 @@ export const catalogRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const rows = await db
-        .select({ profile: mentorProfiles, name: users.name, email: users.email })
+        .select({
+          profile: mentorProfiles,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+          expertPageSlug: expertPages.slug,
+        })
         .from(mentorProfiles)
         .innerJoin(users, eq(users.id, mentorProfiles.userId))
+        .leftJoin(expertPages, eq(expertPages.userId, mentorProfiles.userId))
         .where(eq(mentorProfiles.id, input.id))
         .limit(1);
       const row = rows[0] ?? null;
@@ -339,5 +348,99 @@ export const catalogRouter = createRouter({
         startAt: s.startAt.toISOString(),
         endAt: s.endAt.toISOString(),
       }));
+    }),
+
+  expertPackagesBySlug: publicQuery
+    .input(z.object({ slug: z.string().max(64) }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const page = await db
+        .select({ userId: expertPages.userId })
+        .from(expertPages)
+        .where(eq(expertPages.slug, input.slug))
+        .limit(1)
+        .then((r) => r[0]);
+      if (!page) return [];
+      const packages = await db
+        .select()
+        .from(mentorServicePackages)
+        .where(
+          and(
+            eq(mentorServicePackages.userId, page.userId),
+            eq(mentorServicePackages.status, "published"),
+          ),
+        )
+        .orderBy(asc(mentorServicePackages.displayOrder));
+      if (!packages.length) return [];
+      const items = await db
+        .select()
+        .from(mentorServicePackageItems)
+        .where(inArray(mentorServicePackageItems.packageId, packages.map((p) => p.id)))
+        .orderBy(asc(mentorServicePackageItems.displayOrder));
+      const services = await db
+        .select()
+        .from(mentorServices)
+        .where(
+          inArray(
+            mentorServices.id,
+            items.map((i) => i.serviceId),
+          ),
+        );
+      return packages.map((pkg) => ({
+        ...pkg,
+        items: items
+          .filter((i) => i.packageId === pkg.id)
+          .map((i) => ({
+            ...i,
+            service: services.find((s) => s.id === i.serviceId)!,
+          })),
+      }));
+    }),
+
+  expertPackageBySlug: publicQuery
+    .input(
+      z.object({
+        expertSlug: z.string().max(64),
+        packageSlug: z.string().max(64),
+      }),
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const page = await db
+        .select({ userId: expertPages.userId })
+        .from(expertPages)
+        .where(eq(expertPages.slug, input.expertSlug))
+        .limit(1)
+        .then((r) => r[0]);
+      if (!page) return null;
+      const pkg = await db
+        .select()
+        .from(mentorServicePackages)
+        .where(
+          and(
+            eq(mentorServicePackages.userId, page.userId),
+            eq(mentorServicePackages.slug, input.packageSlug),
+            eq(mentorServicePackages.status, "published"),
+          ),
+        )
+        .limit(1)
+        .then((r) => r[0] ?? null);
+      if (!pkg) return null;
+      const items = await db
+        .select()
+        .from(mentorServicePackageItems)
+        .where(eq(mentorServicePackageItems.packageId, pkg.id))
+        .orderBy(asc(mentorServicePackageItems.displayOrder));
+      const services = await db
+        .select()
+        .from(mentorServices)
+        .where(inArray(mentorServices.id, items.map((i) => i.serviceId)));
+      return {
+        ...pkg,
+        items: items.map((i) => ({
+          ...i,
+          service: services.find((s) => s.id === i.serviceId)!,
+        })),
+      };
     }),
 });

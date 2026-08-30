@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../queries/connection";
 import {
   expertEducation,
@@ -7,6 +7,8 @@ import {
   expertPages,
   expertPageSections,
   mentorProfiles,
+  mentorServicePackageItems,
+  mentorServicePackages,
   mentorServices,
   users,
 } from "@db/schema";
@@ -231,7 +233,7 @@ export async function getPublishedExpertPageBySlug(slug: string) {
   const row = rows[0];
   if (!row || row.page.status !== "published") return null;
 
-  const [config, sections, experiences, educations, services] = await Promise.all([
+  const [config, sections, experiences, educations, services, packages] = await Promise.all([
     db
       .select()
       .from(expertPageConfigs)
@@ -263,7 +265,41 @@ export async function getPublishedExpertPageBySlug(slug: string) {
         ),
       )
       .orderBy(mentorServices.displayOrder),
+    db
+      .select()
+      .from(mentorServicePackages)
+      .where(
+        and(
+          eq(mentorServicePackages.userId, row.page.userId),
+          eq(mentorServicePackages.status, "published"),
+        ),
+      )
+      .orderBy(mentorServicePackages.displayOrder),
   ]);
+
+  const packageItems = packages.length
+    ? await db
+        .select()
+        .from(mentorServicePackageItems)
+        .where(inArray(mentorServicePackageItems.packageId, packages.map((p) => p.id)))
+        .orderBy(mentorServicePackageItems.displayOrder)
+    : [];
+  const packageItemServiceIds = packageItems.map((i) => i.serviceId);
+  const packageServices = packageItemServiceIds.length
+    ? await db
+        .select()
+        .from(mentorServices)
+        .where(inArray(mentorServices.id, packageItemServiceIds))
+    : [];
+  const packagesWithItems = packages.map((pkg) => ({
+    ...pkg,
+    items: packageItems
+      .filter((i) => i.packageId === pkg.id)
+      .map((i) => ({
+        ...i,
+        service: packageServices.find((s) => s.id === i.serviceId)!,
+      })),
+  }));
 
   const resolvedProfile = await resolveAssetFields(row.profile, ["profileImage", "coverImage"], db);
 
@@ -276,5 +312,6 @@ export async function getPublishedExpertPageBySlug(slug: string) {
     experiences,
     educations,
     services,
+    packages: packagesWithItems,
   };
 }

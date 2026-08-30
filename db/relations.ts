@@ -19,6 +19,8 @@ import {
   expertPageConfigs,
   expertPageSections,
   mentorServices,
+  mentorServicePackages,
+  mentorServicePackageItems,
   expertAvailabilityRules,
   expertAvailabilityExceptions,
   expertBookings,
@@ -205,6 +207,34 @@ export const expertPageSectionsRelations = relations(expertPageSections, ({ one 
     references: [expertPages.id],
   }),
 }));
+
+export const mentorServicesRelations = relations(mentorServices, ({ one, many }) => ({
+  user: one(users, {
+    fields: [mentorServices.userId],
+    references: [users.id],
+  }),
+  packageItems: many(mentorServicePackageItems),
+}));
+
+export const mentorServicePackagesRelations = relations(mentorServicePackages, ({ one, many }) => ({
+  user: one(users, {
+    fields: [mentorServicePackages.userId],
+    references: [users.id],
+  }),
+  items: many(mentorServicePackageItems),
+}));
+
+export const mentorServicePackageItemsRelations = relations(mentorServicePackageItems, ({ one }) => ({
+  package: one(mentorServicePackages, {
+    fields: [mentorServicePackageItems.packageId],
+    references: [mentorServicePackages.id],
+  }),
+  service: one(mentorServices, {
+    fields: [mentorServicePackageItems.serviceId],
+    references: [mentorServices.id],
+  }),
+}));
+
 export const expertAvailabilityRulesRelations = relations(expertAvailabilityRules, ({ one }) => ({
   user: one(users, {
     fields: [expertAvailabilityRules.userId],

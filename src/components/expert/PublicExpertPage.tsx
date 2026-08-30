@@ -11,9 +11,7 @@ import {
   MapPin,
   Github,
   Globe,
-  MessageCircle,
   Star,
-  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -42,6 +40,7 @@ type Section = NonNullable<ExpertPageData>["sections"][number];
 type Experience = NonNullable<ExpertPageData>["experiences"][number];
 type Education = NonNullable<ExpertPageData>["educations"][number];
 type Service = NonNullable<ExpertPageData>["services"][number];
+type Package = NonNullable<ExpertPageData>["packages"][number];
 
 const SECTION_LABELS: Record<string, string> = {
   hero: "Hero",
@@ -106,7 +105,7 @@ function ReviewsSection({ expertUserId, cardBg, mutedText }: { expertUserId: num
 }
 
 export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPageData> }) {
-  const { config, sections, profile, user, experiences, educations, services } = data;
+  const { config, sections, profile, user, experiences, educations, services, packages } = data;
 
   const isDark = config.background === "dark";
   const isMuted = config.background === "muted";
@@ -404,12 +403,20 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
               </section>
             )}
 
-            {orderedSections.includes("services") && services.length > 0 && (
+            {(services.length > 0 || packages.length > 0) && (
               <section className={`rounded-3xl border p-6 sm:p-8 ${cardBg}`}>
                 <h2 className="font-display text-xl font-semibold mb-5">
                   {SECTION_LABELS.services}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
+                  {packages.map((pkg: Package) => (
+                    <PackageCard
+                      key={pkg.id}
+                      pkg={pkg}
+                      accentColor={accentColor}
+                      expertSlug={data.page.slug}
+                    />
+                  ))}
                   {services.map((service: Service) => (
                     <ServiceCard
                       key={service.id}
@@ -482,28 +489,6 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
               </div>
             ) : null}
 
-            {(profile?.price ?? 0) > 0 && (
-              <div className={`rounded-3xl border p-6 ${cardBg}`}>
-                <h3 className="font-display text-lg font-semibold mb-4">Mentorship package</h3>
-                <div className="font-display text-3xl font-bold">{formatINR(profile.price)}</div>
-                <p className="text-sm text-muted-foreground mt-1">Complete guidance package</p>
-                <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-center gap-2">
-                    <Users className="h-4 w-4" /> {profile.mockGds} mock GDs
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4" /> {profile.mockPis} mock PIs
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4" /> 1:1 guidance
-                  </li>
-                </ul>
-                <Button className={`w-full mt-5 ${btnRadius}`} style={accentStyle} asChild>
-                  <Link to={`/mentors/${profile.id}`}>Book mentorship</Link>
-                </Button>
-              </div>
-            )}
-
             <div className={`rounded-3xl border p-6 ${cardBg}`}>
               <p className={`text-xs ${mutedText}`}>
                 Powered by{" "}
@@ -513,6 +498,72 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PackageCard({
+  pkg,
+  accentColor,
+  expertSlug,
+}: {
+  pkg: Package;
+  accentColor: string;
+  expertSlug: string;
+}) {
+  const chipStyle = { borderColor: accentColor, color: accentColor };
+  const btnStyle = { backgroundColor: accentColor, color: "#fff" };
+  const included = pkg.items ?? [];
+
+  return (
+    <div className="rounded-2xl border p-5 flex flex-col h-full" style={{ borderColor: accentColor }}>
+      {pkg.image && (
+        <img
+          src={pkg.image}
+          alt={pkg.title}
+          className="h-28 w-full rounded-xl object-cover mb-3 border"
+        />
+      )}
+      <h3 className="font-display text-lg font-semibold leading-tight">{pkg.title}</h3>
+      <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+        <span className="rounded-full border px-2 py-0.5 font-medium" style={chipStyle}>
+          Package
+        </span>
+        {included.length > 0 && (
+          <span className="text-muted-foreground">{included.length} service{included.length === 1 ? "" : "s"}</span>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground mt-2 line-clamp-2 flex-1">
+        {pkg.description || "No description"}
+      </p>
+      {included.length > 0 && (
+        <ul className="mt-3 space-y-1">
+          {included.slice(0, 4).map((item) => (
+            <li key={item.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-green-600" />
+              <span className="line-clamp-1">{item.service.title}</span>
+            </li>
+          ))}
+          {included.length > 4 && (
+            <li className="text-xs text-muted-foreground">+ {included.length - 4} more</li>
+          )}
+        </ul>
+      )}
+      <div className="mt-4 flex items-center justify-between">
+        <span className="font-display text-lg font-bold">
+          {pkg.price ? formatINR(pkg.price) : "Custom"}
+        </span>
+      </div>
+      <Button
+        asChild
+        className="w-full mt-4 rounded-full"
+        style={btnStyle}
+        variant="ghost"
+      >
+        <Link to={`/m/${expertSlug}/packages/${pkg.slug}`}>
+          View package <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+        </Link>
+      </Button>
     </div>
   );
 }

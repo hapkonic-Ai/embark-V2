@@ -1,18 +1,18 @@
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { fallbackFace } from "@/lib/images";
 import { Building2, GraduationCap, Users } from "lucide-react";
 
 function Avatar({ src, name, size = 64 }: { src: string; name: string; size?: number }) {
+  const [errored, setErrored] = useState(false);
   return (
     <img
-      src={src}
+      src={errored ? fallbackFace(name) : src}
       alt={name}
       className="rounded-full object-cover border-2 border-white shadow-md bg-stone-100"
       style={{ width: size, height: size }}
-      onError={(e) => {
-        e.currentTarget.src = fallbackFace(name);
-      }}
+      onError={() => setErrored(true)}
     />
   );
 }

@@ -32,20 +32,20 @@ const serviceInput = z.object({
     .min(1)
     .max(64)
     .regex(/^[a-z0-9-]+$/, "Slug may only contain lowercase letters, numbers, and hyphens."),
-  description: z.string().max(4000).optional().or(z.literal("")),
+  description: z.string().max(4000).optional().or(z.literal("")).or(z.null()),
   serviceType: SERVICE_TYPE_ENUM,
   price: z.number().int().min(0).max(10_000_000),
   currency: z.string().min(3).max(3).default("INR"),
-  durationMinutes: z.number().int().min(1).max(8 * 60).optional(),
+  durationMinutes: z.number().int().min(1).max(8 * 60).optional().or(z.null()),
   deliveryMode: DELIVERY_MODE_ENUM.default("online"),
-  requirements: z.string().max(2000).optional().or(z.literal("")),
-  outcomes: z.string().max(2000).optional().or(z.literal("")),
-  image: z.string().max(12_000_000).optional().or(z.literal("")),
+  requirements: z.string().max(2000).optional().or(z.literal("")).or(z.null()),
+  outcomes: z.string().max(2000).optional().or(z.literal("")).or(z.null()),
+  image: z.string().max(12_000_000).optional().or(z.literal("")).or(z.null()),
   status: STATUS_ENUM.default("draft"),
   displayOrder: z.number().int().min(0).default(0),
   communicationMode: COMMUNICATION_MODE_ENUM.default("none"),
-  whatsappDirectNumber: z.string().max(32).optional().or(z.literal("")),
-  whatsappGroupInviteUrl: z.string().url().max(512).optional().or(z.literal("")),
+  whatsappDirectNumber: z.union([z.string().max(32), z.literal(""), z.null()]).optional(),
+  whatsappGroupInviteUrl: z.union([z.string().url().max(512), z.literal(""), z.null()]).optional(),
   whatsappGroupAccessPolicy: WHATSAPP_POLICY_ENUM.default("after_payment"),
 });
 

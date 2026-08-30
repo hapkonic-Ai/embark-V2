@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import { Search, BadgeCheck, Linkedin, Lock, ArrowRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
@@ -17,15 +17,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
 import { mentorImage, fallbackFace } from "@/lib/images";
 
-function MentorAvatar({ name, bschool }: { name: string | null; bschool: string | null }) {
+function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bschool: string | null; profileImage?: string | null }) {
+  const [errored, setErrored] = useState(false);
+  const initialSrc = profileImage || mentorImage(name ?? "Mentor", bschool ?? "IIM");
+  const src = errored ? fallbackFace(name ?? "Mentor") : initialSrc;
   return (
     <img
-      src={mentorImage(name ?? "Mentor", bschool ?? "IIM")}
+      src={src}
       alt={name ?? "Mentor"}
       className="h-full w-full object-cover"
-      onError={(e) => {
-        e.currentTarget.src = fallbackFace(name ?? "Mentor");
-      }}
+      onError={() => setErrored(true)}
     />
   );
 }
@@ -61,6 +62,7 @@ function MentorsHeroVisual() {
 export default function Mentors() {
   const { data: mentors, isLoading } = trpc.catalog.mentors.useQuery();
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
   const reduce = useReducedMotion();
 
@@ -68,6 +70,10 @@ export default function Mentors() {
     const hay = `${m.name} ${m.profile.bschool} ${m.profile.company} ${m.profile.expertise}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   });
+
+  function goToMentor(profile: (typeof filtered)[number]["profile"]) {
+    navigate(profile.publicSlug ? `/m/${profile.publicSlug}` : `/mentors/${profile.id}`);
+  }
 
   return (
     <SiteLayout>
@@ -171,10 +177,11 @@ export default function Mentors() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-xl transition-all flex flex-col"
+                className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-xl transition-all flex flex-col cursor-pointer"
+                onClick={() => goToMentor(m.profile)}
               >
                 <div className="h-64 overflow-hidden">
-                  <MentorAvatar name={m.name} bschool={m.profile.bschool} />
+                  <MentorAvatar name={m.name} bschool={m.profile.bschool} profileImage={m.profile.profileImage} />
                 </div>
                 <div className="absolute top-3 right-3">
                   <Badge variant="secondary" className="text-green-700 bg-green-100">
@@ -210,15 +217,21 @@ export default function Mentors() {
                     )}
                     <div className="flex items-center gap-2">
                       {m.profile.linkedinUrl && (
-                        <Button size="icon" variant="outline" className="rounded-full h-8 w-8 border-stone-600 text-white hover:bg-stone-800" asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="rounded-full h-8 w-8 border-stone-600 text-white hover:bg-stone-800"
+                          asChild
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <a href={m.profile.linkedinUrl} target="_blank" rel="noreferrer" aria-label="LinkedIn">
                             <Linkedin className="h-3.5 w-3.5" />
                           </a>
                         </Button>
                       )}
-                      <Button size="sm" className="rounded-full" asChild>
+                      <Button size="sm" className="rounded-full" asChild onClick={(e) => e.stopPropagation()}>
                         <Link to={m.profile.publicSlug ? `/m/${m.profile.publicSlug}` : `/mentors/${m.profile.id}`}>
-                          {m.profile.publicSlug ? "Public page" : "View profile"}
+                          View profile
                         </Link>
                       </Button>
                     </div>

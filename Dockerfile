@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 ARG NODE_VERSION=20
 
 # Stage 1: install dependencies and build the app

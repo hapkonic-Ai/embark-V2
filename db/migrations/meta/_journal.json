@@ -71,6 +71,20 @@
       "when": 1788033127267,
       "tag": "0009_phase6_expert_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1788067484951,
+      "tag": "0010_good_blur",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1788068157026,
+      "tag": "0011_cover_image_text",
+      "breakpoints": true
     }
   ]
 }

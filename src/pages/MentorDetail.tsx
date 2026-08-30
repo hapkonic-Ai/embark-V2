@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, BadgeCheck, Briefcase, ExternalLink, GraduationCap, Linkedin, MessageCircle, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -15,10 +15,19 @@ import { mentorImage, fallbackFace } from "@/lib/images";
 
 export default function MentorDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { data, isLoading } = trpc.catalog.mentor.useQuery({ id: Number(id) });
   const [payOpen, setPayOpen] = useState(false);
   const utils = trpc.useUtils();
+
+  useEffect(() => {
+    if (!data || isLoading) return;
+    const slug = data.profile.publicSlug || data.expertPageSlug;
+    if (slug) {
+      navigate(`/m/${slug}`, { replace: true });
+    }
+  }, [data, isLoading, navigate]);
 
   const purchase = trpc.candidate.purchaseMentorship.useMutation({
     onSuccess: (r) => {
@@ -72,7 +81,7 @@ export default function MentorDetail() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-5">
               <img
-                src={mentorImage(data.name ?? "Mentor", p.bschool ?? "IIM")}
+                src={p.profileImage || mentorImage(data.name ?? "Mentor", p.bschool ?? "IIM")}
                 alt={data.name ?? "Mentor"}
                 className="h-24 w-24 rounded-3xl object-cover shadow-xl shadow-orange-500/25"
                 onError={(e) => { e.currentTarget.src = fallbackFace(data.name ?? "Mentor"); }}

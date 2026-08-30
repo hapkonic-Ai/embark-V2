@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Lock } from "lucide-react";
 import { trpc } from "@/providers/trpc";
@@ -86,15 +87,16 @@ export function Programs() {
   );
 }
 
-function MentorAvatar({ name, bschool }: { name: string | null; bschool: string | null }) {
+function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bschool: string | null; profileImage?: string | null }) {
+  const [errored, setErrored] = useState(false);
+  const initialSrc = profileImage || mentorImage(name ?? "Mentor", bschool ?? "IIM");
+  const src = errored ? fallbackFace(name ?? "Mentor") : initialSrc;
   return (
     <img
-      src={mentorImage(name ?? "Mentor", bschool ?? "IIM")}
+      src={src}
       alt={name ?? "Mentor"}
       className="h-full w-full object-cover"
-      onError={(e) => {
-        e.currentTarget.src = fallbackFace(name ?? "Mentor");
-      }}
+      onError={() => setErrored(true)}
     />
   );
 }
@@ -102,7 +104,13 @@ function MentorAvatar({ name, bschool }: { name: string | null; bschool: string 
 export function MentorsPreview() {
   const { data: mentors } = trpc.catalog.mentors.useQuery();
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const top = mentors?.slice(0, 4) ?? [];
+
+  function goToMentor(profile: (typeof top)[number]["profile"]) {
+    navigate(profile.publicSlug ? `/m/${profile.publicSlug}` : `/mentors/${profile.id}`);
+  }
+
   return (
     <section className="section-light py-20">
       <ParallaxBox offset={35} className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -125,10 +133,11 @@ export function MentorsPreview() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
               whileHover={{ y: -8 }}
-              className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-xl transition-all"
+              className="group relative overflow-hidden rounded-3xl border bg-card shadow-sm hover:shadow-xl transition-all cursor-pointer"
+              onClick={() => goToMentor(m.profile)}
             >
               <div className="h-64 overflow-hidden">
-                <MentorAvatar name={m.name} bschool={m.profile.bschool} />
+                <MentorAvatar name={m.name} bschool={m.profile.bschool} profileImage={m.profile.profileImage} />
               </div>
               <div className="p-5">
                 <h3 className="font-display font-semibold text-lg">{m.name}</h3>
@@ -157,8 +166,10 @@ export function MentorsPreview() {
                     {m.profile.mockGds} GD · {m.profile.mockPis} PI
                   </Badge>
                 </div>
-                <Button size="sm" className="mt-4 w-full rounded-full" asChild>
-                  <Link to={`/mentors/${m.profile.id}`}>View profile</Link>
+                <Button size="sm" className="mt-4 w-full rounded-full" asChild onClick={(e) => e.stopPropagation()}>
+                  <Link to={m.profile.publicSlug ? `/m/${m.profile.publicSlug}` : `/mentors/${m.profile.id}`}>
+                    View profile
+                  </Link>
                 </Button>
               </div>
             </motion.div>

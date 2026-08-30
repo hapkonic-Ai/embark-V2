@@ -8,8 +8,10 @@ import { adminRouter } from "./routers/admin";
 import { expertRouter } from "./routers/expert";
 import { expertPageRouter } from "./routers/expert-page";
 import { expertServicesRouter } from "./routers/expert-services";
+import { expertServicePackagesRouter } from "./routers/expert-service-packages";
 import { expertCalendarRouter } from "./routers/expert-calendar";
 import { bookingRouter } from "./routers/booking";
+import { paymentsRouter } from "./routers/payments";
 import { expertOperationsRouter } from "./routers/expert-operations";
 import { reviewsRouter } from "./routers/reviews";
 import { createRouter, publicQuery } from "./middleware";
@@ -26,8 +28,10 @@ export const appRouter = createRouter({
   expert: expertRouter,
   expertPage: expertPageRouter,
   expertServices: expertServicesRouter,
+  expertServicePackages: expertServicePackagesRouter,
   expertCalendar: expertCalendarRouter,
   booking: bookingRouter,
+  payments: paymentsRouter,
   expertOperations: expertOperationsRouter,
   reviews: reviewsRouter,
 });
