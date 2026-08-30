@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { ComparisonBoard } from "@/components/site/ComparisonBoard";
 import { StorySection } from "@/components/site/StorySection";
@@ -185,6 +186,11 @@ export default function Colleges() {
 
   return (
     <SiteLayout>
+      <DocumentHead
+        title="Compare B-Schools"
+        description="Compare Indian B-schools by fees, NIRF rank, average package, ROI, recruiters, location and culture on Arena for grads."
+        path="colleges"
+      />
       <EditorialHero
         dark={false}
         title="Don't choose a college because everyone else did."

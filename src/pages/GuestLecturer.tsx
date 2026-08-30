@@ -5,6 +5,7 @@ import { CalendarDays, Linkedin, Search } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { SpotlightHero } from "@/components/site/SpotlightHero";
 import { StorySection } from "@/components/site/StorySection";
@@ -164,6 +165,11 @@ export default function GuestLecturer() {
 
   return (
     <SiteLayout>
+      <DocumentHead
+        title="Guest Lecturer"
+        description="Invite verified IIM, XLRI and ISB alumni to deliver guest lectures, workshops and campus sessions through Arena for grads."
+        path="guest-lecturer"
+      />
       <EditorialHero
         dark={false}
         title="Meet the people shaping the industries"

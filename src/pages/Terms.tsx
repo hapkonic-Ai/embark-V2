@@ -1,8 +1,14 @@
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 
 export default function Terms() {
   return (
     <SiteLayout>
+      <DocumentHead
+        title="Terms of Service"
+        description="Read the Terms of Service for using Arena for grads — MBA mentorship, events, playbooks and college comparison platform."
+        path="terms"
+      />
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16 sm:py-24">
         <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">Terms of Service</h1>
         <p className="mt-4 text-muted-foreground">Last updated: 27 August 2026</p>

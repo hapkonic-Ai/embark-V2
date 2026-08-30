@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import PaymentModal from "@/components/PaymentModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export default function MentorDetail() {
   if (isLoading) {
     return (
       <SiteLayout>
+        <DocumentHead title="Mentor" path={`mentors/${id}`} />
         <div className="mx-auto max-w-5xl px-4 py-14"><Skeleton className="h-96 rounded-3xl" /></div>
       </SiteLayout>
     );
@@ -52,6 +54,7 @@ export default function MentorDetail() {
   if (!data) {
     return (
       <SiteLayout>
+        <DocumentHead title="Mentor not found" path={`mentors/${id}`} noIndex />
         <div className="mx-auto max-w-5xl px-4 py-24 text-center">Mentor not found.</div>
       </SiteLayout>
     );
@@ -70,8 +73,16 @@ export default function MentorDetail() {
     setPayOpen(true);
   };
 
+  const mentorTitle = data.name ? `${data.name} — ${p.headline || "Mentor"}` : "Mentor profile";
+  const mentorDesc = p.bio || `${data.name ?? "Mentor"} is a verified ${p.bschool ?? "B-school"} alumni mentor on Arena for grads.`;
+
   return (
     <SiteLayout>
+      <DocumentHead
+        title={mentorTitle}
+        description={mentorDesc}
+        path={`mentors/${id}`}
+      />
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
         <Button variant="ghost" size="sm" asChild className="mb-6">
           <Link to="/mentors"><ArrowLeft className="mr-1.5 h-4 w-4" /> All mentors</Link>

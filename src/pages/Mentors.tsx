@@ -5,6 +5,7 @@ import { Search, BadgeCheck, Linkedin, Lock, ArrowRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { StorySection } from "@/components/site/StorySection";
 import { JourneySteps } from "@/components/site/JourneySteps";
@@ -77,6 +78,11 @@ export default function Mentors() {
 
   return (
     <SiteLayout>
+      <DocumentHead
+        title="Find a Mentor"
+        description="Browse verified IIM, XLRI and ISB alumni mentors for GD, PI, profile review and placement guidance on Arena for grads."
+        path="mentors"
+      />
       <EditorialHero
         title="The people who made it."
         highlight="Now in your corner."

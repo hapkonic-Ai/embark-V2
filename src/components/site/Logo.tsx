@@ -22,7 +22,7 @@ export function Logo({ size = "md" }: { size?: "sm" | "md" }) {
         origin: { y: 0.1 },
         colors: ["#f97316", "#ea580c", "#fbbf24", "#fff7ed"],
       });
-      toast("🎉 PARTY MODE ACTIVATED", {
+      toast("Party mode activated", {
         description: "You clicked the logo 7 times. It wears off in 6 seconds. Worth it.",
       });
       setTimeout(

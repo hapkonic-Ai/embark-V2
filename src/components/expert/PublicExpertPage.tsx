@@ -184,7 +184,7 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
         {profile?.coverImage && config.coverStyle !== "none" && (
           <img
             src={profile.coverImage}
-            alt="cover"
+            alt={`${displayName} cover photo`}
             className="absolute inset-0 h-full w-full object-cover"
           />
         )}

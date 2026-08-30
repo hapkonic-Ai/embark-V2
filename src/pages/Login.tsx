@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/site/Logo";
 import { dashboardPath } from "@/components/site/Navbar";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { fireConfetti } from "@/components/site/EasterEggs";
 import { SafeImg } from "@/components/site/SafeImg";
 import { reviewPersonImage, fallbackFace } from "@/lib/images";
@@ -90,6 +91,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
+      <DocumentHead title="Sign in" description="Sign in or create your Arena for grads account — for candidates, mentors, experts and campus partners." path="login" noIndex />
       {/* left panel */}
       <div className="section-dark relative hidden lg:flex flex-col p-12">
         <div className="relative [&_span]:text-white">
@@ -219,7 +221,7 @@ export default function Login() {
         </div>
 
         <p className="relative mt-6 text-xs text-muted-foreground">
-          “Arena for grads” — because “panic-scroll Quora at 2am” was taken.
+          Arena for grads — mentorship, events and college insights built by people who have converted their calls.
         </p>
       </div>
 
@@ -340,8 +342,9 @@ export default function Login() {
           </form>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Demo accounts — superadmin@arenafograds.com · admin@arenafograds.com · candidate@arenafograds.com
-            <br />(password: Arenafograds@123) ·{" "}
+            Need help?{" "}
+            <a href="mailto:hello@arenafograds.com" className="text-orange-600 hover:underline">Contact support</a>
+            {" "}·{" "}
             <Link to="/" className="inline-flex items-center gap-1 text-orange-600 hover:underline"><ArrowLeft className="h-3 w-3" /> back home</Link>
           </p>
         </motion.div>

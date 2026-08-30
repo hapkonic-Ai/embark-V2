@@ -4,6 +4,7 @@ import { Check, Linkedin, Lock, MessageCircle, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/site/Navbar";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import PublicExpertPage from "@/components/expert/PublicExpertPage";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +29,7 @@ export default function PublicMentorProfile() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/40">
+        <DocumentHead title="Profile" path={`m/${slug}`} />
         <Navbar />
         <div className="mx-auto max-w-3xl px-4 pt-28 pb-16">
           <Skeleton className="h-96 rounded-3xl" />
@@ -37,12 +39,24 @@ export default function PublicMentorProfile() {
   }
 
   if (expertData?.page) {
-    return <PublicExpertPage data={expertData} />;
+    const expertProfile = expertData.profile;
+    const expertTitle = expertProfile?.displayName || expertData.user?.name || "Expert profile";
+    return (
+      <>
+        <DocumentHead
+          title={expertTitle}
+          description={expertProfile?.headline || expertProfile?.bio || `${expertTitle} on Arena for grads`}
+          path={`m/${slug}`}
+        />
+        <PublicExpertPage data={expertData} />
+      </>
+    );
   }
 
   if (!data?.profile) {
     return (
       <div className="min-h-screen bg-muted/40">
+        <DocumentHead title="Profile not found" path={`m/${slug}`} noIndex />
         <Navbar />
         <div className="mx-auto max-w-3xl px-4 pt-28 pb-16 text-center">
           <h1 className="font-display text-3xl font-bold">Profile not found</h1>
@@ -62,6 +76,11 @@ export default function PublicMentorProfile() {
 
   return (
     <div className="min-h-screen bg-muted/40">
+      <DocumentHead
+        title={displayName}
+        description={profile.headline || profile.bio || `${displayName} is a verified mentor on Arena for grads.`}
+        path={`m/${slug}`}
+      />
       <Navbar />
       <div className="mx-auto max-w-3xl px-4 sm:px-6 pt-28 pb-16">
         <div className="rounded-3xl border bg-card p-8 shadow-sm overflow-hidden">
@@ -69,7 +88,7 @@ export default function PublicMentorProfile() {
             {profile.coverImage ? (
               <img
                 src={profile.coverImage}
-                alt="cover"
+                alt={`${displayName} cover photo`}
                 className="h-full w-full object-cover"
               />
             ) : (
