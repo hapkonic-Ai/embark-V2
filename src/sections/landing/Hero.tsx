@@ -250,28 +250,25 @@ export default function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 1.1 }}
-              className="absolute top-16 left-8 z-0 h-44 w-44 text-orange-500"
-              viewBox="0 0 176 176"
+              className="absolute top-16 left-8 z-0 h-40 w-40 text-orange-500"
+              viewBox="0 0 160 160"
               fill="none"
               stroke="currentColor"
-              strokeWidth="4"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
               <motion.path
-                d="M28 24 C 60 24, 80 72, 110 96"
+                d="M24 18 C 52 18, 75 62, 108 88"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 1, delay: 1.1 }}
               />
               <motion.path
-                d="M94 84 L110 96 L124 80 Z"
-                fill="currentColor"
-                stroke="none"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
+                d="M96 78 L108 88 L120 74"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
                 transition={{ duration: 0.3, delay: 2 }}
-                style={{ transformOrigin: "110px 96px" }}
               />
             </motion.svg>
 
