@@ -67,23 +67,18 @@ export default function Navbar() {
 
           <nav className="hidden md:flex items-center gap-1">
             {LINKS.map((l) => {
-              const active = location.pathname.startsWith(l.to);
+              const active = location.pathname === l.to || location.pathname.startsWith(`${l.to}/`);
               return (
                 <Link
                   key={l.to}
                   to={l.to}
                   className={`relative px-3.5 py-2 text-sm font-medium rounded-full transition-colors ${
-                    active ? "text-orange-600" : "text-muted-foreground hover:text-foreground"
+                    active
+                      ? "text-orange-600 bg-orange-100 dark:bg-orange-500/15"
+                      : "text-muted-foreground hover:text-foreground hover:bg-stone-100 dark:hover:bg-stone-800/40"
                   }`}
                 >
-                  {active && (
-                    <motion.span
-                      layoutId="nav-pill"
-                      className="absolute inset-0 rounded-full bg-orange-100 dark:bg-orange-500/15"
-                      transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-                    />
-                  )}
-                  <span className="relative">{l.label}</span>
+                  {l.label}
                 </Link>
               );
             })}
