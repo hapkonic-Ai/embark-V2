@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import DashboardShell from "@/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,12 +23,24 @@ export default function ExpertReviews() {
   const [serviceId, setServiceId] = useState<string>("all");
   const [page, setPage] = useState(1);
 
+  const utils = trpc.useUtils();
   const { data: summary, isLoading: summaryLoading } = trpc.expertOperations.reviewSummary.useQuery();
   const { data: services, isLoading: servicesLoading } = trpc.expertServices.listMyServices.useQuery();
   const { data, isLoading } = trpc.expertOperations.listReviews.useQuery({
     page,
     pageSize: PAGE_SIZE,
     serviceId: serviceId === "all" ? undefined : Number(serviceId),
+  });
+
+  const setVisibility = trpc.expertOperations.setReviewVisibility.useMutation({
+    onSuccess: (_, vars) => {
+      toast.success(vars.isPublic ? "Review is now public" : "Review is now hidden");
+      utils.expertOperations.listReviews.invalidate();
+      utils.expertOperations.reviewSummary.invalidate();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update review visibility");
+    },
   });
 
   const reviews = data?.reviews ?? [];
@@ -125,9 +139,30 @@ export default function ExpertReviews() {
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(row.review.createdAt).toLocaleDateString()}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                            {row.review.isPublic ? (
+                              <Eye className="h-3.5 w-3.5" />
+                            ) : (
+                              <EyeOff className="h-3.5 w-3.5" />
+                            )}
+                            <span>Public</span>
+                            <Switch
+                              checked={row.review.isPublic}
+                              onCheckedChange={(checked) =>
+                                setVisibility.mutate({
+                                  reviewId: row.review.id,
+                                  isPublic: checked,
+                                })
+                              }
+                              disabled={setVisibility.isPending}
+                              aria-label="Toggle public visibility"
+                            />
+                          </label>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(row.review.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
                       <p className="mt-2 font-medium">{row.review.title ?? "Review"}</p>
                       <p className="mt-1 text-sm text-muted-foreground">

@@ -31,6 +31,7 @@ const sectionTypeSchema = z.enum([
   "education",
   "skills",
   "services",
+  "reviews",
   "social_links",
   "cta",
 ]);

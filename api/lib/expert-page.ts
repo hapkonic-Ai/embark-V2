@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "../queries/connection";
 import {
   expertEducation,
@@ -10,6 +10,7 @@ import {
   mentorServicePackageItems,
   mentorServicePackages,
   mentorServices,
+  reviews,
   users,
 } from "@db/schema";
 import { resolveAssetFields } from "../lib/file-assets";
@@ -21,6 +22,7 @@ export const DEFAULT_SECTION_TYPES = [
   "education",
   "skills",
   "services",
+  "reviews",
   "social_links",
   "cta",
 ] as const;
@@ -76,6 +78,7 @@ interface VisibilityInputs {
   portfolioUrl?: string | null;
   websiteUrl?: string | null;
   publishedServiceCount?: number;
+  reviewCount?: number;
 }
 
 export function defaultSectionVisibility(type: SectionType, inputs: VisibilityInputs): boolean {
@@ -92,6 +95,8 @@ export function defaultSectionVisibility(type: SectionType, inputs: VisibilityIn
       return !!inputs.expertise;
     case "services":
       return (inputs.publishedServiceCount ?? 0) > 0;
+    case "reviews":
+      return (inputs.reviewCount ?? 0) > 0;
     case "social_links":
       return !!(
         inputs.linkedinUrl ||
@@ -128,7 +133,7 @@ export async function getOrCreateExpertPage(userId: number) {
   const baseSlug = profile?.publicSlug || displayName;
   const slug = await generateUniqueSlug(baseSlug);
 
-  const [experiences, educations, publishedServices] = await Promise.all([
+  const [experiences, educations, publishedServices, reviewCount] = await Promise.all([
     db.select({ id: expertExperience.id }).from(expertExperience).where(eq(expertExperience.userId, userId)),
     db.select({ id: expertEducation.id }).from(expertEducation).where(eq(expertEducation.userId, userId)),
     db
@@ -140,6 +145,11 @@ export async function getOrCreateExpertPage(userId: number) {
           eq(mentorServices.status, "published"),
         ),
       ),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(reviews)
+      .where(eq(reviews.expertUserId, userId))
+      .then((r) => Number(r[0]?.count ?? 0)),
   ]);
 
   const visibilityInputs: VisibilityInputs = {
@@ -152,6 +162,7 @@ export async function getOrCreateExpertPage(userId: number) {
     portfolioUrl: profile?.portfolioUrl,
     websiteUrl: profile?.websiteUrl,
     publishedServiceCount: publishedServices.length,
+    reviewCount,
   };
 
   await db.transaction(async (tx) => {
@@ -190,9 +201,76 @@ export async function getOrCreateExpertPage(userId: number) {
   return created;
 }
 
+async function buildVisibilityInputs(userId: number) {
+  const db = getDb();
+  const [profile, experiences, educations, publishedServices, reviewCount] = await Promise.all([
+    db
+      .select()
+      .from(mentorProfiles)
+      .where(eq(mentorProfiles.userId, userId))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    db.select({ id: expertExperience.id }).from(expertExperience).where(eq(expertExperience.userId, userId)),
+    db.select({ id: expertEducation.id }).from(expertEducation).where(eq(expertEducation.userId, userId)),
+    db
+      .select({ id: mentorServices.id })
+      .from(mentorServices)
+      .where(
+        and(
+          eq(mentorServices.userId, userId),
+          eq(mentorServices.status, "published"),
+        ),
+      ),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(reviews)
+      .where(eq(reviews.expertUserId, userId))
+      .then((r) => Number(r[0]?.count ?? 0)),
+  ]);
+
+  return {
+    bio: profile?.bio,
+    experienceCount: experiences.length,
+    educationCount: educations.length,
+    expertise: profile?.expertise,
+    linkedinUrl: profile?.linkedinUrl,
+    githubUrl: profile?.githubUrl,
+    portfolioUrl: profile?.portfolioUrl,
+    websiteUrl: profile?.websiteUrl,
+    publishedServiceCount: publishedServices.length,
+    reviewCount,
+  };
+}
+
+export async function ensureDefaultSections(pageId: number, userId: number) {
+  const db = getDb();
+  const existing = await db
+    .select({ sectionType: expertPageSections.sectionType, displayOrder: expertPageSections.displayOrder })
+    .from(expertPageSections)
+    .where(eq(expertPageSections.pageId, pageId));
+
+  const existingTypes = new Set(existing.map((e) => e.sectionType));
+  const missing = DEFAULT_SECTION_TYPES.filter((type) => !existingTypes.has(type));
+  if (missing.length === 0) return;
+
+  const visibilityInputs = await buildVisibilityInputs(userId);
+  const baseOrder = existing.length;
+
+  await db.insert(expertPageSections).values(
+    missing.map((type, index) => ({
+      pageId,
+      sectionType: type,
+      displayOrder: baseOrder + index,
+      isVisible: defaultSectionVisibility(type, visibilityInputs),
+      config: {},
+    })),
+  );
+}
+
 export async function getExpertPageWithDetails(userId: number) {
   const db = getDb();
   const page = await getOrCreateExpertPage(userId);
+  await ensureDefaultSections(page.id, userId);
 
   const [config, sections, services] = await Promise.all([
     db
@@ -232,6 +310,7 @@ export async function getPublishedExpertPageBySlug(slug: string) {
 
   const row = rows[0];
   if (!row || row.page.status !== "published") return null;
+  await ensureDefaultSections(row.page.id, row.page.userId);
 
   const [config, sections, experiences, educations, services, packages] = await Promise.all([
     db

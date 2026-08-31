@@ -477,6 +477,41 @@ export const expertOperationsRouter = createRouter({
     };
   }),
 
+  setReviewVisibility: expert
+    .input(
+      z.object({
+        reviewId: z.number(),
+        isPublic: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const review = await db
+        .select()
+        .from(reviews)
+        .where(and(eq(reviews.id, input.reviewId), eq(reviews.expertUserId, ctx.user.id)))
+        .limit(1)
+        .then((r) => r[0]);
+
+      if (!review) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Review not found." });
+      }
+
+      await db
+        .update(reviews)
+        .set({ isPublic: input.isPublic, updatedAt: new Date() })
+        .where(eq(reviews.id, review.id));
+
+      const updated = await db
+        .select()
+        .from(reviews)
+        .where(eq(reviews.id, review.id))
+        .limit(1)
+        .then((r) => r[0]!);
+
+      return { success: true, review: updated };
+    }),
+
   rescheduleBooking: expert
     .input(
       z.object({

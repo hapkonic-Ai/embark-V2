@@ -5,12 +5,20 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
+  Briefcase,
   Check,
   ExternalLink,
   Eye,
   EyeOff,
+  Github,
+  Globe,
+  GraduationCap,
+  Linkedin,
   Loader2,
+  Mail,
+  MapPin,
   Save,
+  Star,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,6 +64,7 @@ const SECTION_LABELS: Record<string, string> = {
   education: "Education",
   skills: "Skills",
   services: "Services",
+  reviews: "Reviews",
   social_links: "Social links",
   cta: "Call to action",
 };
@@ -907,6 +916,7 @@ export default function ExpertPageBuilder() {
                 sections={visibleSections.map((s) => s.sectionType)}
                 experiences={data.experiences}
                 educations={data.educations}
+                expertUserId={data.page.userId}
               />
             </div>
           </div>
@@ -931,25 +941,30 @@ function PagePreview({
   sections,
   experiences,
   educations,
+  expertUserId,
 }: {
   profile: ExpertPageData["profile"];
   config: SettingsDraft;
   sections: string[];
   experiences: Experience[];
   educations: Education[];
+  expertUserId: number;
 }) {
-  const bgClass =
-    config.background === "dark"
-      ? "bg-stone-900 text-stone-100"
-      : config.background === "muted"
-        ? "bg-stone-100 text-stone-900"
-        : "bg-white text-stone-900";
+  const isDark = config.background === "dark";
+  const isMuted = config.background === "muted";
+  const bgClass = isDark
+    ? "bg-stone-950 text-stone-100"
+    : isMuted
+      ? "bg-stone-50 text-stone-900"
+      : "bg-background text-foreground";
+  const cardBg = isDark ? "bg-stone-900/60 border-stone-800" : "bg-card border-border";
+  const mutedText = isDark ? "text-stone-400" : "text-muted-foreground";
   const radius =
     config.profileImageStyle === "circle"
       ? "rounded-full"
       : config.profileImageStyle === "square"
         ? "rounded-xl"
-        : "rounded-2xl";
+        : "rounded-3xl";
   const btnRadius =
     config.buttonStyle === "pill"
       ? "rounded-full"
@@ -963,20 +978,17 @@ function PagePreview({
     { key: "githubUrl", label: "GitHub", url: profile?.githubUrl },
     { key: "portfolioUrl", label: "Portfolio", url: profile?.portfolioUrl },
     { key: "websiteUrl", label: "Website", url: profile?.websiteUrl },
-  ].filter((s) => s.url);
+  ].filter((s): s is { key: string; label: string; url: string } => !!s.url);
 
-  const borderClass = bgClass.includes("dark")
-    ? "border-stone-800"
-    : "border-stone-200";
+  const { data: reviewsData } = trpc.reviews.listForExpert.useQuery({ expertUserId });
+  const publicReviews = reviewsData?.reviews ?? [];
+
+  const displayName = profile?.displayName || "Your name";
+  const headline = profile?.headline || profile?.currentRole || "";
+  const expertise = profile?.expertise?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
 
   return (
-    <div
-      className={`rounded-3xl border shadow-sm overflow-hidden ${bgClass} ${borderClass}`}
-      style={{
-        fontFamily:
-          config.theme === "modern" ? "system-ui, sans-serif" : "inherit",
-      }}
-    >
+    <div className={`overflow-hidden rounded-3xl border shadow-sm ${bgClass}`}>
       <div
         className={`h-32 ${
           config.coverStyle === "gradient"
@@ -986,152 +998,153 @@ function PagePreview({
               : "bg-transparent"
         }`}
       />
-      <div className="px-6 pb-8">
-        <div className="-mt-12 flex items-end gap-4 mb-4">
-          {profile?.profileImage ? (
-            <img
-              src={profile.profileImage}
-              alt={profile.displayName || "Expert"}
-              className={`h-24 w-24 border-4 ${borderClass} object-cover ${radius}`}
-            />
-          ) : (
-            <div
-              className={`h-24 w-24 border-4 ${borderClass} flex items-center justify-center bg-orange-100 text-orange-600 text-2xl font-bold ${radius}`}
-            >
-              {(profile?.displayName || "E").charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div className="mb-1">
-            <h2 className="font-display text-2xl font-bold">
-              {profile?.displayName || "Your name"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {profile?.headline || profile?.currentRole || "Professional headline"}
-            </p>
-          </div>
-        </div>
-
-        {sections.includes("hero") && (
-          <div className="space-y-4">
-            {profile?.location && (
-              <p className="text-sm text-muted-foreground">{profile.location}</p>
+      <div className="px-6 pb-8 -mt-12">
+        <div className={`rounded-3xl border p-5 shadow-lg ${cardBg}`}>
+          <div className="flex items-end gap-4">
+            {profile?.profileImage ? (
+              <img
+                src={profile.profileImage}
+                alt={displayName}
+                className={`h-20 w-20 border-4 ${cardBg.split(" ")[0]} object-cover shadow-md ${radius}`}
+              />
+            ) : (
+              <div
+                className={`h-20 w-20 border-4 ${cardBg.split(" ")[0]} flex items-center justify-center bg-orange-100 text-orange-600 text-2xl font-bold ${radius}`}
+              >
+                {displayName.charAt(0).toUpperCase()}
+              </div>
             )}
+            <div className="mb-1">
+              <h2 className="font-display text-xl font-bold">{displayName}</h2>
+              {headline && <p className={`text-sm ${mutedText}`}>{headline}</p>}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             {(profile?.verificationStatus === "verified" || profile?.isVerified) && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">
-                <Check className="h-3 w-3" />
-                Verified Expert
+              <Badge className="rounded-full border-0 bg-green-100 text-green-700">
+                <Check className="mr-1 h-3 w-3" /> Verified
+              </Badge>
+            )}
+            {profile?.location && (
+              <span className={`flex items-center gap-1 text-xs ${mutedText}`}>
+                <MapPin className="h-3 w-3" /> {profile.location}
               </span>
             )}
-            {config.ctaType !== "none" && (
-              <button
-                className={`px-5 py-2 text-sm font-medium ${btnRadius}`}
-                style={accentStyle}
-              >
-                {config.ctaLabel || "Get in touch"}
-              </button>
-            )}
           </div>
-        )}
 
-        {sections.includes("about") && profile?.bio && (
-          <section className="mt-8">
-            <h3 className="font-display text-lg font-semibold mb-2">About</h3>
-            <p className="text-sm leading-relaxed whitespace-pre-line">{profile.bio}</p>
-          </section>
-        )}
-
-        {sections.includes("experience") && experiences.length > 0 && (
-          <section className="mt-8">
-            <h3 className="font-display text-lg font-semibold mb-3">Experience</h3>
-            <div className="space-y-3">
-              {experiences.map((exp) => (
-                <div
-                  key={exp.id}
-                  className={`rounded-2xl border p-4 ${borderClass}`}
-                >
-                  <div className="font-medium">{exp.role || "Role"}</div>
-                  <div className="text-sm text-muted-foreground">{exp.company}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {exp.startDate}{" "}
-                    {exp.endDate
-                      ? `— ${exp.isCurrent ? "Present" : exp.endDate}`
-                      : ""}
-                  </div>
-                  {exp.description && (
-                    <p className="text-sm mt-2 whitespace-pre-line">{exp.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {sections.includes("education") && educations.length > 0 && (
-          <section className="mt-8">
-            <h3 className="font-display text-lg font-semibold mb-3">Education</h3>
-            <div className="space-y-3">
-              {educations.map((edu) => (
-                <div
-                  key={edu.id}
-                  className={`rounded-2xl border p-4 ${borderClass}`}
-                >
-                  <div className="font-medium">{edu.institution}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {edu.degree} {edu.fieldOfStudy ? `— ${edu.fieldOfStudy}` : ""}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {sections.includes("skills") && profile?.expertise && (
-          <section className="mt-8">
-            <h3 className="font-display text-lg font-semibold mb-3">Skills</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.expertise.split(",").map((skill: string) => (
-                <span
-                  key={skill}
-                  className="rounded-full border px-3 py-1 text-xs font-medium"
-                  style={{ borderColor: config.accentColor, color: config.accentColor }}
-                >
-                  {skill.trim()}
-                </span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {sections.includes("social_links") && socials.length > 0 && (
-          <section className="mt-8">
-            <h3 className="font-display text-lg font-semibold mb-3">Connect</h3>
-            <div className="flex flex-wrap gap-2">
+          {sections.includes("social_links") && socials.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
               {socials.map((s) => (
-                <a
+                <Button
                   key={s.key}
-                  href={s.url || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium ${btnRadius}`}
-                  style={{ backgroundColor: config.accentColor, color: "#fff" }}
+                  variant="outline"
+                  size="sm"
+                  className={`${btnRadius}`}
+                  style={{ borderColor: config.accentColor, color: config.accentColor }}
+                  asChild
                 >
-                  {s.label}
-                </a>
+                  <a href={s.url} target="_blank" rel="noreferrer">
+                    {s.key === "linkedinUrl" ? <Linkedin className="mr-1.5 h-3.5 w-3.5" /> : s.key === "githubUrl" ? <Github className="mr-1.5 h-3.5 w-3.5" /> : <Globe className="mr-1.5 h-3.5 w-3.5" />}
+                    {s.label}
+                  </a>
+                </Button>
               ))}
             </div>
-          </section>
-        )}
+          )}
 
-        {sections.includes("cta") && config.ctaType !== "none" && (
-          <section className="mt-8 text-center">
-            <button
-              className={`px-6 py-2.5 text-sm font-medium ${btnRadius}`}
-              style={accentStyle}
-            >
+          {sections.includes("cta") && config.ctaType !== "none" && (
+            <Button className={`mt-4 w-full ${btnRadius}`} style={accentStyle}>
+              <Mail className="mr-1.5 h-4 w-4" />
               {config.ctaLabel || "Get in touch"}
-            </button>
-          </section>
-        )}
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-6 space-y-6">
+          {sections.includes("about") && profile?.bio && (
+            <section className={`rounded-3xl border p-5 ${cardBg}`}>
+              <h3 className="font-display text-base font-semibold mb-2">{SECTION_LABELS.about}</h3>
+              <p className={`text-sm leading-relaxed whitespace-pre-line ${mutedText}`}>{profile.bio}</p>
+            </section>
+          )}
+
+          {sections.includes("experience") && experiences.length > 0 && (
+            <section className={`rounded-3xl border p-5 ${cardBg}`}>
+              <h3 className="font-display text-base font-semibold mb-3 flex items-center gap-2">
+                <Briefcase className={`h-4 w-4 ${mutedText}`} /> Experience
+              </h3>
+              <div className="space-y-3">
+                {experiences.map((exp) => (
+                  <div key={exp.id} className={`rounded-2xl border p-3 ${cardBg}`}>
+                    <div className="text-sm font-semibold">{exp.role || "Role"}</div>
+                    <div className={`text-xs ${mutedText}`}>{exp.company}</div>
+                    <div className={`text-xs ${mutedText} mt-1`}>
+                      {exp.startDate} {exp.endDate ? `— ${exp.isCurrent ? "Present" : exp.endDate}` : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {sections.includes("education") && educations.length > 0 && (
+            <section className={`rounded-3xl border p-5 ${cardBg}`}>
+              <h3 className="font-display text-base font-semibold mb-3 flex items-center gap-2">
+                <GraduationCap className={`h-4 w-4 ${mutedText}`} /> Education
+              </h3>
+              <div className="space-y-3">
+                {educations.map((edu) => (
+                  <div key={edu.id} className={`rounded-2xl border p-3 ${cardBg}`}>
+                    <div className="text-sm font-semibold">{edu.institution}</div>
+                    <div className={`text-xs ${mutedText}`}>
+                      {edu.degree} {edu.fieldOfStudy ? `— ${edu.fieldOfStudy}` : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {sections.includes("skills") && expertise.length > 0 && (
+            <section className={`rounded-3xl border p-5 ${cardBg}`}>
+              <h3 className="font-display text-base font-semibold mb-3">Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {expertise.map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-full border px-2.5 py-0.5 text-xs font-medium bg-secondary"
+                    style={{ borderColor: config.accentColor, color: config.accentColor }}
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {sections.includes("reviews") && publicReviews.length > 0 && (
+            <section className={`rounded-3xl border p-5 ${cardBg}`}>
+              <h3 className="font-display text-base font-semibold mb-3">Reviews</h3>
+              <div className="space-y-3">
+                {publicReviews.slice(0, 3).map((row) => (
+                  <div key={row.review.id} className={`rounded-2xl border p-3 ${cardBg}`}>
+                    <div className="flex items-center gap-1 mb-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3 w-3 ${i < row.review.rating ? "text-amber-500 fill-current" : "text-stone-300"}`}
+                        />
+                      ))}
+                    </div>
+                    {row.review.title && <p className="text-sm font-medium">{row.review.title}</p>}
+                    {row.review.content && <p className={`text-xs ${mutedText} mt-1 line-clamp-2`}>{row.review.content}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
       </div>
     </div>
   );
