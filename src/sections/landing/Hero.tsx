@@ -245,31 +245,32 @@ export default function Hero() {
           <motion.div
             className="relative hidden lg:flex items-center justify-center h-[600px]"
           >
-            {/* hand-drawn arrow pointing to student */}
+            {/* animated connection line */}
             <motion.svg
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 1, delay: 1.1, ease: "easeInOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 1.1 }}
               className="absolute top-16 left-8 z-0 h-40 w-40 text-orange-500"
               viewBox="0 0 160 160"
               fill="none"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="2"
               strokeLinecap="round"
+              strokeDasharray="6 6"
             >
               <motion.path
-                d="M20 20 C 50 20, 60 80, 120 100 S 130 140, 100 130"
+                d="M24 18 C 52 18, 72 58, 100 82"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={{ duration: 1, delay: 1.1 }}
-              />
-              <motion.path
-                d="M90 120 L100 132 L115 118"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.3, delay: 2 }}
+                transition={{ duration: 1.2, delay: 1.1, ease: "easeInOut" }}
               />
             </motion.svg>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 2, delay: 2.2, repeat: Infinity, repeatDelay: 1 }}
+              className="absolute top-[6.8rem] left-[7.6rem] h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.6)]"
+            />
 
             {/* sparkle / dot decorations */}
             <motion.div

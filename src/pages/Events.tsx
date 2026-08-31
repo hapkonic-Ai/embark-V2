@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { StorySection } from "@/components/site/StorySection";
 import { EventCard, EventSkeleton } from "@/components/site/EventCard";
@@ -111,6 +112,11 @@ export default function Events() {
 
   return (
     <SiteLayout>
+      <DocumentHead
+        title="Events & Case Competitions"
+        description="Compete in national MBA events, hackathons and case competitions judged by mentors, founders and B-school alumni on Arena for grads."
+        path="events"
+      />
       <EditorialHero
         dark={false}
         title="Don't just attend events."

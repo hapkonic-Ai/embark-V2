@@ -1,0 +1,20 @@
+# Arena for grads — llms.txt
+
+Arena for grads is an MBA mentorship and career platform built for Indian graduate students and early professionals. It connects aspirants with verified IIM, XLRI and ISB alumni mentors, runs live events and case competitions, publishes practical playbooks, and provides analytical B-school comparison tools.
+
+## Public pages
+
+- Home: https://arenafograds.com/
+- Mentors: https://arenafograds.com/mentors
+- Events: https://arenafograds.com/events
+- Playbooks: https://arenafograds.com/playbooks
+- Compare Colleges: https://arenafograds.com/colleges
+- Guest Lecturer: https://arenafograds.com/guest-lecturer
+- Terms of Service: https://arenafograds.com/terms
+- Privacy Policy: https://arenafograds.com/privacy
+
+## Contact
+
+- Email: hello@arenafograds.com
+- Location: Bangalore, India
+- Brand name: Arena for grads

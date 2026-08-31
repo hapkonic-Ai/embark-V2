@@ -3,14 +3,71 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Embark — MBA mentorship, hackathons, playbooks and B-school comparisons. Your CAT-to-campus companion." />
-    <title>Embark — Your MBA Journey Starts Here</title>
+    <meta name="description" content="Arena for grads — MBA mentorship, hackathons, playbooks and B-school comparisons. Your CAT-to-campus companion." />
+    <title>Arena for grads — Your MBA Journey Starts Here</title>
+    <meta name="theme-color" content="#f97316" />
+    <link rel="icon" type="image/png" href="/image copy.png" />
+    <link rel="apple-touch-icon" href="/image copy.png" />
+    <link rel="canonical" href="https://arenafograds.com/" />
+    <meta property="og:site_name" content="Arena for grads" />
+    <meta name="twitter:site" content="@arenafograds" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://arenafograds.com/#organization",
+            "name": "Arena for grads",
+            "url": "https://arenafograds.com",
+            "logo": "https://arenafograds.com/image%20copy.png",
+            "sameAs": [
+              "https://twitter.com/arenafograds",
+              "https://www.linkedin.com/company/arenafograds",
+              "https://www.instagram.com/arenafograds"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "email": "hello@arenafograds.com",
+              "contactType": "customer support",
+              "areaServed": "IN"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://arenafograds.com/#website",
+            "name": "Arena for grads",
+            "url": "https://arenafograds.com",
+            "publisher": { "@id": "https://arenafograds.com/#organization" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": { "@type": "EntryPoint", "urlTemplate": "https://arenafograds.com/mentors?search={search_term_string}" },
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "LocalBusiness",
+            "@id": "https://arenafograds.com/#localbusiness",
+            "name": "Arena for grads",
+            "image": "https://arenafograds.com/og-image.png",
+            "url": "https://arenafograds.com",
+            "email": "hello@arenafograds.com",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Bangalore",
+              "addressCountry": "IN"
+            },
+            "areaServed": "India"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

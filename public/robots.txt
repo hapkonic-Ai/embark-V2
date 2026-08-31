@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /mentor/dashboard
+Disallow: /expert/
+Disallow: /admin
+Disallow: /superadmin
+Disallow: /campus/dashboard
+Disallow: /student-booking/
+Disallow: /*?mode=
+
+Sitemap: https://arenafograds.com/sitemap.xml

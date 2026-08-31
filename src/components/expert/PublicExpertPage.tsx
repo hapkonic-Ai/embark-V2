@@ -18,6 +18,7 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { SafeImg } from "@/components/site/SafeImg";
 import {
   Dialog,
   DialogContent,
@@ -183,7 +184,7 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
         {profile?.coverImage && config.coverStyle !== "none" && (
           <img
             src={profile.coverImage}
-            alt="cover"
+            alt={`${displayName} cover photo`}
             className="absolute inset-0 h-full w-full object-cover"
           />
         )}
@@ -492,7 +493,7 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
             <div className={`rounded-3xl border p-6 ${cardBg}`}>
               <p className={`text-xs ${mutedText}`}>
                 Powered by{" "}
-                <span className="font-semibold text-orange-600">Embark</span>
+                <span className="font-semibold text-orange-600">Arena for grads</span>
               </p>
             </div>
           </div>
@@ -517,13 +518,11 @@ function PackageCard({
 
   return (
     <div className="rounded-2xl border p-5 flex flex-col h-full" style={{ borderColor: accentColor }}>
-      {pkg.image && (
-        <img
-          src={pkg.image}
-          alt={pkg.title}
-          className="h-28 w-full rounded-xl object-cover mb-3 border"
-        />
-      )}
+      <SafeImg
+        src={pkg.image || "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80"}
+        alt={pkg.title}
+        className="h-28 w-full rounded-xl object-cover mb-3 border"
+      />
       <h3 className="font-display text-lg font-semibold leading-tight">{pkg.title}</h3>
       <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
         <span className="rounded-full border px-2 py-0.5 font-medium" style={chipStyle}>
@@ -583,13 +582,11 @@ function ServiceCard({
 
   return (
     <div className="rounded-2xl border p-5 flex flex-col h-full" style={{ borderColor: accentColor }}>
-      {service.image && (
-        <img
-          src={service.image}
-          alt={service.title}
-          className="h-28 w-full rounded-xl object-cover mb-3 border"
-        />
-      )}
+      <SafeImg
+        src={service.image || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80"}
+        alt={service.title}
+        className="h-28 w-full rounded-xl object-cover mb-3 border"
+      />
       <h3 className="font-display text-lg font-semibold leading-tight">{service.title}</h3>
       <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
         <span className="rounded-full border px-2 py-0.5 font-medium capitalize" style={chipStyle}>

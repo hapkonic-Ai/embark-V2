@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   ArrowUpDown,
   Briefcase,
   Clock,
@@ -459,7 +461,7 @@ export default function ExpertServices() {
                         disabled={i === 0}
                         onClick={() => moveItem(i, "up")}
                       >
-                        ↑
+                        <ArrowUp className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -468,7 +470,7 @@ export default function ExpertServices() {
                         disabled={i === ordered.length - 1}
                         onClick={() => moveItem(i, "down")}
                       >
-                        ↓
+                        <ArrowDown className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

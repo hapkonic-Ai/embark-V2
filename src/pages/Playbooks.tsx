@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { BookStack } from "@/components/site/BookStack";
 import { StorySection } from "@/components/site/StorySection";
@@ -13,10 +14,10 @@ import PaymentModal from "@/components/PaymentModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
-import { playbookCoverImage } from "@/lib/images";
+import { generateBookCover } from "@/lib/bookCover";
 
 function fallbackCover(_id: number, title: string) {
-  return playbookCoverImage(title);
+  return generateBookCover(title);
 }
 
 const HERO_BOOKS = [
@@ -83,6 +84,11 @@ export default function Playbooks() {
 
   return (
     <SiteLayout>
+      <DocumentHead
+        title="Playbooks"
+        description="Practical MBA playbooks for GD, PI, profile building, case frameworks and placement preparation — written by students who converted their calls."
+        path="playbooks"
+      />
       <EditorialHero
         title="The playbook for"
         highlight="getting where you want to go."

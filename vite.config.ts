@@ -6,10 +6,12 @@ import { defineConfig } from "vite"
 import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] }),
-    inspectAttr(), react()],
+    mode === "development" ? inspectAttr() : null,
+    react(),
+  ].filter(Boolean),
   server: {
     port: 3000,
   },
@@ -25,5 +27,39 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes("node_modules")) {
+            const parts = id.split("node_modules/");
+            const pkg = parts[parts.length - 1].split("/")[0];
+            const scope = pkg.startsWith("@") ? pkg.split("/").slice(0, 2).join("/") : pkg;
+            // Group tiny shared deps into one vendor chunk to keep file count reasonable
+            if (
+              ["react", "react-dom", "react-router", "scheduler", "use-sync-external-store"].includes(scope)
+            ) {
+              return "react-vendor";
+            }
+            if (["framer-motion"].includes(scope)) return "motion";
+            if (["recharts", "d3"].some((n) => scope.startsWith(n))) return "charts";
+            if (
+              ["@radix-ui", "cmdk", "vaul", "@floating-ui", "aria-hidden", "react-remove-scroll", "@react-aria"].some((n) =>
+                scope.startsWith(n)
+              )
+            ) {
+              return "ui-vendor";
+            }
+            if (
+              ["@trpc", "@tanstack", "superjson"].some((n) => scope.startsWith(n))
+            ) {
+              return "data-vendor";
+            }
+            return "vendor";
+          }
+          return null;
+        },
+      },
+    },
   },
-});
+}));

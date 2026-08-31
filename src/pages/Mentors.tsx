@@ -5,6 +5,7 @@ import { Search, BadgeCheck, Linkedin, Lock, ArrowRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { StorySection } from "@/components/site/StorySection";
 import { JourneySteps } from "@/components/site/JourneySteps";
@@ -77,6 +78,11 @@ export default function Mentors() {
 
   return (
     <SiteLayout>
+      <DocumentHead
+        title="Find a Mentor"
+        description="Browse verified IIM, XLRI and ISB alumni mentors for GD, PI, profile review and placement guidance on Arena for grads."
+        path="mentors"
+      />
       <EditorialHero
         title="The people who made it."
         highlight="Now in your corner."
@@ -106,7 +112,7 @@ export default function Mentors() {
         <div className="rounded-3xl bg-card p-6 sm:p-8 border border-stone-800">
           <div className="grid gap-6 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3">Before mentor</p>
+              <p className="text-sm font-semibold text-stone-900 mb-3">Before mentor</p>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li>Unsure what interviewers actually expect</li>
                 <li>Practicing generic answers from forums</li>
@@ -115,7 +121,7 @@ export default function Mentors() {
               </ul>
             </div>
             <div className="rounded-2xl bg-stone-900 text-stone-100 p-6 border border-stone-800">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-400 mb-3">After mentor</p>
+              <p className="text-sm font-semibold text-orange-400 mb-3">After mentor</p>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li>Understands what panels evaluate</li>
                 <li>Has practiced realistic, profile-specific questions</li>

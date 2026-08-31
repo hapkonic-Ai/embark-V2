@@ -183,7 +183,7 @@ export default function ExpertOnboarding() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-24 pb-16">
           <div className="mb-8">
             <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight">
-              Become an Embark Expert
+              Become an Arena for grads Expert
             </h1>
             <p className="mt-1.5 text-muted-foreground">
               Complete your profile so students can discover and book you.

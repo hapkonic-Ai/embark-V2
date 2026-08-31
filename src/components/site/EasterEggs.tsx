@@ -3,6 +3,7 @@ import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { Rocket } from "lucide-react";
 
 const KONAMI = [
   "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown",
@@ -36,21 +37,21 @@ export default function EasterEggs() {
         konamiBuffer.length = 0;
         fireConfetti(true);
         setTimeout(() => fireConfetti(true), 350);
-        toast("🕹️ KONAMI!", {
+        toast("Konami code unlocked", {
           description: "You unlocked absolutely nothing. But the panel is impressed.",
         });
       }
 
-      // typing "embark"
+      // typing "arena"
       if (/^[a-z]$/i.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const target = e.target as HTMLElement;
         if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
         wordBuffer = (wordBuffer + e.key.toLowerCase()).slice(-6);
-        if (wordBuffer === "embark") {
+        if (wordBuffer === "arena") {
           wordBuffer = "";
           setRocket((r) => r + 1);
           fireConfetti(true);
-          toast("🚀 Liftoff!", {
+          toast("Liftoff!", {
             description: "You typed our name. The rocket approves.",
           });
         }
@@ -69,9 +70,9 @@ export default function EasterEggs() {
           initial={{ x: "-10vw", y: "80vh", rotate: -45, opacity: 1 }}
           animate={{ x: "110vw", y: "-20vh", rotate: -45, opacity: [1, 1, 0] }}
           transition={{ duration: 2.4, ease: "easeIn" }}
-          className="fixed z-[100] text-6xl pointer-events-none select-none"
+          className="fixed z-[100] pointer-events-none select-none text-orange-500"
         >
-          🚀
+          <Rocket className="h-14 w-14" strokeWidth={1.5} />
         </motion.div>
       )}
     </AnimatePresence>

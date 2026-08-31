@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, GraduationCap, Loader2, MapPinned, School, Star, TrendingUp, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, GraduationCap, Loader2, MapPinned, School, Star, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/site/Logo";
 import { dashboardPath } from "@/components/site/Navbar";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { fireConfetti } from "@/components/site/EasterEggs";
-import { reviewPersonImage } from "@/lib/images";
+import { SafeImg } from "@/components/site/SafeImg";
+import { reviewPersonImage, fallbackFace } from "@/lib/images";
 
 function buildOAuthUrl() {
   const authUrl = import.meta.env.VITE_KIMI_AUTH_URL;
@@ -89,6 +91,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
+      <DocumentHead title="Sign in" description="Sign in or create your Arena for grads account — for candidates, mentors, experts and campus partners." path="login" noIndex />
       {/* left panel */}
       <div className="section-dark relative hidden lg:flex flex-col p-12">
         <div className="relative [&_span]:text-white">
@@ -131,10 +134,11 @@ export default function Login() {
               transition={{ delay: 0.45, duration: 0.8, ease: [0.22, 1.4, 0.36, 1] }}
               className="absolute left-1/2 top-1/2 h-[300px] w-[220px] -translate-x-1/2 -translate-y-1/2 z-10"
             >
-              <img
+              <SafeImg
                 src="/login-student.png"
                 alt="Student holding books"
                 className="h-full w-full object-contain drop-shadow-2xl"
+                fallback="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=400&q=80"
               />
             </motion.div>
 
@@ -146,12 +150,12 @@ export default function Login() {
             >
               <div className="flex -space-x-3">
                 {[
-                  reviewPersonImage("Ayesha"),
-                  reviewPersonImage("Rahul"),
-                  reviewPersonImage("Priya"),
-                  reviewPersonImage("Vikram"),
-                ].map((src, i) => (
-                  <img key={i} src={src} alt="" className="h-10 w-10 rounded-full border-2 border-stone-950 object-cover" />
+                  { name: "Ayesha", src: reviewPersonImage("Ayesha") },
+                  { name: "Rahul", src: reviewPersonImage("Rahul") },
+                  { name: "Priya", src: reviewPersonImage("Priya") },
+                  { name: "Vikram", src: reviewPersonImage("Vikram") },
+                ].map((p, i) => (
+                  <SafeImg key={i} src={p.src} alt={p.name} fallback={fallbackFace(p.name)} className="h-10 w-10 rounded-full border-2 border-stone-950 object-cover" />
                 ))}
                 <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-950 bg-orange-500 text-xs font-bold">
                   +4k
@@ -178,7 +182,7 @@ export default function Login() {
                 “My PI mentor asked the exact questions that came up in my actual IIM panel. Unreal.”
               </p>
               <div className="mt-3 flex items-center gap-2">
-                <img src={reviewPersonImage("Ayesha")} alt="" className="h-8 w-8 rounded-full object-cover" />
+                <SafeImg src={reviewPersonImage("Ayesha")} alt="Ayesha" fallback={fallbackFace("Ayesha")} className="h-8 w-8 rounded-full object-cover" />
                 <div className="text-xs">
                   <div className="font-semibold text-stone-100">Ayesha K.</div>
                   <div className="text-muted-foreground">IIM K '27</div>
@@ -217,7 +221,7 @@ export default function Login() {
         </div>
 
         <p className="relative mt-6 text-xs text-muted-foreground">
-          “Embark” — because “panic-scroll Quora at 2am” was taken.
+          Arena for grads — mentorship, events and college insights built by people who have converted their calls.
         </p>
       </div>
 
@@ -294,7 +298,7 @@ export default function Login() {
                     I agree to the{" "}
                     <Link to="/terms" target="_blank" className="text-orange-600 hover:underline">Terms & Conditions</Link>,{" "}
                     <Link to="/privacy" target="_blank" className="text-orange-600 hover:underline">Privacy Policy</Link>, and
-                    understand that mentorship is provided by independent mentors on the Embark platform.
+                    understand that mentorship is provided by independent mentors on the Arena for grads platform.
                   </Label>
                 </div>
               </>
@@ -338,9 +342,10 @@ export default function Login() {
           </form>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Demo accounts — superadmin@embark.in · admin@embark.in · candidate@embark.in
-            <br />(password: Embark@123) ·{" "}
-            <Link to="/" className="text-orange-600 hover:underline">← back home</Link>
+            Need help?{" "}
+            <a href="mailto:hello@arenafograds.com" className="text-orange-600 hover:underline">Contact support</a>
+            {" "}·{" "}
+            <Link to="/" className="inline-flex items-center gap-1 text-orange-600 hover:underline"><ArrowLeft className="h-3 w-3" /> back home</Link>
           </p>
         </motion.div>
       </div>

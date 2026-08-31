@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
+import { DocumentHead } from "@/components/site/DocumentHead";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,17 +65,24 @@ export default function EventDetail() {
   };
 
   if (isLoading) {
-    return <SiteLayout><div className="mx-auto max-w-5xl px-4 py-14"><Skeleton className="h-96 rounded-3xl" /></div></SiteLayout>;
+    return <SiteLayout><DocumentHead title="Event" path={`events/${id}`} /><div className="mx-auto max-w-5xl px-4 py-14"><Skeleton className="h-96 rounded-3xl" /></div></SiteLayout>;
   }
   if (!event) {
-    return <SiteLayout><div className="mx-auto max-w-5xl px-4 py-24 text-center">Event not found.</div></SiteLayout>;
+    return <SiteLayout><DocumentHead title="Event not found" path={`events/${id}`} noIndex /><div className="mx-auto max-w-5xl px-4 py-24 text-center">Event not found.</div></SiteLayout>;
   }
 
   const isLive = event.status === "live";
   const deadlinePassed = event.endAt ? new Date(event.endAt) < new Date() : false;
 
+  const eventDesc = `${event.title} — ${event.type === "hackathon" ? "Hackathon" : "Case competition"} with ${event.prize} prize pool on Arena for grads.`;
+
   return (
     <SiteLayout>
+      <DocumentHead
+        title={event.title}
+        description={eventDesc}
+        path={`events/${id}`}
+      />
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
         <Button variant="ghost" size="sm" asChild className="mb-6">
           <Link to="/events"><ArrowLeft className="mr-1.5 h-4 w-4" /> All events</Link>
