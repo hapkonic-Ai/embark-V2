@@ -6,6 +6,7 @@ import {
   ExternalLink,
   Globe,
   LayoutDashboard,
+  Linkedin,
   Package,
   Plus,
   Settings,
@@ -222,10 +223,19 @@ function ProfileTab() {
             <p className="text-sm font-medium">Public page</p>
             <p className="text-sm text-muted-foreground break-all">{publicUrl}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" className="rounded-full" asChild>
               <a href={publicUrl} target="_blank" rel="noreferrer">
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> View
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-full" asChild>
+              <a
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicUrl)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Linkedin className="mr-1.5 h-3.5 w-3.5" /> Share on LinkedIn
               </a>
             </Button>
             <Button size="sm" className="rounded-full" asChild>

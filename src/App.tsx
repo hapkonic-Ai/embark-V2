@@ -14,6 +14,7 @@ import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Colleges from "./pages/Colleges";
 import CandidateDashboard from "./pages/CandidateDashboard";
+import MyBookings from "./pages/MyBookings";
 import MentorDashboard from "./pages/MentorDashboard";
 import ExpertOnboarding from "./pages/ExpertOnboarding";
 import ExpertDashboard from "./pages/ExpertDashboard";
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={["candidate"]}>
               <StudentBookingDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRoute roles={["candidate"]}>
+              <MyBookings />
             </ProtectedRoute>
           }
         />

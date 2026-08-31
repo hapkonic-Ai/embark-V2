@@ -287,6 +287,7 @@ export const bookingRouter = createRouter({
         booking: expertBookings,
         expertName: users.name,
         serviceTitle: mentorServices.title,
+        serviceType: mentorServices.serviceType,
       })
       .from(expertBookings)
       .innerJoin(users, eq(users.id, expertBookings.userId))

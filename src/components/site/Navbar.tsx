@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Menu, X, LayoutDashboard, LogOut } from "lucide-react";
+import { ArrowRight, Menu, X, LayoutDashboard, LogOut, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,11 @@ export default function Navbar() {
                   <DropdownMenuItem onClick={() => navigate(dashboardPath(user.role))}>
                     <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
                   </DropdownMenuItem>
+                  {user.role === "candidate" && (
+                    <DropdownMenuItem onClick={() => navigate("/bookings")}>
+                      <Calendar className="mr-2 h-4 w-4" /> My bookings
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => logout()}>
                     <LogOut className="mr-2 h-4 w-4" /> Log out
                   </DropdownMenuItem>
@@ -159,9 +164,16 @@ export default function Navbar() {
               ))}
               <div className="pt-2 flex gap-2">
                 {isAuthenticated ? (
-                  <Button className="flex-1" asChild>
-                    <Link to={dashboardPath(user?.role)}>Dashboard</Link>
-                  </Button>
+                  <>
+                    {user?.role === "candidate" && (
+                      <Button variant="outline" className="flex-1" asChild>
+                        <Link to="/bookings">My bookings</Link>
+                      </Button>
+                    )}
+                    <Button className="flex-1" asChild>
+                      <Link to={dashboardPath(user?.role)}>Dashboard</Link>
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button variant="outline" className="flex-1" asChild>
