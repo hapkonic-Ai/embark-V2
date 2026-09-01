@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
-import { BookStack, type HeroBook } from "@/components/site/BookStack";
+import { GsapCardStack, type StackBook } from "@/components/site/GsapCardStack";
 import { StorySection } from "@/components/site/StorySection";
 import { JourneySteps } from "@/components/site/JourneySteps";
 import PaymentModal from "@/components/PaymentModal";
@@ -20,15 +20,15 @@ function fallbackCover(_id: number, title: string) {
   return generateBookCover(title);
 }
 
-const HERO_BOOKS: HeroBook[] = [
-  { title: "Crack the GD", subtitle: "Group discussion scripts that win", color: "#ea580c", cover: generateBookCover("Crack the GD", "Group discussion scripts that win", "#ea580c") },
-  { title: "Build your MBA profile", subtitle: "Shape your story for top b-schools", color: "#1c1917", cover: generateBookCover("Build your MBA profile", "Shape your story for top b-schools", "#1c1917") },
-  { title: "Master the PI", subtitle: "Interview answers with intent", color: "#c2410c", cover: generateBookCover("Master the PI", "Interview answers with intent", "#c2410c") },
-  { title: "Consulting case framework", subtitle: "Solve cases like a consultant", color: "#44403c", cover: generateBookCover("Consulting case framework", "Solve cases like a consultant", "#44403c") },
-  { title: "Placement preparation", subtitle: "A plan that survives pressure", color: "#f97316", cover: generateBookCover("Placement preparation", "A plan that survives pressure", "#f97316") },
-  { title: "Career switch", subtitle: "Move with clarity, not guesswork", color: "#57534e", cover: generateBookCover("Career switch", "Move with clarity, not guesswork", "#57534e") },
-  { title: "SOP that converts", subtitle: "From blank page to final admit", color: "#7c2d12", cover: generateBookCover("SOP that converts", "From blank page to final admit", "#7c2d12") },
-  { title: "WAT essay mastery", subtitle: "Write under pressure", color: "#92400e", cover: generateBookCover("WAT essay mastery", "Write under pressure", "#92400e") },
+const HERO_BOOKS: StackBook[] = [
+  { title: "Crack the GD", subtitle: "Group discussion scripts that win", color: "#ea580c" },
+  { title: "Build your MBA profile", subtitle: "Shape your story for top b-schools", color: "#1c1917" },
+  { title: "Master the PI", subtitle: "Interview answers with intent", color: "#c2410c" },
+  { title: "Consulting case framework", subtitle: "Solve cases like a consultant", color: "#44403c" },
+  { title: "Placement preparation", subtitle: "A plan that survives pressure", color: "#f97316" },
+  { title: "Career switch", subtitle: "Move with clarity, not guesswork", color: "#57534e" },
+  { title: "SOP that converts", subtitle: "From blank page to final admit", color: "#7c2d12" },
+  { title: "WAT essay mastery", subtitle: "Write under pressure", color: "#92400e" },
 ];
 
 const PLAYBOOK_STEPS = [
@@ -99,7 +99,7 @@ export default function Playbooks() {
         secondaryHref="/mentors"
         dark={false}
       >
-        <BookStack books={HERO_BOOKS} />
+        <GsapCardStack books={HERO_BOOKS} />
       </EditorialHero>
 
       <StorySection
