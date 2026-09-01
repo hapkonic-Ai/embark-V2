@@ -1,11 +1,6 @@
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useState } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { generateBookCover } from "@/lib/bookCover";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 const CARD_W = 220;
 const CARD_H = 320;
@@ -19,6 +14,15 @@ export type StackBook = {
 export function GsapCardStack({ books }: { books: StackBook[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useLayoutEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -29,7 +33,6 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
       const centerX = container.offsetWidth / 2 - CARD_W / 2;
       const centerY = container.offsetHeight / 2 - CARD_H / 2;
 
-      // initial stacked state
       cards.forEach((card, i) => {
         gsap.set(card, {
           x: centerX,
@@ -40,40 +43,64 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
           opacity: 1,
         });
       });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: container,
-          start: "top 60%",
-          end: "bottom 20%",
-          scrub: 1,
-        },
-      });
-
-      cards.forEach((card, i) => {
-        const spread = (i - (cards.length - 1) / 2) * (CARD_W + 24);
-        tl.to(
-          card,
-          {
-            x: centerX + spread,
-            y: centerY - Math.abs(spread) * 0.15,
-            rotation: (i - cards.length / 2) * 3,
-            scale: 1,
-            zIndex: i,
-            ease: "none",
-          },
-          0
-        );
-      });
     }, container);
 
     return () => ctx.revert();
   }, [books.length]);
 
+  const fanOut = () => {
+    if (prefersReducedMotion) return;
+    const container = containerRef.current;
+    const cards = cardsRef.current.filter(Boolean) as HTMLDivElement[];
+    if (!container || cards.length === 0) return;
+
+    const centerX = container.offsetWidth / 2 - CARD_W / 2;
+    const centerY = container.offsetHeight / 2 - CARD_H / 2;
+
+    cards.forEach((card, i) => {
+      const spread = (i - (cards.length - 1) / 2) * (CARD_W + 24);
+      gsap.to(card, {
+        x: centerX + spread,
+        y: centerY - Math.abs(spread) * 0.15,
+        rotation: (i - cards.length / 2) * 3,
+        scale: 1,
+        zIndex: i,
+        duration: 0.55,
+        ease: "back.out(1.2)",
+        delay: i * 0.04,
+      });
+    });
+  };
+
+  const stack = () => {
+    if (prefersReducedMotion) return;
+    const container = containerRef.current;
+    const cards = cardsRef.current.filter(Boolean) as HTMLDivElement[];
+    if (!container || cards.length === 0) return;
+
+    const centerX = container.offsetWidth / 2 - CARD_W / 2;
+    const centerY = container.offsetHeight / 2 - CARD_H / 2;
+
+    cards.forEach((card, i) => {
+      gsap.to(card, {
+        x: centerX,
+        y: centerY,
+        rotation: (i - cards.length / 2) * 4,
+        scale: 1 - i * 0.02,
+        zIndex: cards.length - i,
+        duration: 0.5,
+        ease: "power2.out",
+        delay: (cards.length - i) * 0.03,
+      });
+    });
+  };
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full min-h-[520px] lg:min-h-[640px]"
+      onMouseEnter={fanOut}
+      onMouseLeave={stack}
+      className="relative w-full min-h-[520px] lg:min-h-[640px] cursor-pointer"
     >
       {books.map((book, i) => (
         <div
