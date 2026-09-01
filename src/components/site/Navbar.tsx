@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Menu, X, LayoutDashboard, LogOut, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { isExpertEnabled } from "@contracts/features";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,7 @@ const LINKS = [
 export function dashboardPath(role?: string) {
   switch (role) {
     case "mentor": return "/mentor/dashboard";
-    case "expert": return "/expert/dashboard";
+    case "expert": return isExpertEnabled() ? "/expert/dashboard" : "/";
     case "campus": return "/campus/dashboard";
     case "admin": return "/admin";
     case "superadmin": return "/superadmin";

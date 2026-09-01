@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import EasterEggs from "@/components/site/EasterEggs";
 import { LoadingScreen } from "@/components/site/LoadingScreen";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { isExpertEnabled } from "@contracts/features";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Mentors from "./pages/Mentors";
@@ -39,6 +40,117 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
+
+const expertRoutes = isExpertEnabled() ? (
+  <>
+    <Route path="/m/:slug/services/:serviceSlug" element={<PublicServiceDetail />} />
+    <Route path="/m/:slug/packages/:packageSlug" element={<PublicPackageDetail />} />
+    <Route
+      path="/expert/onboarding"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertOnboarding />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/dashboard"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertDashboard />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/profile/edit"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertProfileEdit />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/page"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertPageBuilder />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/services"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertServices />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/services/:id"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertServiceEditor />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/service-packages/:id"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertServicePackageEditor />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/calendar"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertCalendar />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/bookings"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertBookings />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/bookings/:id"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertBookingDetail />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/customers"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertCustomers />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/customers/:id"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertCustomerDetail />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/expert/reviews"
+      element={
+        <ProtectedRoute roles={["expert"]}>
+          <ExpertReviews />
+        </ProtectedRoute>
+      }
+    />
+  </>
+) : null;
 export default function App() {
   return (
     <>
@@ -49,8 +161,6 @@ export default function App() {
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/mentors/:id" element={<MentorDetail />} />
         <Route path="/m/:slug" element={<PublicMentorProfile />} />
-        <Route path="/m/:slug/services/:serviceSlug" element={<PublicServiceDetail />} />
-        <Route path="/m/:slug/packages/:packageSlug" element={<PublicPackageDetail />} />
         <Route path="/playbooks" element={<Playbooks />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetail />} />
@@ -90,110 +200,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/expert/onboarding"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertOnboarding />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/dashboard"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/profile/edit"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertProfileEdit />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/page"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertPageBuilder />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/services"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertServices />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/services/:id"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertServiceEditor />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/service-packages/:id"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertServicePackageEditor />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/calendar"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertCalendar />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/bookings"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertBookings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/bookings/:id"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertBookingDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/customers"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertCustomers />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/customers/:id"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertCustomerDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expert/reviews"
-          element={
-            <ProtectedRoute roles={["expert"]}>
-              <ExpertReviews />
-            </ProtectedRoute>
-          }
-        />
+                {expertRoutes}
         <Route
           path="/campus/dashboard"
           element={

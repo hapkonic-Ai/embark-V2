@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { isExpertEnabled } from "@contracts/features";
 import { authedQuery } from "./middleware";
 
 type Role = "candidate" | "mentor" | "expert" | "campus" | "admin" | "superadmin";
@@ -10,6 +11,12 @@ export function roleQuery(...roles: Role[]) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: `Requires role: ${roles.join(" or ")}`,
+      });
+    }
+    if (roles.includes("expert") && !isExpertEnabled()) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Expert features are currently disabled.",
       });
     }
     if (!ctx.user.isActive) {

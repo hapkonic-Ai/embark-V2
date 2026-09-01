@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Search, BadgeCheck, Linkedin, Lock, ArrowRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { isExpertEnabled } from "@contracts/features";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
@@ -67,7 +68,9 @@ export default function Mentors() {
   const [q, setQ] = useState("");
   const reduce = useReducedMotion();
 
+  const expertEnabled = isExpertEnabled();
   const filtered = (mentors ?? []).filter((m) => {
+    if (!expertEnabled && m.role === "expert") return false;
     const hay = `${m.name} ${m.profile.bschool} ${m.profile.company} ${m.profile.expertise}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   });

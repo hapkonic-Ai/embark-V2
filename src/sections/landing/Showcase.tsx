@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Check, Lock } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { isExpertEnabled } from "@contracts/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/format";
@@ -105,7 +106,8 @@ export function MentorsPreview() {
   const { data: mentors } = trpc.catalog.mentors.useQuery();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const top = mentors?.slice(0, 4) ?? [];
+  const expertEnabled = isExpertEnabled();
+  const top = mentors?.filter((m) => expertEnabled || m.role !== "expert").slice(0, 4) ?? [];
 
   function goToMentor(profile: (typeof top)[number]["profile"]) {
     navigate(profile.publicSlug ? `/m/${profile.publicSlug}` : `/mentors/${profile.id}`);

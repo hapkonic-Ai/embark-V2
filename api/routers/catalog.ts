@@ -1,4 +1,5 @@
 import { desc, eq, sql, and, ne, or, asc, inArray } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
   colleges,
@@ -12,6 +13,7 @@ import {
   submissions,
   users,
 } from "@db/schema";
+import { isExpertEnabled } from "@contracts/features";
 import { getDb } from "../queries/connection";
 import { createRouter, publicQuery } from "../middleware";
 import { getPublishedExpertPageBySlug } from "../lib/expert-page";
@@ -21,6 +23,13 @@ import {
   getExpertTimezone,
   parseIsoDateTime,
 } from "../lib/calendar";
+
+const expertPublic = publicQuery.use(({ next }) => {
+  if (!isExpertEnabled()) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Not found" });
+  }
+  return next();
+});
 
 export const catalogRouter = createRouter({
   stats: publicQuery.query(async () => {
@@ -185,7 +194,7 @@ export const catalogRouter = createRouter({
       .orderBy(sql`coalesce(${colleges.nirfRank}, 999)`, colleges.name);
   }),
 
-  expertPageBySlug: publicQuery
+  expertPageBySlug: expertPublic
     .input(z.object({ slug: z.string().max(64) }))
     .query(async ({ input }) => {
       const page = await getPublishedExpertPageBySlug(input.slug);
@@ -193,7 +202,7 @@ export const catalogRouter = createRouter({
       return page;
     }),
 
-  expertServicesBySlug: publicQuery
+  expertServicesBySlug: expertPublic
     .input(z.object({ slug: z.string().max(64) }))
     .query(async ({ input }) => {
       const db = getDb();
@@ -231,7 +240,7 @@ export const catalogRouter = createRouter({
         .orderBy(mentorServices.displayOrder);
     }),
 
-  expertServiceBySlug: publicQuery
+  expertServiceBySlug: expertPublic
     .input(
       z.object({
         expertSlug: z.string().max(64),
@@ -276,7 +285,7 @@ export const catalogRouter = createRouter({
         .then((r) => r[0] ?? null);
     }),
 
-  expertServiceSlots: publicQuery
+  expertServiceSlots: expertPublic
     .input(
       z.object({
         expertSlug: z.string().max(64),
@@ -350,7 +359,7 @@ export const catalogRouter = createRouter({
       }));
     }),
 
-  expertPackagesBySlug: publicQuery
+  expertPackagesBySlug: expertPublic
     .input(z.object({ slug: z.string().max(64) }))
     .query(async ({ input }) => {
       const db = getDb();
@@ -397,7 +406,7 @@ export const catalogRouter = createRouter({
       }));
     }),
 
-  expertPackageBySlug: publicQuery
+  expertPackageBySlug: expertPublic
     .input(
       z.object({
         expertSlug: z.string().max(64),

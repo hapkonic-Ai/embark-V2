@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { isExpertEnabled } from "@contracts/features";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -247,7 +248,9 @@ export default function Login() {
             {mode === "register" && (
               <>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {(["candidate", "mentor", "expert", "campus"] as const).map((r) => {
+                  {(["candidate", "mentor", "expert", "campus"] as const)
+                    .filter((r) => r !== "expert" || isExpertEnabled())
+                    .map((r) => {
                     const meta = {
                       candidate: { icon: GraduationCap, label: "Student", desc: "I want to get mentored" },
                       mentor: { icon: MapPinned, label: "Mentor", desc: "I want to mentor" },

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { Session } from "@contracts/constants";
+import { isExpertEnabled } from "@contracts/features";
 import { users, mentorProfiles, expertOnboarding } from "@db/schema";
 import { getDb } from "../queries/connection";
 import { getSessionCookieOptions } from "../lib/cookies";
@@ -76,6 +77,12 @@ export const accountRouter = createRouter({
         throw new TRPCError({
           code: "CONFLICT",
           message: "An account with this email already exists.",
+        });
+      }
+      if (input.role === "expert" && !isExpertEnabled()) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Expert registration is currently disabled.",
         });
       }
       await db.insert(users).values({
