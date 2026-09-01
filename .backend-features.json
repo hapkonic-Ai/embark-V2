@@ -2,7 +2,7 @@
   "version": 1,
   "features": ["auth","db"],
   "flags": {
-    "expert": true
+    "expert": false
   },
   "app_id": "1a03afba-d262-8207-8000-00008d539a8d",
   "initialized_at": "2026-08-25T22:13:34Z"

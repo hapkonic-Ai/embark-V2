@@ -290,20 +290,23 @@ export default function Login() {
                   <Label htmlFor="linkedin">LinkedIn profile URL (optional)</Label>
                   <Input id="linkedin" type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/your-handle" />
                 </div>
-                <div className="flex items-start gap-3 rounded-2xl border p-4">
+                <div className="flex items-center gap-2 rounded-2xl border p-4">
                   <Checkbox
                     id="terms"
                     checked={termsAccepted}
                     onCheckedChange={(v) => setTermsAccepted(v === true)}
                     required
                   />
-                  <Label htmlFor="terms" className="text-sm leading-relaxed font-normal cursor-pointer">
+                  <Label htmlFor="terms" className="text-sm font-normal cursor-pointer whitespace-nowrap">
                     I agree to the{" "}
-                    <Link to="/terms" target="_blank" className="text-orange-600 hover:underline">Terms & Conditions</Link>,{" "}
-                    <Link to="/privacy" target="_blank" className="text-orange-600 hover:underline">Privacy Policy</Link>, and
-                    understand that mentorship is provided by independent mentors on the Arena for grads platform.
+                    <Link to="/terms" target="_blank" className="text-orange-600 hover:underline">Terms & Conditions</Link>{" "}
+                    and{" "}
+                    <Link to="/privacy" target="_blank" className="text-orange-600 hover:underline">Privacy Policy</Link>.
                   </Label>
                 </div>
+                <p className="text-xs text-muted-foreground -mt-3 ml-1">
+                  Mentorship is provided by independent mentors on the Arena for grads platform.
+                </p>
               </>
             )}
             <div className="space-y-1.5">
