@@ -82,7 +82,7 @@ const FAQS = [
   },
   {
     q: "I heard there are easter eggs?",
-    a: "There are. Three of them. One involves arrows, one involves our name, and one involves clicking something seven times. Happy hunting. 🥚",
+    a: "There are. Three of them. One involves arrows, one involves our name, and one involves clicking something seven times. Happy hunting.",
   },
 ];
 

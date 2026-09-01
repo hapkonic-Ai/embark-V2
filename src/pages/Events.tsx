@@ -114,7 +114,7 @@ export default function Events() {
     <SiteLayout>
       <DocumentHead
         title="Events & Case Competitions"
-        description="Compete in national MBA events, hackathons and case competitions judged by mentors, founders and B-school alumni on Arena for grads."
+        description="Compete in national MBA events, case competitions and live sessions judged by mentors, founders and B-school alumni on Arena for grads."
         path="events"
       />
       <EditorialHero

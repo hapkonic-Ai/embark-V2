@@ -5,6 +5,7 @@ export type HeroBook = {
   title: string;
   subtitle: string;
   color: string;
+  cover?: string;
 };
 
 export function BookStack({ books }: { books: HeroBook[] }) {
@@ -21,6 +22,7 @@ export function BookStack({ books }: { books: HeroBook[] }) {
         const offset = (i - books.length / 2) * 28;
         const rotate = (i - books.length / 2) * 5;
         const isHovered = hovered === book.title;
+        const hasCover = !!book.cover;
 
         return (
           <motion.div
@@ -48,6 +50,9 @@ export function BookStack({ books }: { books: HeroBook[] }) {
             className="group absolute w-44 cursor-pointer rounded-r-3xl rounded-l-md border-l-[6px] border-white/30 shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 sm:w-52 lg:w-60"
             style={{
               backgroundColor: book.color,
+              backgroundImage: hasCover ? `url(${book.cover})` : undefined,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
               height: "320px",
               transformOrigin: "left center",
             }}
@@ -70,7 +75,7 @@ export function BookStack({ books }: { books: HeroBook[] }) {
               transition={{ duration: 0.6, ease: "easeInOut" }}
             />
 
-            <div className="relative flex h-full flex-col justify-between p-6 text-left text-white">
+            <div className={`relative flex h-full flex-col justify-between p-6 text-left text-white ${hasCover ? "opacity-0 group-hover:opacity-100 transition-opacity duration-300" : ""}`}>
               <div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-10 rounded-full bg-white/30" />

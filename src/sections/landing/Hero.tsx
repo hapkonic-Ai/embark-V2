@@ -149,7 +149,7 @@ export default function Hero() {
               transition={{ delay: 0.05, duration: 0.7 }}
               className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.12]"
             >
-              From blank SOP to final
+              The mentorship that gets you the
               <br />
               <span className="relative inline-flex h-[1.15em] items-center whitespace-nowrap align-baseline overflow-visible">
                 <AnimatePresence mode="wait">
@@ -245,32 +245,41 @@ export default function Hero() {
           <motion.div
             className="relative hidden lg:flex items-center justify-center h-[600px]"
           >
-            {/* animated connection line */}
+            {/* validation-loop style animated path: student -> mentor -> outcome */}
             <motion.svg
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 1.1 }}
-              className="absolute top-16 left-8 z-0 h-40 w-40 text-orange-500"
-              viewBox="0 0 160 160"
+              transition={{ duration: 0.6, delay: 1.0 }}
+              className="absolute top-12 left-4 z-0 h-44 w-72 text-orange-500/60"
+              viewBox="0 0 288 176"
               fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="6 6"
             >
+              <defs>
+                <linearGradient id="heroPathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.2" />
+                  <stop offset="50%" stopColor="#f97316" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#f97316" stopOpacity="0.2" />
+                </linearGradient>
+              </defs>
               <motion.path
-                d="M24 18 C 52 18, 72 58, 100 82"
+                d="M16 128 C 64 48, 128 16, 200 56 S 272 120, 272 120"
+                stroke="url(#heroPathGradient)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeDasharray="8 6"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={{ duration: 1.2, delay: 1.1, ease: "easeInOut" }}
+                transition={{ duration: 1.6, delay: 1.0, ease: "easeInOut" }}
+              />
+              <motion.circle
+                r="5"
+                fill="#f97316"
+                initial={{ offsetDistance: "0%" }}
+                animate={{ offsetDistance: ["0%", "100%"] }}
+                transition={{ duration: 2.4, delay: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                style={{ offsetPath: "path('M16 128 C 64 48, 128 16, 200 56 S 272 120, 272 120')" }}
               />
             </motion.svg>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 1, 0] }}
-              transition={{ duration: 2, delay: 2.2, repeat: Infinity, repeatDelay: 1 }}
-              className="absolute top-[6.8rem] left-[7.6rem] h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.6)]"
-            />
 
             {/* sparkle / dot decorations */}
             <motion.div

@@ -33,24 +33,45 @@ function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bs
   );
 }
 
-function MentorsHeroVisual() {
+function makeHeroVisual(mentors: NonNullable<ReturnType<typeof trpc.catalog.mentors.useQuery>["data"]> | undefined) {
+  const list = mentors ?? [];
+  const featured = list[0];
+  const orbit = list.slice(1, 6);
+  const orbitPositions = [
+    { angle: 30, distance: 165, size: 60 },
+    { angle: 90, distance: 150, size: 52 },
+    { angle: 150, distance: 170, size: 58 },
+    { angle: 210, distance: 155, size: 54 },
+    { angle: 300, distance: 160, size: 56 },
+  ];
+
   return (
     <ProfileNetwork
-      featured={{
-        name: "Rohan Mehta",
-        avatar: mentorImage("Rohan Mehta", "IIM Ahmedabad"),
-        school: "IIM Ahmedabad",
-        company: "ex-McKinsey",
-        expertise: "GD · PI · Placements",
-        students: 247,
-      }}
-      orbit={[
-        { name: "Priya S", avatar: mentorImage("Priya S", "IIM Bangalore"), label: "GD specialist", angle: 30, distance: 165, size: 60 },
-        { name: "Arjun K", avatar: mentorImage("Arjun K", "IIM Calcutta"), label: "PI specialist", angle: 90, distance: 150, size: 52 },
-        { name: "Neha R", avatar: mentorImage("Neha R", "XLRI"), label: "Placement mentor", angle: 150, distance: 170, size: 58 },
-        { name: "Vikram B", avatar: mentorImage("Vikram B", "IIM Ahmedabad"), label: "IIM interview", angle: 210, distance: 155, size: 54 },
-        { name: "Sana M", avatar: mentorImage("Sana M", "FMS Delhi"), label: "Career switch", angle: 300, distance: 160, size: 56 },
-      ]}
+      featured={
+        featured
+          ? {
+              name: featured.name ?? "Mentor",
+              avatar: mentorImage(featured.name ?? "Mentor", featured.profile.bschool ?? "IIM"),
+              school: featured.profile.bschool ?? "",
+              company: featured.profile.company ?? "",
+              expertise: featured.profile.expertise?.split(",").slice(0, 3).join(" · ") ?? "",
+              students: 247,
+            }
+          : {
+              name: "Rohan Mehta",
+              avatar: mentorImage("Rohan Mehta", "IIM Ahmedabad"),
+              school: "IIM Ahmedabad",
+              company: "ex-McKinsey",
+              expertise: "GD · PI · Placements",
+              students: 247,
+            }
+      }
+      orbit={orbit.map((m, i) => ({
+        name: m.name ?? "Mentor",
+        avatar: mentorImage(m.name ?? "Mentor", m.profile.bschool ?? "IIM"),
+        label: m.profile.expertise?.split(",").slice(0, 2).join(" · ") ?? "Mentor",
+        ...orbitPositions[i],
+      }))}
       tags={["Verified alumni", "1:1 sessions", "Mock GDs", "Mock PIs", "Profile reviews"]}
       stats={[
         { value: "4,000+", label: "mentors" },
@@ -95,7 +116,7 @@ export default function Mentors() {
         secondaryCta="Become a mentor"
         secondaryHref="/login?mode=register&role=mentor"
       >
-        <MentorsHeroVisual />
+        {makeHeroVisual(mentors)}
       </EditorialHero>
 
       <StorySection

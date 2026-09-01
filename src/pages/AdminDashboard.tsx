@@ -369,7 +369,7 @@ function SubmissionsTab() {
 // ------------------------------------------------------------- playbooks
 
 type PbForm = { id?: number; title: string; description: string; category: string; price: string; pages: string; emoji: string; coverImage: string; isPublished: boolean };
-const emptyPb: PbForm = { title: "", description: "", category: "GDPI", price: "499", pages: "40", emoji: "📘", coverImage: "", isPublished: true };
+const emptyPb: PbForm = { title: "", description: "", category: "GDPI", price: "499", pages: "40", emoji: "", coverImage: "", isPublished: true };
 
 function PlaybooksTab() {
   const { data, isLoading } = trpc.admin.listPlaybooks.useQuery();

@@ -13,7 +13,7 @@ import { formatINR } from "@/lib/format";
 export default function SuperAdminDashboard() {
   return (
     <DashboardShell
-      title="Superadmin control room 👑"
+      title="Superadmin control room"
       subtitle="Validate mentors, manage roles, keep the site honest."
       roles={["superadmin"]}
       tabs={[

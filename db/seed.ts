@@ -309,12 +309,12 @@ async function seed() {
 
   // ------------------------------------------------------------- playbooks
   const pbs = [
-    { title: "GD Mastery Playbook", category: "GDPI", price: 499, pages: 68, emoji: "🗣️", description: "Frameworks, opening lines, 40 practice topics, and the exact etiquette panelists look for in group discussions." },
-    { title: "PI Crusher: 200 Real Questions", category: "GDPI", price: 599, pages: 112, emoji: "🎤", description: "200 actual interview questions from IIM/XLRI/FMS panels with model answer structures and traps to avoid." },
-    { title: "WAT & Essay Toolkit", category: "WAT", price: 399, pages: 54, emoji: "✍️", description: "50 solved WAT topics, intro-body-conclusion templates, and a 15-minute daily writing routine." },
-    { title: "Case Competition Bible", category: "Case Comps", price: 899, pages: 140, emoji: "🏆", description: "How national winners structure decks: guesstimates, MECE issue trees, storytelling and Q&A defence." },
-    { title: "Consulting Casebook 2026", category: "Case Comps", price: 999, pages: 180, emoji: "💼", description: "35 full cases — market entry, profitability, pricing — with interviewer scripts and math drills." },
-    { title: "Resume to Shortlist", category: "Profile", price: 299, pages: 36, emoji: "📄", description: "Bullet-by-bullet resume surgery, spike-building and the humblebrag formula for B-school forms." },
+    { title: "GD Mastery Playbook", category: "GDPI", price: 499, pages: 68, emoji: "", description: "Frameworks, opening lines, 40 practice topics, and the exact etiquette panelists look for in group discussions." },
+    { title: "PI Crusher: 200 Real Questions", category: "GDPI", price: 599, pages: 112, emoji: "", description: "200 actual interview questions from IIM/XLRI/FMS panels with model answer structures and traps to avoid." },
+    { title: "WAT & Essay Toolkit", category: "WAT", price: 399, pages: 54, emoji: "", description: "50 solved WAT topics, intro-body-conclusion templates, and a 15-minute daily writing routine." },
+    { title: "Case Competition Bible", category: "Case Comps", price: 899, pages: 140, emoji: "", description: "How national winners structure decks: guesstimates, MECE issue trees, storytelling and Q&A defence." },
+    { title: "Consulting Casebook 2026", category: "Case Comps", price: 999, pages: 180, emoji: "", description: "35 full cases — market entry, profitability, pricing — with interviewer scripts and math drills." },
+    { title: "Resume to Shortlist", category: "Profile", price: 299, pages: 36, emoji: "", description: "Bullet-by-bullet resume surgery, spike-building and the humblebrag formula for B-school forms." },
   ];
   for (const p of pbs) {
     const existing = await db.query.playbooks.findFirst({
@@ -331,7 +331,7 @@ async function seed() {
     {
       title: "HackCAT 2026 — Product Teardown Hackathon",
       type: "hackathon" as const,
-      emoji: "💻",
+      emoji: "",
       prize: "₹1,00,000 + fast-track interviews",
       status: "live" as const,
       startAt: new Date(now - 2 * day),
@@ -344,7 +344,7 @@ async function seed() {
     {
       title: "National Case Sprint: D2C Edition",
       type: "case_competition" as const,
-      emoji: "🧩",
+      emoji: "",
       prize: "₹50,000 + mentorship package",
       status: "live" as const,
       startAt: new Date(now - 1 * day),
@@ -357,7 +357,7 @@ async function seed() {
     {
       title: "Summer Strategy League 2025",
       type: "case_competition" as const,
-      emoji: "☀️",
+      emoji: "",
       prize: "₹25,000",
       status: "closed" as const,
       startAt: new Date(now - 90 * day),

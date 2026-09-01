@@ -53,7 +53,7 @@ export function LoadingScreen() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               src="/image copy.png"
               alt="Arena for grads"
-              className="relative z-10 h-28 w-auto object-contain"
+              className="relative z-10 h-40 w-auto object-contain"
             />
           </div>
 
