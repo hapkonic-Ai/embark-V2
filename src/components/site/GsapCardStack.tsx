@@ -2,8 +2,8 @@ import { useRef, useLayoutEffect, useState } from "react";
 import { gsap } from "gsap";
 import { generateBookCover } from "@/lib/bookCover";
 
-const CARD_W = 220;
-const CARD_H = 320;
+const CARD_W = 150;
+const CARD_H = 220;
 
 export type StackBook = {
   title: string;
@@ -37,8 +37,8 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
         gsap.set(card, {
           x: centerX,
           y: centerY,
-          rotation: (i - cards.length / 2) * 4,
-          scale: 1 - i * 0.02,
+          rotation: (i - cards.length / 2) * 5,
+          scale: 1 - i * 0.015,
           zIndex: cards.length - i,
           opacity: 1,
         });
@@ -56,18 +56,20 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
 
     const centerX = container.offsetWidth / 2 - CARD_W / 2;
     const centerY = container.offsetHeight / 2 - CARD_H / 2;
+    const gap = 18;
+    const totalWidth = (cards.length - 1) * (CARD_W + gap);
 
     cards.forEach((card, i) => {
-      const spread = (i - (cards.length - 1) / 2) * (CARD_W + 24);
+      const spread = i * (CARD_W + gap) - totalWidth / 2;
       gsap.to(card, {
         x: centerX + spread,
-        y: centerY - Math.abs(spread) * 0.15,
-        rotation: (i - cards.length / 2) * 3,
+        y: centerY - Math.abs(spread) * 0.08,
+        rotation: (i - cards.length / 2) * 2,
         scale: 1,
         zIndex: i,
-        duration: 0.55,
+        duration: 0.5,
         ease: "back.out(1.2)",
-        delay: i * 0.04,
+        delay: i * 0.03,
       });
     });
   };
@@ -85,12 +87,12 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
       gsap.to(card, {
         x: centerX,
         y: centerY,
-        rotation: (i - cards.length / 2) * 4,
-        scale: 1 - i * 0.02,
+        rotation: (i - cards.length / 2) * 5,
+        scale: 1 - i * 0.015,
         zIndex: cards.length - i,
-        duration: 0.5,
+        duration: 0.45,
         ease: "power2.out",
-        delay: (cards.length - i) * 0.03,
+        delay: (cards.length - i) * 0.025,
       });
     });
   };
@@ -100,13 +102,13 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
       ref={containerRef}
       onMouseEnter={fanOut}
       onMouseLeave={stack}
-      className="relative w-full min-h-[520px] lg:min-h-[640px] cursor-pointer"
+      className="relative w-full min-h-[360px] lg:min-h-[420px] cursor-pointer"
     >
       {books.map((book, i) => (
         <div
           key={book.title}
           ref={(el) => { cardsRef.current[i] = el; }}
-          className="absolute rounded-r-3xl rounded-l-md border-l-[6px] border-white/30 shadow-2xl overflow-hidden will-change-transform"
+          className="absolute rounded-r-2xl rounded-l-md border-l-[4px] border-white/30 shadow-xl overflow-hidden will-change-transform"
           style={{
             width: CARD_W,
             height: CARD_H,
@@ -115,7 +117,21 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
-        />
+        >
+          {/* page edge */}
+          <div className="absolute inset-y-1 right-1 w-2 rounded-r-xl bg-[#f5f0e8]/90" />
+          {/* spine */}
+          <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-white/20 to-transparent" />
+          {/* title overlay for readability */}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-10">
+            <p className="font-display text-sm font-bold text-white leading-tight">
+              {book.title}
+            </p>
+            <p className="mt-0.5 text-[10px] text-white/80 line-clamp-2">
+              {book.subtitle}
+            </p>
+          </div>
+        </div>
       ))}
     </div>
   );
