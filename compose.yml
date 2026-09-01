@@ -3,7 +3,8 @@ services:
     image: mysql:8
     container_name: embark-db
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: embark123
+      MYSQL_ROOT_HOST: '%'
       MYSQL_DATABASE: embark
     volumes:
       - db_data:/var/lib/mysql
