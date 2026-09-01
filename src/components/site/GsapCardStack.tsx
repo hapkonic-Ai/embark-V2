@@ -2,8 +2,8 @@ import { useRef, useLayoutEffect, useState } from "react";
 import { gsap } from "gsap";
 import { generateBookCover } from "@/lib/bookCover";
 
-const CARD_W = 110;
-const CARD_H = 170;
+const CARD_W = 118;
+const CARD_H = 178;
 
 export type StackBook = {
   title: string;
