@@ -22,13 +22,10 @@ function fallbackCover(_id: number, title: string) {
 
 const HERO_BOOKS: StackBook[] = [
   { title: "Crack the GD", subtitle: "Group discussion scripts that win", color: "#ea580c" },
-  { title: "Build your MBA profile", subtitle: "Shape your story for top b-schools", color: "#1c1917" },
-  { title: "Master the PI", subtitle: "Interview answers with intent", color: "#c2410c" },
-  { title: "Consulting case framework", subtitle: "Solve cases like a consultant", color: "#44403c" },
-  { title: "Placement preparation", subtitle: "A plan that survives pressure", color: "#f97316" },
-  { title: "Career switch", subtitle: "Move with clarity, not guesswork", color: "#57534e" },
+  { title: "Master the PI", subtitle: "Interview answers with intent", color: "#1c1917" },
+  { title: "Consulting case framework", subtitle: "Solve cases like a consultant", color: "#c2410c" },
+  { title: "Placement preparation", subtitle: "A plan that survives pressure", color: "#57534e" },
   { title: "SOP that converts", subtitle: "From blank page to final admit", color: "#7c2d12" },
-  { title: "WAT essay mastery", subtitle: "Write under pressure", color: "#92400e" },
 ];
 
 const PLAYBOOK_STEPS = [

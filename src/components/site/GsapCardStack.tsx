@@ -2,8 +2,8 @@ import { useRef, useLayoutEffect, useState } from "react";
 import { gsap } from "gsap";
 import { generateBookCover } from "@/lib/bookCover";
 
-const CARD_W = 150;
-const CARD_H = 220;
+const CARD_W = 110;
+const CARD_H = 170;
 
 export type StackBook = {
   title: string;
@@ -54,22 +54,21 @@ export function GsapCardStack({ books }: { books: StackBook[] }) {
     const cards = cardsRef.current.filter(Boolean) as HTMLDivElement[];
     if (!container || cards.length === 0) return;
 
-    const centerX = container.offsetWidth / 2 - CARD_W / 2;
+    const startX = container.offsetWidth * 0.18 - CARD_W / 2;
     const centerY = container.offsetHeight / 2 - CARD_H / 2;
-    const gap = 18;
-    const totalWidth = (cards.length - 1) * (CARD_W + gap);
+    const gap = 8;
 
     cards.forEach((card, i) => {
-      const spread = i * (CARD_W + gap) - totalWidth / 2;
+      const spread = i * (CARD_W + gap);
       gsap.to(card, {
-        x: centerX + spread,
-        y: centerY - Math.abs(spread) * 0.08,
+        x: startX + spread,
+        y: centerY - i * 8,
         rotation: (i - cards.length / 2) * 2,
         scale: 1,
         zIndex: i,
         duration: 0.5,
         ease: "back.out(1.2)",
-        delay: i * 0.03,
+        delay: i * 0.04,
       });
     });
   };
