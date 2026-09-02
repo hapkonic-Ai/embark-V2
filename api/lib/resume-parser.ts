@@ -48,8 +48,6 @@ export type ParsedResume = {
   experience: ResumeExperience[];
   education: ResumeEducation[];
   skills: string[];
-  certifications: string[];
-  achievements: string[];
   /** Confidence 0-1 for fields that were extracted. */
   confidence?: Record<string, number>;
 };
@@ -74,7 +72,5 @@ export function emptyParsedResume(): ParsedResume {
     experience: [],
     education: [],
     skills: [],
-    certifications: [],
-    achievements: [],
   };
 }

@@ -17,8 +17,9 @@ function envDisabled(): string[] {
     // ignore
   }
   try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.VITE_DISABLED_FEATURES) {
-      return import.meta.env.VITE_DISABLED_FEATURES.split(",").map((s) => s.trim()).filter(Boolean);
+    const meta = import.meta as unknown as { env?: Record<string, string> };
+    if (typeof import.meta !== "undefined" && meta.env?.VITE_DISABLED_FEATURES) {
+      return meta.env.VITE_DISABLED_FEATURES.split(",").map((s) => s.trim()).filter(Boolean);
     }
   } catch {
     // ignore

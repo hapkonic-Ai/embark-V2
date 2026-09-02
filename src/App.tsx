@@ -15,7 +15,6 @@ import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Colleges from "./pages/Colleges";
 import CandidateDashboard from "./pages/CandidateDashboard";
-import MyBookings from "./pages/MyBookings";
 import MentorDashboard from "./pages/MentorDashboard";
 import ExpertOnboarding from "./pages/ExpertOnboarding";
 import ExpertDashboard from "./pages/ExpertDashboard";
@@ -40,6 +39,35 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
+
+const mentorRoutes = (
+  <>
+    <Route
+      path="/mentor/onboarding"
+      element={
+        <ProtectedRoute roles={["mentor", "expert"]}>
+          <ExpertOnboarding />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/mentor/profile/edit"
+      element={
+        <ProtectedRoute roles={["mentor", "expert"]}>
+          <ExpertProfileEdit />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/mentor/page"
+      element={
+        <ProtectedRoute roles={["mentor", "expert"]}>
+          <ExpertPageBuilder />
+        </ProtectedRoute>
+      }
+    />
+  </>
+);
 
 const expertRoutes = isExpertEnabled() ? (
   <>
@@ -184,14 +212,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/bookings"
-          element={
-            <ProtectedRoute roles={["candidate"]}>
-              <MyBookings />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/mentor/dashboard"
           element={
@@ -200,6 +221,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+                {mentorRoutes}
                 {expertRoutes}
         <Route
           path="/campus/dashboard"

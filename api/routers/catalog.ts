@@ -194,11 +194,17 @@ export const catalogRouter = createRouter({
       .orderBy(sql`coalesce(${colleges.nirfRank}, 999)`, colleges.name);
   }),
 
-  expertPageBySlug: expertPublic
+  expertPageBySlug: publicQuery
     .input(z.object({ slug: z.string().max(64) }))
     .query(async ({ input }) => {
       const page = await getPublishedExpertPageBySlug(input.slug);
       if (!page) return null;
+      // When the expert feature flag is off, only mentor pages are public.
+      if (page.user.role === "expert" && !isExpertEnabled()) return null;
+      // Only verified mentors/experts may have public pages.
+      const isVerified =
+        page.profile.isVerified || page.profile.verificationStatus === "verified";
+      if (!isVerified) return null;
       return page;
     }),
 

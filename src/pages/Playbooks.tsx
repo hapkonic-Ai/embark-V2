@@ -1,16 +1,15 @@
-import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { BookOpen, Check } from "lucide-react";
+import { BookOpen, Check, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/providers/cart";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { GsapCardStack, type StackBook } from "@/components/site/GsapCardStack";
 import { StorySection } from "@/components/site/StorySection";
 import { JourneySteps } from "@/components/site/JourneySteps";
-import PaymentModal from "@/components/PaymentModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
@@ -50,24 +49,16 @@ type Playbook = {
 export default function Playbooks() {
   const { user, isAuthenticated } = useAuth();
   const reduce = useReducedMotion();
+  const { addItem, items } = useCart();
   const { data: playbooks, isLoading } = trpc.catalog.playbooks.useQuery();
   const { data: owned } = trpc.candidate.myPlaybooks.useQuery(undefined, {
     enabled: isAuthenticated && user?.role === "candidate",
   });
-  const [selected, setSelected] = useState<Playbook | null>(null);
-  const utils = trpc.useUtils();
 
   const ownedIds = new Set(owned?.map((o) => o.playbook.id) ?? []);
+  const cartPlaybookIds = new Set(items.filter((i) => i.type === "playbook").map((i) => i.playbookId));
 
-  const purchase = trpc.candidate.purchasePlaybook.useMutation({
-    onSuccess: () => {
-      toast.success("Playbook added to your library!");
-      utils.candidate.myPlaybooks.invalidate();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const buy = (p: Playbook) => {
+  const addToCart = (p: Playbook) => {
     if (!isAuthenticated) {
       toast("Sign in first", { description: "Create a free candidate account to buy playbooks." });
       return;
@@ -76,7 +67,14 @@ export default function Playbooks() {
       toast.error("Only candidate accounts can purchase playbooks.");
       return;
     }
-    setSelected(p);
+    const item: Omit<import("@/providers/cart").PlaybookCartItem, "id"> = {
+      type: "playbook",
+      playbookId: p.id,
+      title: p.title,
+      price: p.price,
+    };
+    addItem(item);
+    toast.success("Added to cart", { description: "Checkout from your dashboard Orders section." });
   };
 
   return (
@@ -167,9 +165,13 @@ export default function Playbooks() {
                         <Button size="sm" variant="secondary" disabled className="rounded-full bg-card text-muted-foreground">
                           <Check className="mr-1.5 h-3.5 w-3.5" /> Owned
                         </Button>
+                      ) : cartPlaybookIds.has(p.id) ? (
+                        <Button size="sm" variant="outline" disabled className="rounded-full">
+                          <Check className="mr-1.5 h-3.5 w-3.5" /> In cart
+                        </Button>
                       ) : (
-                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={() => buy(p)}>
-                          Get it
+                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={() => addToCart(p)}>
+                          <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Add to cart
                         </Button>
                       )}
                     </div>
@@ -222,17 +224,6 @@ export default function Playbooks() {
         </div>
       </section>
 
-      {selected && (
-        <PaymentModal
-          open={!!selected}
-          onOpenChange={(v) => !v && setSelected(null)}
-          amount={selected.price}
-          title={selected.title}
-          onConfirm={async () => {
-            await purchase.mutateAsync({ playbookId: selected.id });
-          }}
-        />
-      )}
     </SiteLayout>
   );
 }

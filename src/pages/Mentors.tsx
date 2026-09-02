@@ -19,6 +19,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
 import { mentorImage, fallbackFace } from "@/lib/images";
 
+type MentorListItem = {
+  name: string | null;
+  role?: string | null;
+  profile: {
+    id: number;
+    bschool: string | null;
+    company: string | null;
+    expertise: string | null;
+    headline: string | null;
+    publicSlug: string | null;
+    profileImage: string | null;
+    price: number;
+    mockGds: number;
+    mockPis: number;
+    linkedinUrl: string | null;
+  };
+};
+
 function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bschool: string | null; profileImage?: string | null }) {
   const [errored, setErrored] = useState(false);
   const initialSrc = profileImage || mentorImage(name ?? "Mentor", bschool ?? "IIM");
@@ -33,7 +51,7 @@ function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bs
   );
 }
 
-function makeHeroVisual(mentors: NonNullable<ReturnType<typeof trpc.catalog.mentors.useQuery>["data"]> | undefined) {
+function makeHeroVisual(mentors: MentorListItem[] | undefined) {
   const list = mentors ?? [];
   const featured = list[0];
   const orbit = list.slice(1, 6);
@@ -83,7 +101,8 @@ function makeHeroVisual(mentors: NonNullable<ReturnType<typeof trpc.catalog.ment
 }
 
 export default function Mentors() {
-  const { data: mentors, isLoading } = trpc.catalog.mentors.useQuery();
+  const { data: rawMentors, isLoading } = trpc.catalog.mentors.useQuery();
+  const mentors = rawMentors as MentorListItem[] | undefined;
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState("");

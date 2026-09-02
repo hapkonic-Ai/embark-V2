@@ -32,6 +32,9 @@ export default function ExpertProfileEdit() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const uploadImage = trpc.expert.uploadImage.useMutation({
+    onError: (e) => toast.error(e.message),
+  });
 
   const [form, setForm] = useState({
     displayName: "",
@@ -140,13 +143,33 @@ export default function ExpertProfileEdit() {
                     label="Profile photo"
                     value={form.profileImage}
                     onChange={(v) => update("profileImage", v)}
-                    disabled={upsert.isPending}
+                    onUpload={async (dataUrl) => {
+                      const fileMime = dataUrl.match(/^data:([^;]+)/)?.[1] ?? "image/png";
+                      const base64 = dataUrl.split(",")[1] ?? "";
+                      const result = await uploadImage.mutateAsync({
+                        fileName: "profile.png",
+                        fileMime,
+                        fileBase64: base64,
+                      });
+                      return result.url;
+                    }}
+                    disabled={upsert.isPending || uploadImage.isPending}
                   />
                   <ImageUploadField
                     label="Cover image"
                     value={form.coverImage}
                     onChange={(v) => update("coverImage", v)}
-                    disabled={upsert.isPending}
+                    onUpload={async (dataUrl) => {
+                      const fileMime = dataUrl.match(/^data:([^;]+)/)?.[1] ?? "image/png";
+                      const base64 = dataUrl.split(",")[1] ?? "";
+                      const result = await uploadImage.mutateAsync({
+                        fileName: "cover.png",
+                        fileMime,
+                        fileBase64: base64,
+                      });
+                      return result.url;
+                    }}
+                    disabled={upsert.isPending || uploadImage.isPending}
                   />
                 </div>
               </CardContent>

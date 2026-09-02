@@ -85,6 +85,13 @@
       "when": 1788068157026,
       "tag": "0011_cover_image_text",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1788382119109,
+      "tag": "0012_wealthy_reaper",
+      "breakpoints": true
     }
   ]
 }

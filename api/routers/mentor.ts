@@ -142,16 +142,23 @@ export const mentorRouter = createRouter({
         })
         .where(eq(mockSessions.id, input.sessionId));
       const field = row.session.type === "gd" ? "gdUsed" : "piUsed";
+      const newUsed =
+        row.session.type === "gd"
+          ? row.mentorship.gdUsed + 1
+          : row.mentorship.piUsed + 1;
+      const completed =
+        (row.session.type === "gd" ? newUsed : row.mentorship.gdUsed) ===
+          row.mentorship.gdTotal &&
+        (row.session.type === "pi" ? newUsed : row.mentorship.piUsed) ===
+          row.mentorship.piTotal;
       await db
         .update(mentorships)
         .set({
-          [field]:
-            row.session.type === "gd"
-              ? row.mentorship.gdUsed + 1
-              : row.mentorship.piUsed + 1,
+          [field]: newUsed,
+          status: completed ? "completed" : row.mentorship.status,
         })
         .where(eq(mentorships.id, row.mentorship.id));
-      return { success: true };
+      return { success: true, mentorshipCompleted: completed };
     }),
 
   toggleMentorship: mentor

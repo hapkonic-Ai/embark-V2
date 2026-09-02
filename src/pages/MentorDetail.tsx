@@ -5,7 +5,6 @@ import { ArrowLeft, BadgeCheck, Briefcase, ExternalLink, GraduationCap, Linkedin
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { isExpertEnabled } from "@contracts/features";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
 import PaymentModal from "@/components/PaymentModal";
@@ -25,7 +24,7 @@ export default function MentorDetail() {
 
   useEffect(() => {
     if (!data || isLoading) return;
-    const slug = data.profile.publicSlug || (isExpertEnabled() ? data.expertPageSlug : undefined);
+    const slug = data.profile.publicSlug || data.expertPageSlug;
     if (slug) {
       navigate(`/m/${slug}`, { replace: true });
     }

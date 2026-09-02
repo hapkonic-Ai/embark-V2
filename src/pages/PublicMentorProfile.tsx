@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { Check, Linkedin, Lock, MessageCircle, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { isExpertEnabled } from "@contracts/features";
 import Navbar from "@/components/site/Navbar";
 import { DocumentHead } from "@/components/site/DocumentHead";
 import PublicExpertPage from "@/components/expert/PublicExpertPage";
@@ -16,17 +15,16 @@ import { mentorImage, fallbackFace } from "@/lib/images";
 export default function PublicMentorProfile() {
   const { slug } = useParams<{ slug: string }>();
   const { isAuthenticated } = useAuth();
-  const expertEnabled = isExpertEnabled();
   const { data: expertData, isLoading: expertLoading } = trpc.catalog.expertPageBySlug.useQuery(
     { slug: slug ?? "" },
-    { enabled: !!slug && expertEnabled },
+    { enabled: !!slug },
   );
   const { data, isLoading: mentorLoading } = trpc.catalog.mentorBySlug.useQuery(
     { slug: slug ?? "" },
-    { enabled: !!slug && (!expertEnabled || !expertData) },
+    { enabled: !!slug && !expertData },
   );
 
-  const isLoading = (expertEnabled && expertLoading) || (mentorLoading && (!expertEnabled || !expertData));
+  const isLoading = expertLoading || (mentorLoading && !expertData);
 
   if (isLoading) {
     return (
@@ -40,7 +38,7 @@ export default function PublicMentorProfile() {
     );
   }
 
-  if (expertEnabled && expertData?.page) {
+  if (expertData?.page) {
     const expertProfile = expertData.profile;
     const expertTitle = expertProfile?.displayName || expertData.user?.name || "Expert profile";
     return (

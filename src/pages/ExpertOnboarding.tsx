@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
   Briefcase,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { dashboardPath } from "@/components/site/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +82,7 @@ export default function ExpertOnboarding() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParsedProposal | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const hasHydratedStep = useRef(false);
 
   const me = trpc.expert.me.useQuery(undefined, {
     enabled: !!user,
@@ -97,6 +99,7 @@ export default function ExpertOnboarding() {
     onError: (e) => toast.error(e.message),
   });
   const updateOnboarding = trpc.expert.updateOnboarding.useMutation({
+    onSuccess: () => utils.expert.me.invalidate(),
     onError: (e) => toast.error(e.message),
   });
   const utils = trpc.useUtils();
@@ -105,7 +108,8 @@ export default function ExpertOnboarding() {
   });
 
   useEffect(() => {
-    if (me.data?.onboarding?.currentStep) {
+    if (!hasHydratedStep.current && me.data?.onboarding?.currentStep) {
+      hasHydratedStep.current = true;
       const step = me.data.onboarding.currentStep as OnboardingStep;
       setCurrentStep(step === "account" ? "resume" : step);
     }
@@ -173,6 +177,10 @@ export default function ExpertOnboarding() {
 
   if (!user) return null;
 
+  if (me.data?.onboarding?.status === "completed") {
+    return <Navigate to={dashboardPath(user.role)} replace />;
+  }
+
   const stepIndex = STEPS.findIndex((s) => s.id === currentStep);
   const progress = Math.round((((stepIndex < 0 ? 0 : stepIndex) + 1) / STEPS.length) * 100);
 
@@ -183,7 +191,7 @@ export default function ExpertOnboarding() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-24 pb-16">
           <div className="mb-8">
             <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight">
-              Become an Arena for grads Expert
+              {user?.role === "mentor" ? "Become a Mentor" : "Become an Arena for grads Expert"}
             </h1>
             <p className="mt-1.5 text-muted-foreground">
               Complete your profile so students can discover and book you.
@@ -268,7 +276,7 @@ export default function ExpertOnboarding() {
                         toast.success("Profile submitted for verification.");
                         await utils.expert.me.invalidate();
                         await utils.expert.myProfile.invalidate();
-                        navigate("/expert/dashboard", { replace: true });
+                        navigate(dashboardPath(user.role), { replace: true });
                       },
                     });
                   }}
@@ -512,6 +520,9 @@ function ProfileStep({ onComplete }: { onComplete: () => void }) {
     },
     onError: (e) => toast.error(e.message),
   });
+  const uploadImage = trpc.expert.uploadImage.useMutation({
+    onError: (e) => toast.error(e.message),
+  });
 
   const [form, setForm] = useState(() => ({
     displayName: "",
@@ -576,13 +587,33 @@ function ProfileStep({ onComplete }: { onComplete: () => void }) {
             label="Profile photo"
             value={form.profileImage}
             onChange={(v) => update("profileImage", v)}
-            disabled={upsert.isPending}
+            onUpload={async (dataUrl) => {
+              const fileMime = dataUrl.match(/^data:([^;]+)/)?.[1] ?? "image/png";
+              const base64 = dataUrl.split(",")[1] ?? "";
+              const result = await uploadImage.mutateAsync({
+                fileName: "profile.png",
+                fileMime,
+                fileBase64: base64,
+              });
+              return result.url;
+            }}
+            disabled={upsert.isPending || uploadImage.isPending}
           />
           <ImageUploadField
             label="Cover image"
             value={form.coverImage}
             onChange={(v) => update("coverImage", v)}
-            disabled={upsert.isPending}
+            onUpload={async (dataUrl) => {
+              const fileMime = dataUrl.match(/^data:([^;]+)/)?.[1] ?? "image/png";
+              const base64 = dataUrl.split(",")[1] ?? "";
+              const result = await uploadImage.mutateAsync({
+                fileName: "cover.png",
+                fileMime,
+                fileBase64: base64,
+              });
+              return result.url;
+            }}
+            disabled={upsert.isPending || uploadImage.isPending}
           />
         </div>
         <Field label="Location" value={form.location} onChange={(v) => update("location", v)} />
@@ -634,6 +665,7 @@ function ExperienceStep({ onComplete }: { onComplete: () => void }) {
     onError: (e) => toast.error(e.message),
   });
 
+  const [isCompleting, setIsCompleting] = useState(false);
   const [form, setForm] = useState({
     company: "",
     role: "",
@@ -697,7 +729,8 @@ function ExperienceStep({ onComplete }: { onComplete: () => void }) {
         </div>
       </div>
       <div className="mt-6 flex justify-end">
-        <Button className="rounded-full" onClick={onComplete}>
+        <Button className="rounded-full" disabled={isCompleting} onClick={() => { setIsCompleting(true); onComplete(); }}>
+          {isCompleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Continue <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
@@ -715,6 +748,7 @@ function EducationStep({ onComplete }: { onComplete: () => void }) {
     onError: (e) => toast.error(e.message),
   });
 
+  const [isCompleting, setIsCompleting] = useState(false);
   const [form, setForm] = useState({
     institution: "",
     degree: "",
@@ -764,7 +798,8 @@ function EducationStep({ onComplete }: { onComplete: () => void }) {
         </div>
       </div>
       <div className="mt-6 flex justify-end">
-        <Button className="rounded-full" onClick={onComplete}>
+        <Button className="rounded-full" disabled={isCompleting} onClick={() => { setIsCompleting(true); onComplete(); }}>
+          {isCompleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Continue <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
@@ -825,11 +860,16 @@ function CompleteStep({
           </div>
         </div>
       )}
-      <div className="mt-8">
+      <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
         {isPending ? (
-          <Button className="rounded-full" onClick={() => navigate("/expert/dashboard")}>
-            Go to dashboard
-          </Button>
+          <>
+            <Button className="rounded-full" onClick={() => navigate(dashboardPath(data?.user?.role))}>
+              Go to dashboard
+            </Button>
+            <Button variant="outline" className="rounded-full" onClick={() => navigate(data?.user?.role === "mentor" ? "/mentor/page" : "/expert/page")}>
+              Build your public page
+            </Button>
+          </>
         ) : (
           <Button
             className="rounded-full"

@@ -17,11 +17,13 @@ export default function ImageUploadField({
   label,
   value,
   onChange,
+  onUpload,
   disabled,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onUpload?: (dataUrl: string) => Promise<string>;
   disabled?: boolean;
 }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -48,9 +50,14 @@ export default function ImageUploadField({
     setIsLoading(true);
     try {
       const dataUrl = await fileToBase64(file);
-      onChange(dataUrl);
-    } catch {
-      setError("Could not read the image. Please try another file.");
+      if (onUpload) {
+        const url = await onUpload(dataUrl);
+        onChange(url);
+      } else {
+        onChange(dataUrl);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload the image. Please try again.");
     } finally {
       setIsLoading(false);
       if (inputRef.current) inputRef.current.value = "";

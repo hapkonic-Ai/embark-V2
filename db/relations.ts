@@ -284,6 +284,14 @@ export const ordersRelations = relations(orders, ({ one }) => ({
     fields: [orders.bookingId],
     references: [expertBookings.id],
   }),
+  mentorship: one(mentorships, {
+    fields: [orders.mentorshipId],
+    references: [mentorships.id],
+  }),
+  playbookPurchase: one(playbookPurchases, {
+    fields: [orders.playbookPurchaseId],
+    references: [playbookPurchases.id],
+  }),
   student: one(users, {
     fields: [orders.studentId],
     references: [users.id],
@@ -317,6 +325,10 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   booking: one(expertBookings, {
     fields: [reviews.bookingId],
     references: [expertBookings.id],
+  }),
+  mentorship: one(mentorships, {
+    fields: [reviews.mentorshipId],
+    references: [mentorships.id],
   }),
   student: one(users, {
     fields: [reviews.studentId],
