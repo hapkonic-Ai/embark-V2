@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Loader2, Save } from "lucide-react";
+import { AlertCircle, Check, Loader2, Save, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,12 @@ export default function ExpertProfileEdit() {
     websiteUrl: "",
     publicSlug: "",
   });
+
+  const debouncedSlug = useDebounce(form.publicSlug, 400);
+  const slugCheck = trpc.expert.checkSlugAvailability.useQuery(
+    { slug: debouncedSlug },
+    { enabled: debouncedSlug.length >= 2 },
+  );
 
   useEffect(() => {
     if (data?.profile) {
@@ -205,6 +212,7 @@ export default function ExpertProfileEdit() {
                   label="Public slug"
                   value={form.publicSlug}
                   onChange={(v) => update("publicSlug", v.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                  hint={<SlugAvailabilityHint slug={form.publicSlug} check={slugCheck as SlugCheckState} currentSlug={data?.profile?.publicSlug ?? ""} />}
                 />
               </CardContent>
             </Card>
@@ -220,11 +228,13 @@ function Field({
   value,
   onChange,
   textarea,
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   textarea?: boolean;
+  hint?: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
@@ -234,6 +244,66 @@ function Field({
       ) : (
         <Input value={value} onChange={(e) => onChange(e.target.value)} />
       )}
+      {hint}
     </div>
   );
+}
+
+type SlugCheckState = {
+  isLoading: boolean;
+  data?: { available: boolean; slug: string } | null;
+  error?: { message: string } | null;
+};
+
+function SlugAvailabilityHint({
+  slug,
+  currentSlug,
+  check,
+}: {
+  slug: string;
+  currentSlug: string;
+  check: SlugCheckState;
+}) {
+  if (!slug || slug.length < 2) return null;
+  if (slug === currentSlug) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Check className="h-3.5 w-3.5 text-green-600" />
+        <span>This is your current slug</span>
+      </div>
+    );
+  }
+  if (check.isLoading) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <span>Checking availability…</span>
+      </div>
+    );
+  }
+  if (check.data?.available) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-green-600">
+        <Check className="h-3.5 w-3.5" />
+        <span>Available</span>
+      </div>
+    );
+  }
+  if (check.data && !check.data.available) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-destructive">
+        <X className="h-3.5 w-3.5" />
+        <span>Already taken</span>
+      </div>
+    );
+  }
+  if (check.error) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-destructive">
+        <AlertCircle className="h-3.5 w-3.5" />
+        <span>{check.error.message}</span>
+      </div>
+    );
+  }
+  return null;
 }

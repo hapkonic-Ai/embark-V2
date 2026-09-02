@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   ArrowRight, Award, BookOpen, Calendar, Check, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
-  Loader2, MessageCircle, Star, Trophy, Users,
+  Loader2, MessageCircle, ShieldCheck, Smartphone, Star, Trophy, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
@@ -16,6 +16,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +49,7 @@ export default function CandidateDashboard() {
       title={`Hey, ${user?.name?.split(" ")[0] ?? "there"}`}
       subtitle="Your mentorships, playbooks and competition entries."
       roles={["candidate"]}
+      layout="topbar"
       initialTab={searchParams.get("tab") ?? undefined}
       tabs={[
         { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -66,7 +78,7 @@ function Overview({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
   const { data: subs } = trpc.candidate.mySubmissions.useQuery();
   const { data: recommendedMentors } = trpc.catalog.mentors.useQuery();
   const { data: events } = trpc.catalog.events.useQuery();
-  const active = ms?.filter((m) => m.mentorship.status === "active") ?? [];
+  const active = ms?.rows.filter((m) => m.mentorship.status === "active") ?? [];
   const readiness = Math.min(100, active.length * 25 + (pbs?.length ?? 0) * 15 + (subs?.length ?? 0) * 20);
 
   const statCards = [
@@ -228,8 +240,11 @@ function Overview({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
   );
 }
 
+const MENTORSHIPS_PAGE_SIZE = 5;
+
 function MentorshipsTab() {
-  const { data, isLoading } = trpc.candidate.myMentorships.useQuery();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = trpc.candidate.myMentorships.useQuery({ page, pageSize: MENTORSHIPS_PAGE_SIZE });
   const utils = trpc.useUtils();
   const [reqOpen, setReqOpen] = useState<{ id: number; type: "gd" | "pi" } | null>(null);
   const [reviewFor, setReviewFor] = useState<{ mentorshipId: number; mentorName: string | null } | null>(null);
@@ -248,7 +263,7 @@ function MentorshipsTab() {
   });
 
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
-  if (!data || data.length === 0) {
+  if (!data || data.rows.length === 0) {
     return (
       <div className="rounded-3xl border bg-card p-12 text-center">
         <div className="mx-auto h-16 w-16 rounded-2xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
@@ -261,9 +276,11 @@ function MentorshipsTab() {
     );
   }
 
+  const totalPages = Math.ceil(data.total / data.pageSize);
+
   return (
     <div className="space-y-5">
-      {data.map(({ mentorship: m, profile, mentorName, sessions, order, review }) => {
+      {data.rows.map(({ mentorship: m, profile, mentorName, sessions, order, review }) => {
         const gdPct = m.gdTotal ? (m.gdUsed / m.gdTotal) * 100 : 0;
         const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
         const isPaid = !order || order.status === "paid";
@@ -287,6 +304,41 @@ function MentorshipsTab() {
           />
         );
       })}
+
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <p className="text-xs text-muted-foreground">
+            Showing {Math.min((page - 1) * MENTORSHIPS_PAGE_SIZE + 1, data.total)}–{Math.min(page * MENTORSHIPS_PAGE_SIZE, data.total)} of {data.total}
+          </p>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <PaginationItem key={i + 1}>
+                  <PaginationLink
+                    isActive={page === i + 1}
+                    onClick={() => setPage(i + 1)}
+                    className="cursor-pointer"
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <Dialog open={!!reqOpen} onOpenChange={(v) => !v && setReqOpen(null)}>
         <DialogContent>
@@ -561,15 +613,21 @@ function MentorshipReviewDialog({
   );
 }
 
+type CheckoutPhase = "cart" | "payment" | "paying" | "done";
+
 function OrdersTab() {
   const { data: orders, isLoading } = trpc.payments.myOrders.useQuery();
   const { items: cartItems, removeItem: removeFromCart } = useCart();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showHistory, setShowHistory] = useState(false);
+  const [phase, setPhase] = useState<CheckoutPhase>("cart");
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "card">("upi");
+  const [checkoutItems, setCheckoutItems] = useState<typeof cartItems>([]);
+  const [doneCount, setDoneCount] = useState(0);
   const utils = trpc.useUtils();
+
   const pay = trpc.payments.simulatePay.useMutation({
     onSuccess: () => {
-      toast.success("Payment successful");
       utils.payments.myOrders.invalidate();
       utils.candidate.myMentorships.invalidate();
       utils.candidate.myPlaybooks.invalidate();
@@ -577,74 +635,78 @@ function OrdersTab() {
     onError: (e) => toast.error(e.message),
   });
   const purchaseMentorship = trpc.candidate.purchaseMentorship.useMutation({
-    onSuccess: (r) => {
+    onSuccess: () => {
       utils.candidate.myMentorships.invalidate();
       utils.payments.myOrders.invalidate();
-      if (r.orderId) {
-        pay.mutate({ orderId: r.orderId });
-      }
     },
     onError: (e) => toast.error(e.message),
   });
   const purchasePlaybook = trpc.candidate.purchasePlaybook.useMutation({
-    onSuccess: (r) => {
+    onSuccess: () => {
       utils.candidate.myPlaybooks.invalidate();
       utils.payments.myOrders.invalidate();
-      if (r.orderId) {
-        pay.mutate({ orderId: r.orderId });
-      }
     },
     onError: (e) => toast.error(e.message),
   });
 
   const isBusy = purchaseMentorship.isPending || purchasePlaybook.isPending || pay.isPending;
 
-  const checkoutOne = (item: typeof cartItems[number]) => {
-    if (item.type === "mentorship") {
-      purchaseMentorship.mutate({ mentorProfileId: item.mentorProfileId }, {
-        onSuccess: () => removeFromCart(item.id),
-      });
-    } else {
-      purchasePlaybook.mutate({ playbookId: item.playbookId }, {
-        onSuccess: () => removeFromCart(item.id),
-      });
+  const startCheckout = (items: typeof cartItems) => {
+    if (items.length === 0) {
+      toast.error("Select at least one item to checkout");
+      return;
     }
+    setCheckoutItems(items);
+    setPhase("payment");
+  };
+
+  const runCheckout = async () => {
+    setPhase("paying");
+    let paid = 0;
+    const paidIds: string[] = [];
+
+    try {
+      for (const item of checkoutItems) {
+        let orderId: number | undefined;
+        if (item.type === "mentorship") {
+          const r = await purchaseMentorship.mutateAsync({ mentorProfileId: item.mentorProfileId });
+          orderId = r.orderId;
+        } else {
+          const r = await purchasePlaybook.mutateAsync({ playbookId: item.playbookId });
+          orderId = r.orderId;
+        }
+        if (orderId) {
+          await pay.mutateAsync({ orderId });
+        }
+        paid += 1;
+        paidIds.push(item.id);
+      }
+      setDoneCount(paid);
+      setPhase("done");
+      paidIds.forEach((id) => removeFromCart(id));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        paidIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } catch {
+      setPhase("payment");
+    }
+  };
+
+  const resetCheckout = () => {
+    setPhase("cart");
+    setCheckoutItems([]);
+    setDoneCount(0);
+  };
+
+  const checkoutOne = (item: typeof cartItems[number]) => {
+    startCheckout([item]);
   };
 
   const checkoutSelected = () => {
     const toCheckout = cartItems.filter((i) => selected.has(i.id));
-    if (toCheckout.length === 0) {
-      toast.error("Select at least one item to checkout");
-      return;
-    }
-    let remaining = toCheckout.length;
-    toCheckout.forEach((item) => {
-      const remove = () => {
-        setSelected((prev) => {
-          const next = new Set(prev);
-          next.delete(item.id);
-          return next;
-        });
-        removeFromCart(item.id);
-      };
-      if (item.type === "mentorship") {
-        purchaseMentorship.mutate({ mentorProfileId: item.mentorProfileId }, {
-          onSuccess: () => {
-            remaining -= 1;
-            remove();
-            if (remaining === 0) toast.success("Selected items checked out");
-          },
-        });
-      } else {
-        purchasePlaybook.mutate({ playbookId: item.playbookId }, {
-          onSuccess: () => {
-            remaining -= 1;
-            remove();
-            if (remaining === 0) toast.success("Selected items checked out");
-          },
-        });
-      }
-    });
+    startCheckout(toCheckout);
   };
 
   const toggleSelect = (id: string) => {
@@ -664,6 +726,8 @@ function OrdersTab() {
     .filter((i) => selected.has(i.id))
     .reduce((sum, i) => sum + i.price, 0);
 
+  const checkoutTotal = checkoutItems.reduce((sum, i) => sum + i.price, 0);
+
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
 
   return (
@@ -671,7 +735,7 @@ function OrdersTab() {
       <div className="rounded-3xl border bg-card p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-semibold">Cart ({cartItems.length})</h3>
-          {cartItems.length > 0 && (
+          {cartItems.length > 0 && phase === "cart" && (
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={selectAll}>Select all</Button>
               {cartItems.length > 1 && (
@@ -681,7 +745,7 @@ function OrdersTab() {
                   disabled={selected.size === 0 || isBusy}
                   onClick={checkoutSelected}
                 >
-                  {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <CreditCard className="mr-1.5 h-4 w-4" />
                   Checkout selected ({selected.size}) {selectedTotal > 0 && `· ₹${selectedTotal.toLocaleString("en-IN")}`}
                 </Button>
               )}
@@ -689,7 +753,7 @@ function OrdersTab() {
           )}
         </div>
 
-        {cartItems.length === 0 ? (
+        {cartItems.length === 0 && phase !== "done" ? (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground">Your cart is empty.</p>
             <div className="mt-3 flex justify-center gap-3">
@@ -703,7 +767,7 @@ function OrdersTab() {
           </div>
         ) : (
           <div className="space-y-3">
-            {cartItems.map((item) => (
+            {phase === "cart" && cartItems.map((item) => (
               <div key={item.id} className="flex items-start gap-3 rounded-2xl border bg-muted/40 p-4">
                 <input
                   type="checkbox"
@@ -729,13 +793,90 @@ function OrdersTab() {
                     disabled={isBusy}
                     onClick={() => checkoutOne(item)}
                   >
-                    {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     <CreditCard className="mr-1.5 h-4 w-4" /> Checkout
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => removeFromCart(item.id)}>Remove</Button>
                 </div>
               </div>
             ))}
+
+            {phase === "payment" && (
+              <div className="rounded-2xl border bg-muted/40 p-5 space-y-4">
+                <div>
+                  <h4 className="font-display font-semibold text-lg">Checkout</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {checkoutItems.length} item{checkoutItems.length > 1 ? "s" : ""} · Total{" "}
+                    <span className="font-semibold text-orange-600">₹{checkoutTotal.toLocaleString("en-IN")}</span>
+                  </p>
+                </div>
+
+                <Tabs value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "upi" | "card")}>
+                  <TabsList className="grid grid-cols-2 w-full">
+                    <TabsTrigger value="upi"><Smartphone className="mr-1.5 h-4 w-4" />UPI</TabsTrigger>
+                    <TabsTrigger value="card"><CreditCard className="mr-1.5 h-4 w-4" />Card</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="upi" className="space-y-3 pt-3">
+                    <label className="text-sm font-medium">UPI ID</label>
+                    <input
+                      type="text"
+                      placeholder="you@okhdfc"
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </TabsContent>
+                  <TabsContent value="card" className="space-y-3 pt-3">
+                    <label className="text-sm font-medium">Card number</label>
+                    <input
+                      type="text"
+                      placeholder="4242 4242 4242 4242"
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <input
+                        type="password"
+                        placeholder="CVV"
+                        className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" className="rounded-full" onClick={resetCheckout}>Cancel</Button>
+                  <Button className="rounded-full" disabled={isBusy} onClick={runCheckout}>
+                    {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Pay ₹{checkoutTotal.toLocaleString("en-IN")}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Demo checkout — no real money is charged.
+                </p>
+              </div>
+            )}
+
+            {phase === "paying" && (
+              <div className="rounded-2xl border bg-muted/40 p-8 text-center space-y-3">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-500" />
+                <p className="font-medium">Processing payment…</p>
+                <p className="text-sm text-muted-foreground">Talking to the (imaginary) bank for {checkoutItems.length} item{checkoutItems.length > 1 ? "s" : ""}.</p>
+              </div>
+            )}
+
+            {phase === "done" && (
+              <div className="rounded-2xl border bg-green-50 p-8 text-center space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
+                  <Check className="h-6 w-6" />
+                </div>
+                <p className="font-medium text-green-900">Payment successful!</p>
+                <p className="text-sm text-green-800">{doneCount} item{doneCount > 1 ? "s" : ""} added to your orders.</p>
+                <Button className="rounded-full" onClick={resetCheckout}>Back to cart</Button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import {
   expertEducation,
   expertExperience,
   expertOnboarding,
+  expertPages,
   expertResumes,
   expertVerifications,
   fileAssets,
@@ -24,6 +25,7 @@ import {
 import { isValidTimezone } from "../lib/calendar";
 import { uploadObject } from "../lib/s3-client";
 import { nanoid } from "nanoid";
+import { slugify } from "../lib/expert-page";
 
 const expert = authedQuery.use(async ({ ctx, next }) => {
   if (ctx.user.role !== "mentor" && ctx.user.role !== "expert") {
@@ -185,6 +187,44 @@ export const expertRouter = createRouter({
     return { profile: resolvedProfile, experiences, educations, completion };
   }),
 
+  checkSlugAvailability: expert
+    .input(
+      z.object({
+        slug: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(
+            /^[a-z0-9-]+$/,
+            "Slug may only contain lowercase letters, numbers, and hyphens.",
+          ),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const desired = slugify(input.slug);
+      const [profile, page] = await Promise.all([
+        db
+          .select({ userId: mentorProfiles.userId })
+          .from(mentorProfiles)
+          .where(eq(mentorProfiles.publicSlug, desired))
+          .limit(1)
+          .then((r) => r[0] ?? null),
+        db
+          .select({ userId: expertPages.userId })
+          .from(expertPages)
+          .where(eq(expertPages.slug, desired))
+          .limit(1)
+          .then((r) => r[0] ?? null),
+      ]);
+
+      const takenByOther =
+        (profile && profile.userId !== ctx.user.id) ||
+        (page && page.userId !== ctx.user.id);
+
+      return { available: !takenByOther, slug: desired };
+    }),
+
   upsertProfile: expert
     .input(
       z.object({
@@ -275,6 +315,23 @@ export const expertRouter = createRouter({
         } else if (value !== undefined) {
           set[key] = value;
         }
+      }
+
+      if (typeof set.publicSlug === "string" && set.publicSlug) {
+        const desired = slugify(set.publicSlug);
+        const conflict = await db
+          .select({ userId: mentorProfiles.userId })
+          .from(mentorProfiles)
+          .where(eq(mentorProfiles.publicSlug, desired))
+          .limit(1)
+          .then((r) => r[0] ?? null);
+        if (conflict && conflict.userId !== ctx.user.id) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "That public slug is already taken.",
+          });
+        }
+        set.publicSlug = desired;
       }
 
       if (!existing) {

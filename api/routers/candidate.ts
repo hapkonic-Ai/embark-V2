@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -95,54 +95,72 @@ export const candidateRouter = createRouter({
       return { success: true, whatsapp: mentor.profile.whatsapp, ...result };
     }),
 
-  myMentorships: candidate.query(async ({ ctx }) => {
-    const db = getDb();
-    const rows = await db
-      .select({
-        mentorship: mentorships,
-        profile: mentorProfiles,
-        mentorName: users.name,
-      })
-      .from(mentorships)
-      .innerJoin(
-        mentorProfiles,
-        eq(mentorProfiles.id, mentorships.mentorProfileId),
-      )
-      .innerJoin(users, eq(users.id, mentorProfiles.userId))
-      .where(eq(mentorships.candidateId, ctx.user.id))
-      .orderBy(desc(mentorships.createdAt));
-    const all = await Promise.all(
-      rows.map(async (r) => {
-        const [s, order, review] = await Promise.all([
-          db
-            .select()
-            .from(mockSessions)
-            .where(eq(mockSessions.mentorshipId, r.mentorship.id))
-            .orderBy(desc(mockSessions.createdAt)),
-          db
-            .select()
-            .from(orders)
-            .where(eq(orders.mentorshipId, r.mentorship.id))
-            .orderBy(desc(orders.createdAt))
-            .limit(1)
-            .then((x) => x[0] ?? null),
-          db
-            .select()
-            .from(reviews)
-            .where(
-              and(
-                eq(reviews.mentorshipId, r.mentorship.id),
-                eq(reviews.studentId, ctx.user.id),
-              ),
-            )
-            .limit(1)
-            .then((x) => x[0] ?? null),
-        ]);
-        return { ...r, sessions: s, order, review };
-      }),
-    );
-    return all;
-  }),
+  myMentorships: candidate
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(50).default(10),
+      }).optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const page = input?.page ?? 1;
+      const pageSize = input?.pageSize ?? 10;
+      const db = getDb();
+      const offset = (page - 1) * pageSize;
+      const [totalRow, rows] = await Promise.all([
+        db
+          .select({ count: count() })
+          .from(mentorships)
+          .where(eq(mentorships.candidateId, ctx.user.id)),
+        db
+          .select({
+            mentorship: mentorships,
+            profile: mentorProfiles,
+            mentorName: users.name,
+          })
+          .from(mentorships)
+          .innerJoin(
+            mentorProfiles,
+            eq(mentorProfiles.id, mentorships.mentorProfileId),
+          )
+          .innerJoin(users, eq(users.id, mentorProfiles.userId))
+          .where(eq(mentorships.candidateId, ctx.user.id))
+          .orderBy(desc(mentorships.createdAt))
+          .limit(pageSize)
+          .offset(offset),
+      ]);
+      const all = await Promise.all(
+        rows.map(async (r) => {
+          const [s, order, review] = await Promise.all([
+            db
+              .select()
+              .from(mockSessions)
+              .where(eq(mockSessions.mentorshipId, r.mentorship.id))
+              .orderBy(desc(mockSessions.createdAt)),
+            db
+              .select()
+              .from(orders)
+              .where(eq(orders.mentorshipId, r.mentorship.id))
+              .orderBy(desc(orders.createdAt))
+              .limit(1)
+              .then((x) => x[0] ?? null),
+            db
+              .select()
+              .from(reviews)
+              .where(
+                and(
+                  eq(reviews.mentorshipId, r.mentorship.id),
+                  eq(reviews.studentId, ctx.user.id),
+                ),
+              )
+              .limit(1)
+              .then((x) => x[0] ?? null),
+          ]);
+          return { ...r, sessions: s, order, review };
+        }),
+      );
+      return { rows: all, total: Number(totalRow[0]?.count ?? 0), page, pageSize };
+    }),
 
   requestMock: candidate
     .input(

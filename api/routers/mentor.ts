@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { guestLectureRequests, mentorProfiles, mentorships, mockSessions, users } from "@db/schema";
@@ -50,32 +50,51 @@ export const mentorRouter = createRouter({
       return { success: true };
     }),
 
-  myMentees: mentor.query(async ({ ctx }) => {
-    const db = getDb();
-    const profile = await getMyProfile(ctx.user.id);
-    if (!profile) return [];
-    const rows = await db
-      .select({
-        mentorship: mentorships,
-        candidateName: users.name,
-        candidateEmail: users.email,
-        candidatePhone: users.phone,
-      })
-      .from(mentorships)
-      .innerJoin(users, eq(users.id, mentorships.candidateId))
-      .where(eq(mentorships.mentorProfileId, profile.id))
-      .orderBy(desc(mentorships.createdAt));
-    return Promise.all(
-      rows.map(async (r) => {
-        const sessions = await db
-          .select()
-          .from(mockSessions)
-          .where(eq(mockSessions.mentorshipId, r.mentorship.id))
-          .orderBy(desc(mockSessions.createdAt));
-        return { ...r, sessions };
-      }),
-    );
-  }),
+  myMentees: mentor
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(50).default(10),
+      }).optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const page = input?.page ?? 1;
+      const pageSize = input?.pageSize ?? 10;
+      const db = getDb();
+      const profile = await getMyProfile(ctx.user.id);
+      if (!profile) return { rows: [], total: 0, page, pageSize };
+      const offset = (page - 1) * pageSize;
+      const [totalRow, rows] = await Promise.all([
+        db
+          .select({ count: count() })
+          .from(mentorships)
+          .where(eq(mentorships.mentorProfileId, profile.id)),
+        db
+          .select({
+            mentorship: mentorships,
+            candidateName: users.name,
+            candidateEmail: users.email,
+            candidatePhone: users.phone,
+          })
+          .from(mentorships)
+          .innerJoin(users, eq(users.id, mentorships.candidateId))
+          .where(eq(mentorships.mentorProfileId, profile.id))
+          .orderBy(desc(mentorships.createdAt))
+          .limit(pageSize)
+          .offset(offset),
+      ]);
+      const withSessions = await Promise.all(
+        rows.map(async (r) => {
+          const sessions = await db
+            .select()
+            .from(mockSessions)
+            .where(eq(mockSessions.mentorshipId, r.mentorship.id))
+            .orderBy(desc(mockSessions.createdAt));
+          return { ...r, sessions };
+        }),
+      );
+      return { rows: withSessions, total: Number(totalRow[0]?.count ?? 0), page, pageSize };
+    }),
 
   scheduleSession: mentor
     .input(
