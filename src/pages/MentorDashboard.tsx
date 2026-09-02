@@ -1,22 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router";
+import type { inferProcedureOutput } from "@trpc/server";
+import type { AppRouter } from "../../api/router";
 import {
   AlertTriangle,
+  ArrowLeft,
   Briefcase,
   CalendarCheck,
   CalendarDays,
   Check,
   ExternalLink,
   GraduationCap,
-  History,
   LayoutTemplate,
   Link2,
   Linkedin,
   Loader2,
   MapPin,
+  MessageCircle,
   Pencil,
   Settings,
   Sprout,
+  Star,
   Trash2,
   Users,
 } from "lucide-react";
@@ -104,16 +108,20 @@ function VerificationBanner() {
 
 const MENTEES_PAGE_SIZE = 5;
 
+type MyMenteesOutput = inferProcedureOutput<AppRouter["mentor"]["myMentees"]>;
+type MenteeRow = MyMenteesOutput["rows"][number];
+
 function MenteesTab() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = trpc.mentor.myMentees.useQuery({ page, pageSize: MENTEES_PAGE_SIZE });
   const utils = trpc.useUtils();
+  const [view, setView] = useState<"list" | "detail">("list");
+  const [selected, setSelected] = useState<MenteeRow | null>(null);
   const [scheduleFor, setScheduleFor] = useState<number | null>(null);
   const [scheduleNote, setScheduleNote] = useState("");
   const [completeFor, setCompleteFor] = useState<number | null>(null);
   const [score, setScore] = useState("7");
   const [feedback, setFeedback] = useState("");
-  const [selected, setSelected] = useState<NonNullable<typeof data>["rows"][number] | null>(null);
 
   const invalidate = () => utils.mentor.myMentees.invalidate();
 
@@ -125,6 +133,16 @@ function MenteesTab() {
     onSuccess: () => { toast.success("Session completed & feedback saved"); setCompleteFor(null); setScore("7"); setFeedback(""); invalidate(); },
     onError: (e) => toast.error(e.message),
   });
+
+  const openDetail = (row: MenteeRow) => {
+    setSelected(row);
+    setView("detail");
+  };
+
+  const backToList = () => {
+    setView("list");
+    setSelected(null);
+  };
 
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
   if (!data || data.rows.length === 0) {
@@ -145,94 +163,22 @@ function MenteesTab() {
 
   return (
     <div className="space-y-5">
-      {data.rows.map(({ mentorship: m, candidateName, candidateEmail, candidatePhone, sessions }) => (
-        <div key={m.id} className="rounded-3xl border bg-card p-7 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="font-display text-lg font-semibold">{candidateName}</h3>
-              <p className="text-xs text-muted-foreground">{candidateEmail}{candidatePhone ? ` · ${candidatePhone}` : ""} · paid {formatINR(m.price)}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => setSelected({ mentorship: m, candidateName, candidateEmail, candidatePhone, sessions })}>
-                <History className="mr-1.5 h-3.5 w-3.5" /> View history
-              </Button>
-              <Badge className={m.status === "active" ? "bg-green-100 text-green-700" : "bg-stone-200 text-stone-600"}>{m.status}</Badge>
-            </div>
-          </div>
-          <div className="mt-3 text-sm text-muted-foreground">
-            GDs: <b className="text-foreground">{m.gdUsed}/{m.gdTotal}</b> · PIs: <b className="text-foreground">{m.piUsed}/{m.piTotal}</b>
-          </div>
-
-          <div className="mt-5 space-y-2.5">
-            {sessions.length === 0 && (
-              <p className="text-sm text-muted-foreground">No session requests yet.</p>
-            )}
-            {sessions.slice(0, 3).map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/60 px-4 py-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="uppercase">{s.type}</Badge>
-                  <span>{s.topic || "—"}</span>
-                  {s.scheduledNote && <span className="text-xs text-muted-foreground">· {s.scheduledNote}</span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  {s.score !== null && <Badge className="bg-orange-500">{s.score}/10</Badge>}
-                  {s.status === "requested" && (
-                    <Button size="sm" className="rounded-full" onClick={() => { setScheduleFor(s.id); setScheduleNote(s.scheduledNote ?? ""); }}>
-                      Schedule
-                    </Button>
-                  )}
-                  {s.status === "scheduled" && (
-                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => { setCompleteFor(s.id); setFeedback(s.feedback ?? ""); }}>
-                      <CalendarCheck className="mr-1.5 h-3.5 w-3.5" /> Complete
-                    </Button>
-                  )}
-                  {s.status === "completed" && <Badge className="bg-green-100 text-green-700">completed</Badge>}
-                </div>
-              </div>
-            ))}
-            {sessions.length > 3 && (
-              <Button variant="ghost" size="sm" className="w-full rounded-full" onClick={() => setSelected({ mentorship: m, candidateName, candidateEmail, candidatePhone, sessions })}>
-                Show all {sessions.length} sessions
-              </Button>
-            )}
-          </div>
-        </div>
-      ))}
-
-      {totalPages > 1 && (
-        <div className="flex flex-col items-center gap-2 pt-2">
-          <p className="text-xs text-muted-foreground">
-            Showing {Math.min((page - 1) * MENTEES_PAGE_SIZE + 1, data.total)}–{Math.min(page * MENTEES_PAGE_SIZE, data.total)} of {data.total}
-          </p>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <PaginationItem key={i + 1}>
-                  <PaginationLink
-                    isActive={page === i + 1}
-                    onClick={() => setPage(i + 1)}
-                    className="cursor-pointer"
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      {view === "list" ? (
+        <MenteesList
+          rows={data.rows}
+          totalPages={totalPages}
+          page={page}
+          setPage={setPage}
+          onOpen={openDetail}
+        />
+      ) : selected ? (
+        <MenteeDetail
+          row={selected}
+          onBack={backToList}
+          onSchedule={(s) => { setScheduleFor(s.id); setScheduleNote(s.scheduledNote ?? ""); }}
+          onComplete={(s) => { setCompleteFor(s.id); setFeedback(s.feedback ?? ""); }}
+        />
+      ) : null}
 
       <Dialog open={scheduleFor !== null} onOpenChange={(v) => !v && setScheduleFor(null)}>
         <DialogContent>
@@ -275,94 +221,274 @@ function MenteesTab() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <MenteeDetailDialog
-        selected={selected}
-        onClose={() => setSelected(null)}
-        onSchedule={(s) => { setScheduleFor(s.id); setScheduleNote(s.scheduledNote ?? ""); }}
-        onComplete={(s) => { setCompleteFor(s.id); setFeedback(s.feedback ?? ""); }}
-      />
     </div>
   );
 }
 
-function MenteeDetailDialog({
-  selected,
-  onClose,
+function MenteesList({
+  rows,
+  totalPages,
+  page,
+  setPage,
+  onOpen,
+}: {
+  rows: MenteeRow[];
+  totalPages: number;
+  page: number;
+  setPage: (p: number) => void;
+  onOpen: (row: MenteeRow) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {rows.map((row) => {
+        const { mentorship: m, candidateName, candidateEmail, candidatePhone, review } = row;
+        const statusMeta =
+          m.status === "active"
+            ? { label: "Ongoing", cls: "bg-green-100 text-green-700" }
+            : m.status === "completed"
+              ? { label: "Completed", cls: "bg-stone-200 text-stone-600" }
+              : { label: "Cancelled", cls: "bg-red-100 text-red-700" };
+        const gdPct = m.gdTotal ? (m.gdUsed / m.gdTotal) * 100 : 0;
+        const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
+        return (
+          <button
+            key={m.id}
+            onClick={() => onOpen(row)}
+            className="w-full text-left rounded-3xl border bg-card p-6 shadow-sm transition-colors hover:border-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-xl font-bold text-white">
+                  {candidateName?.slice(0, 2).toUpperCase() ?? "ME"}
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-semibold">{candidateName ?? "Mentee"}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {candidateEmail}{candidatePhone ? ` · ${candidatePhone}` : ""} · paid {formatINR(m.price)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {review && (
+                  <Badge className="bg-amber-100 text-amber-700 border-0">
+                    <Star className="mr-1 h-3 w-3 fill-amber-500 text-amber-500" /> Review received
+                  </Badge>
+                )}
+                <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-muted-foreground">Mock GDs</span>
+                  <b>{m.gdUsed}/{m.gdTotal}</b>
+                </div>
+                <Progress value={gdPct} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-muted-foreground">Mock Interviews</span>
+                  <b>{m.piUsed}/{m.piTotal}</b>
+                </div>
+                <Progress value={piPct} className="h-2" />
+              </div>
+            </div>
+          </button>
+        );
+      })}
+
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <p className="text-xs text-muted-foreground">
+            Showing {Math.min((page - 1) * MENTEES_PAGE_SIZE + 1, rows.length)}–{Math.min(page * MENTEES_PAGE_SIZE, rows.length)} of {rows.length}
+          </p>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <PaginationItem key={i + 1}>
+                  <PaginationLink
+                    isActive={page === i + 1}
+                    onClick={() => setPage(i + 1)}
+                    className="cursor-pointer"
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenteeDetail({
+  row,
+  onBack,
   onSchedule,
   onComplete,
 }: {
-  selected: { mentorship: { id: number; status: string; gdUsed: number; gdTotal: number; piUsed: number; piTotal: number; price: number }; candidateName: string | null; candidateEmail: string | null; candidatePhone: string | null; sessions: { id: number; type: "gd" | "pi"; topic: string | null; status: string; score: number | null; feedback: string | null; scheduledNote: string | null }[] } | null;
-  onClose: () => void;
-  onSchedule: (s: { id: number; scheduledNote: string | null }) => void;
-  onComplete: (s: { id: number; feedback: string | null }) => void;
+  row: MenteeRow;
+  onBack: () => void;
+  onSchedule: (s: MenteeRow["sessions"][number]) => void;
+  onComplete: (s: MenteeRow["sessions"][number]) => void;
 }) {
-  const m = selected?.mentorship;
+  const { mentorship: m, candidateName, candidateEmail, candidatePhone, sessions, review } = row;
+  const statusMeta =
+    m.status === "active"
+      ? { label: "Ongoing", cls: "bg-green-100 text-green-700" }
+      : m.status === "completed"
+        ? { label: "Completed", cls: "bg-stone-200 text-stone-600" }
+        : { label: "Cancelled", cls: "bg-red-100 text-red-700" };
+  const gdPct = m.gdTotal ? (m.gdUsed / m.gdTotal) * 100 : 0;
+  const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
+
   return (
-    <Dialog open={!!selected} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-2xl rounded-3xl">
-        <DialogHeader>
-          <DialogTitle className="font-display">{selected?.candidateName ?? "Mentee"}</DialogTitle>
-        </DialogHeader>
-        {selected && m && (
-          <div className="space-y-5 py-2">
-            <div className="rounded-2xl border bg-muted/40 p-4 space-y-1 text-sm">
-              <p><span className="text-muted-foreground">Email:</span> {selected.candidateEmail ?? "—"}</p>
-              <p><span className="text-muted-foreground">Phone:</span> {selected.candidatePhone ?? "—"}</p>
-              <p><span className="text-muted-foreground">Package:</span> {formatINR(m.price)} · {m.gdTotal} GD + {m.piTotal} PI</p>
-              <p><span className="text-muted-foreground">Progress:</span> GD {m.gdUsed}/{m.gdTotal} · PI {m.piUsed}/{m.piTotal} · <Badge className={m.status === "active" ? "bg-green-100 text-green-700" : "bg-stone-200 text-stone-600"}>{m.status}</Badge></p>
+    <div className="space-y-5">
+      <Button variant="outline" className="rounded-full" onClick={onBack}>
+        <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to mentees
+      </Button>
+
+      <div className="rounded-3xl border bg-card p-7 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-2xl font-bold text-white">
+              {candidateName?.slice(0, 2).toUpperCase() ?? "ME"}
+            </div>
+            <div>
+              <h2 className="font-display text-2xl font-bold">{candidateName ?? "Mentee"}</h2>
+              <p className="text-sm text-muted-foreground">
+                {candidateEmail}{candidatePhone ? ` · ${candidatePhone}` : ""}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
+            {candidatePhone && (
+              <Button size="sm" variant="outline" className="rounded-full" asChild>
+                <a href={`https://wa.me/${candidatePhone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer">
+                  <MessageCircle className="mr-1.5 h-3.5 w-3.5 text-green-600" /> WhatsApp
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="space-y-5">
+            <div className="rounded-2xl border bg-muted/40 p-4 space-y-2 text-sm">
+              <p><span className="text-muted-foreground">Package price:</span> <b>{formatINR(m.price)}</b></p>
+              <p><span className="text-muted-foreground">Package:</span> {m.gdTotal} GD + {m.piTotal} PI</p>
+              <p><span className="text-muted-foreground">Started:</span> {new Date(m.createdAt).toLocaleDateString("en-IN")}</p>
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold mb-3">Session history</h4>
-              <div className="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
-                {selected.sessions.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No sessions yet.</p>
-                )}
-                {selected.sessions.map((s) => (
-                  <div key={s.id} className="rounded-2xl bg-muted/60 px-4 py-3 text-sm space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="uppercase">{s.type}</Badge>
-                        <span>{s.topic || (s.type === "gd" ? "Group discussion" : "Personal interview")}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {s.score !== null && <Badge className="bg-orange-500">{s.score}/10</Badge>}
-                        <Badge className={
-                          s.status === "completed" ? "bg-green-100 text-green-700"
-                          : s.status === "scheduled" ? "bg-blue-100 text-blue-700"
-                          : "bg-stone-200 text-stone-600"
-                        }>
-                          {s.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    {s.scheduledNote && (
-                      <p className="text-xs text-muted-foreground"><span className="font-medium">Note:</span> {s.scheduledNote}</p>
-                    )}
-                    {s.feedback && (
-                      <p className="text-xs text-muted-foreground border-l-2 border-orange-400 pl-3">
-                        <span className="font-medium">Feedback:</span> {s.feedback}
-                      </p>
-                    )}
-                    <div className="flex gap-2">
-                      {s.status === "requested" && (
-                        <Button size="sm" className="rounded-full" onClick={() => onSchedule(s)}>Schedule</Button>
-                      )}
-                      {s.status === "scheduled" && (
-                        <Button size="sm" variant="outline" className="rounded-full" onClick={() => onComplete(s)}>
-                          <CalendarCheck className="mr-1.5 h-3.5 w-3.5" /> Complete
-                        </Button>
-                      )}
-                    </div>
+              <h4 className="text-sm font-semibold mb-3">Progress</h4>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Mock GDs</span>
+                    <b>{m.gdUsed}/{m.gdTotal}</b>
                   </div>
-                ))}
+                  <Progress value={gdPct} className="h-2" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Mock Interviews</span>
+                    <b>{m.piUsed}/{m.piTotal}</b>
+                  </div>
+                  <Progress value={piPct} className="h-2" />
+                </div>
               </div>
             </div>
+
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Student review</h4>
+              {review ? (
+                <div className="rounded-2xl border bg-amber-50 p-4 space-y-2">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-stone-300"}`}
+                      />
+                    ))}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {new Date(review.createdAt).toLocaleDateString("en-IN")}
+                    </span>
+                  </div>
+                  {review.title && <p className="font-medium text-sm">{review.title}</p>}
+                  {review.content && <p className="text-sm text-muted-foreground">{review.content}</p>}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No review yet.</p>
+              )}
+            </div>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+
+          <div>
+            <h4 className="text-sm font-semibold mb-3">Session history</h4>
+            <div className="space-y-2.5">
+              {sessions.length === 0 && (
+                <p className="text-sm text-muted-foreground">No sessions yet.</p>
+              )}
+              {sessions.map((s) => (
+                <div key={s.id} className="rounded-2xl border bg-muted/40 px-4 py-3 text-sm space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="uppercase">{s.type}</Badge>
+                      <span>{s.topic || (s.type === "gd" ? "Group discussion" : "Personal interview")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {s.score !== null && <Badge className="bg-orange-500">{s.score}/10</Badge>}
+                      <Badge className={
+                        s.status === "completed" ? "bg-green-100 text-green-700"
+                        : s.status === "scheduled" ? "bg-blue-100 text-blue-700"
+                        : "bg-stone-200 text-stone-600"
+                      }>
+                        {s.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  {s.scheduledNote && (
+                    <p className="text-xs text-muted-foreground"><span className="font-medium">Note:</span> {s.scheduledNote}</p>
+                  )}
+                  {s.feedback && (
+                    <p className="text-xs text-muted-foreground border-l-2 border-orange-400 pl-3">
+                      <span className="font-medium">Feedback:</span> {s.feedback}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    {s.status === "requested" && (
+                      <Button size="sm" className="rounded-full" onClick={() => onSchedule(s)}>Schedule</Button>
+                    )}
+                    {s.status === "scheduled" && (
+                      <Button size="sm" variant="outline" className="rounded-full" onClick={() => onComplete(s)}>
+                        <CalendarCheck className="mr-1.5 h-3.5 w-3.5" /> Complete
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -1,7 +1,7 @@
 import { and, count, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { guestLectureRequests, mentorProfiles, mentorships, mockSessions, users } from "@db/schema";
+import { guestLectureRequests, mentorProfiles, mentorships, mockSessions, reviews, users } from "@db/schema";
 import { getDb } from "../queries/connection";
 import { createRouter } from "../middleware";
 import { roleQuery } from "../rbac";
@@ -85,12 +85,20 @@ export const mentorRouter = createRouter({
       ]);
       const withSessions = await Promise.all(
         rows.map(async (r) => {
-          const sessions = await db
-            .select()
-            .from(mockSessions)
-            .where(eq(mockSessions.mentorshipId, r.mentorship.id))
-            .orderBy(desc(mockSessions.createdAt));
-          return { ...r, sessions };
+          const [sessions, review] = await Promise.all([
+            db
+              .select()
+              .from(mockSessions)
+              .where(eq(mockSessions.mentorshipId, r.mentorship.id))
+              .orderBy(desc(mockSessions.createdAt)),
+            db
+              .select()
+              .from(reviews)
+              .where(eq(reviews.mentorshipId, r.mentorship.id))
+              .limit(1)
+              .then((x) => x[0] ?? null),
+          ]);
+          return { ...r, sessions, review };
         }),
       );
       return { rows: withSessions, total: Number(totalRow[0]?.count ?? 0), page, pageSize };
