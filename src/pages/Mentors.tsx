@@ -18,6 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
 import { mentorImage, fallbackFace } from "@/lib/images";
+import type { AppRouter } from "../../api/router";
+import type { inferProcedureOutput } from "@trpc/server";
+
+type MentorList = inferProcedureOutput<AppRouter["catalog"]["mentors"]>;
+type CatalogStats = inferProcedureOutput<AppRouter["catalog"]["stats"]>;
 
 function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bschool: string | null; profileImage?: string | null }) {
   const [errored, setErrored] = useState(false);
@@ -33,7 +38,10 @@ function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bs
   );
 }
 
-function makeHeroVisual(mentors: NonNullable<ReturnType<typeof trpc.catalog.mentors.useQuery>["data"]> | undefined) {
+function makeHeroVisual(
+  mentors: MentorList | undefined,
+  stats: CatalogStats | undefined,
+) {
   const list = mentors ?? [];
   const featured = list[0];
   const orbit = list.slice(1, 6);
@@ -45,38 +53,40 @@ function makeHeroVisual(mentors: NonNullable<ReturnType<typeof trpc.catalog.ment
     { angle: 300, distance: 160, size: 56 },
   ];
 
+  const fallbackFeatured = {
+    name: "Rohan Mehta",
+    avatar: mentorImage("Rohan Mehta", "IIM Ahmedabad"),
+    school: "IIM Ahmedabad",
+    company: "ex-McKinsey",
+    expertise: "GD · PI · Placements",
+    students: 247,
+  };
+
   return (
     <ProfileNetwork
       featured={
         featured
           ? {
               name: featured.name ?? "Mentor",
-              avatar: mentorImage(featured.name ?? "Mentor", featured.profile.bschool ?? "IIM"),
+              avatar: featured.profile.profileImage || mentorImage(featured.name ?? "Mentor", featured.profile.bschool ?? "IIM"),
               school: featured.profile.bschool ?? "",
               company: featured.profile.company ?? "",
               expertise: featured.profile.expertise?.split(",").slice(0, 3).join(" · ") ?? "",
               students: 247,
             }
-          : {
-              name: "Rohan Mehta",
-              avatar: mentorImage("Rohan Mehta", "IIM Ahmedabad"),
-              school: "IIM Ahmedabad",
-              company: "ex-McKinsey",
-              expertise: "GD · PI · Placements",
-              students: 247,
-            }
+          : fallbackFeatured
       }
       orbit={orbit.map((m, i) => ({
         name: m.name ?? "Mentor",
-        avatar: mentorImage(m.name ?? "Mentor", m.profile.bschool ?? "IIM"),
+        avatar: m.profile.profileImage || mentorImage(m.name ?? "Mentor", m.profile.bschool ?? "IIM"),
         label: m.profile.expertise?.split(",").slice(0, 2).join(" · ") ?? "Mentor",
         ...orbitPositions[i],
       }))}
       tags={["Verified alumni", "1:1 sessions", "Mock GDs", "Mock PIs", "Profile reviews"]}
       stats={[
-        { value: "4,000+", label: "mentors" },
-        { value: "1,200+", label: "reviews" },
-        { value: "4.9", label: "rating" },
+        { value: `${(stats?.mentors ?? list.length).toLocaleString("en-IN")}+`, label: "verified mentors" },
+        { value: `${(stats?.candidates ?? 0).toLocaleString("en-IN")}+`, label: "aspirants" },
+        { value: `${stats?.colleges ?? 0}`, label: "B-schools" },
       ]}
     />
   );
@@ -84,6 +94,7 @@ function makeHeroVisual(mentors: NonNullable<ReturnType<typeof trpc.catalog.ment
 
 export default function Mentors() {
   const { data: mentors, isLoading } = trpc.catalog.mentors.useQuery();
+  const { data: stats } = trpc.catalog.stats.useQuery();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
@@ -116,7 +127,7 @@ export default function Mentors() {
         secondaryCta="Become a mentor"
         secondaryHref="/login?mode=register&role=mentor"
       >
-        {makeHeroVisual(mentors)}
+        {makeHeroVisual(mentors, stats)}
       </EditorialHero>
 
       <StorySection
@@ -170,9 +181,9 @@ export default function Mentors() {
 
       <CredibilityStrip
         stats={[
-          { value: "4,000+", label: "verified mentors" },
-          { value: "1,200+", label: "student reviews" },
-          { value: "4.9/5", label: "average rating" },
+          { value: `${stats?.mentors ?? 0}+`, label: "verified mentors" },
+          { value: `${stats?.candidates ?? 0}+`, label: "aspirants on board" },
+          { value: `${stats?.colleges ?? 0}`, label: "B-schools compared" },
         ]}
         extra={["Product leaders", "Founders", "Consultants", "Placement experts"]}
       />

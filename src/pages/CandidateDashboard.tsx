@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import {
-  ArrowRight, Award, BookOpen, Calendar, Check, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
+  ArrowRight, Award, BookOpen, Calendar, Check, Compass, Download, LayoutDashboard, Lightbulb,
   Loader2, MessageCircle, Trophy, Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { downloadBase64 } from "@/lib/format";
 import { fallbackFace } from "@/lib/images";
-import { format } from "date-fns";
+
 
 const subStatus: Record<string, { label: string; cls: string }> = {
   submitted: { label: "Submitted", cls: "bg-blue-100 text-blue-700" },
@@ -38,8 +38,6 @@ export default function CandidateDashboard() {
       tabs={[
         { id: "overview", label: "Overview", icon: LayoutDashboard },
         { id: "mentorships", label: "Mentorships", icon: Users },
-        { id: "bookings", label: "Bookings", icon: Calendar },
-        { id: "orders", label: "Orders", icon: CreditCard },
         { id: "playbooks", label: "My Playbooks", icon: BookOpen },
         { id: "submissions", label: "Submissions", icon: Trophy },
       ]}
@@ -48,8 +46,6 @@ export default function CandidateDashboard() {
         <>
           {tab === "overview" && <Overview user={user} />}
           {tab === "mentorships" && <MentorshipsTab />}
-          {tab === "bookings" && <BookingsTab />}
-          {tab === "orders" && <OrdersTab />}
           {tab === "playbooks" && <PlaybooksTab />}
           {tab === "submissions" && <SubmissionsTab />}
         </>
@@ -391,150 +387,6 @@ function MentorshipsTab() {
   );
 }
 
-function BookingsTab() {
-  const { data, isLoading } = trpc.booking.listForStudent.useQuery();
-
-  if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
-  if (!data || data.length === 0) {
-    return (
-      <div className="rounded-3xl border bg-card p-12 text-center">
-        <div className="mx-auto h-16 w-16 rounded-2xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
-          <Calendar className="h-8 w-8" />
-        </div>
-        <h3 className="mt-4 font-display text-xl font-semibold">No bookings yet</h3>
-        <p className="mt-2 text-sm text-muted-foreground">Book a session with a verified mentor to see it here.</p>
-        <Button className="mt-5 rounded-full" asChild><Link to="/mentors">Browse mentors</Link></Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      {data.map(({ booking, expertName, serviceTitle }) => {
-        const date = format(new Date(booking.startAt), "PPp");
-        return (
-          <div key={booking.id} className="rounded-3xl border bg-card p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <Link
-                to={`/dashboard/orders/${booking.id}`}
-                className="min-w-0 flex-1 hover:opacity-80 transition-opacity"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-display text-lg font-semibold">{serviceTitle}</h3>
-                  <Badge
-                    variant={
-                      booking.status === "confirmed" || booking.status === "completed"
-                        ? "default"
-                        : booking.status === "cancelled"
-                          ? "destructive"
-                          : "secondary"
-                    }
-                  >
-                    {booking.status}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">with {expertName}</p>
-                <p className="text-sm mt-2 flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-muted-foreground" /> {date}
-                </p>
-              </Link>
-              <div className="flex items-center gap-2">
-                {booking.status === "completed" && (
-                  <Badge variant="outline" className="text-green-700 border-green-200 bg-green-50">
-                    Ready for review
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function OrdersTab() {
-  const { data: orders, isLoading } = trpc.payments.myOrders.useQuery();
-  const utils = trpc.useUtils();
-  const pay = trpc.payments.simulatePay.useMutation({
-    onSuccess: () => {
-      toast.success("Payment successful");
-      utils.payments.myOrders.invalidate();
-      utils.booking.listForStudent.invalidate();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
-  if (!orders || orders.length === 0) {
-    return (
-      <div className="rounded-3xl border bg-card p-12 text-center">
-        <div className="mx-auto h-16 w-16 rounded-2xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
-          <CreditCard className="h-8 w-8" />
-        </div>
-        <h3 className="mt-4 font-display text-xl font-semibold">No orders yet</h3>
-        <p className="mt-2 text-sm text-muted-foreground">Book a session with a verified mentor to see it here.</p>
-        <Button className="mt-5 rounded-full" asChild><Link to="/mentors">Browse mentors</Link></Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      {orders.map(({ order, booking, expertName, serviceTitle, payment }) => {
-        const date = format(new Date(booking.startAt), "PPp");
-        const isPending = order.status === "pending";
-        return (
-          <div key={order.id} className="rounded-3xl border bg-card p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <Link
-                to={`/dashboard/orders/${booking.id}`}
-                className="min-w-0 flex-1 hover:opacity-80 transition-opacity"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-display text-lg font-semibold">{serviceTitle}</h3>
-                  <Badge variant={order.status === "paid" ? "default" : "secondary"}>
-                    {order.status}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">with {expertName}</p>
-                <p className="text-sm mt-2 flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-muted-foreground" /> {date}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Amount:</span>
-                  <span className="font-medium">₹{order.amount.toLocaleString("en-IN")} {order.currency}</span>
-                  {payment && (
-                    <span className="text-xs text-muted-foreground">
-                      Paid via {payment.provider} · {payment.providerPaymentId}
-                    </span>
-                  )}
-                </div>
-              </Link>
-              <div className="flex items-center gap-2">
-                {isPending && (
-                  <Button
-                    className="rounded-full"
-                    disabled={pay.isPending}
-                    onClick={() => pay.mutate({ orderId: order.id })}
-                  >
-                    {pay.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    <CreditCard className="mr-1.5 h-4 w-4" /> Pay now
-                  </Button>
-                )}
-                {order.status === "paid" && (
-                  <Badge className="bg-green-100 text-green-700 border-0">
-                    <CreditCard className="mr-1.5 h-3.5 w-3.5" /> Paid
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 function PlaybooksTab() {
   const { data, isLoading } = trpc.candidate.myPlaybooks.useQuery();
@@ -554,7 +406,11 @@ function PlaybooksTab() {
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       {data.map(({ purchase, playbook }) => (
-        <div key={purchase.id} className="rounded-3xl border bg-card p-6 shadow-sm flex gap-4">
+        <Link
+          key={purchase.id}
+          to={`/playbooks/${playbook.id}`}
+          className="rounded-3xl border bg-card p-6 shadow-sm flex gap-4 transition-colors hover:border-orange-200 hover:bg-orange-50/30"
+        >
           <div className="h-12 w-12 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
             <BookOpen className="h-6 w-6" />
           </div>
@@ -565,7 +421,7 @@ function PlaybooksTab() {
             </p>
             <Badge variant="secondary" className="mt-2">{playbook.category}</Badge>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );

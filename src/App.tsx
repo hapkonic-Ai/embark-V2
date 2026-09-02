@@ -11,11 +11,11 @@ import MentorDetail from "./pages/MentorDetail";
 import PublicMentorProfile from "./pages/PublicMentorProfile";
 import PublicServiceDetail from "./pages/PublicServiceDetail";
 import Playbooks from "./pages/Playbooks";
+import PlaybookDetail from "./pages/PlaybookDetail";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Colleges from "./pages/Colleges";
 import CandidateDashboard from "./pages/CandidateDashboard";
-import MyBookings from "./pages/MyBookings";
 import MentorDashboard from "./pages/MentorDashboard";
 import ExpertOnboarding from "./pages/ExpertOnboarding";
 import ExpertDashboard from "./pages/ExpertDashboard";
@@ -25,7 +25,6 @@ import ExpertServices from "./pages/ExpertServices";
 import ExpertServiceEditor from "./pages/ExpertServiceEditor";
 import ExpertServicePackageEditor from "./pages/ExpertServicePackageEditor";
 import PublicPackageDetail from "./pages/PublicPackageDetail";
-import StudentBookingDetail from "./pages/StudentBookingDetail";
 import ExpertCalendar from "./pages/ExpertCalendar";
 import ExpertBookings from "./pages/ExpertBookings";
 import ExpertBookingDetail from "./pages/ExpertBookingDetail";
@@ -162,6 +161,7 @@ export default function App() {
         <Route path="/mentors/:id" element={<MentorDetail />} />
         <Route path="/m/:slug" element={<PublicMentorProfile />} />
         <Route path="/playbooks" element={<Playbooks />} />
+        <Route path="/playbooks/:id" element={<PlaybookDetail />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/colleges" element={<Colleges />} />
@@ -176,22 +176,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/dashboard/orders/:id"
-          element={
-            <ProtectedRoute roles={["candidate"]}>
-              <StudentBookingDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bookings"
-          element={
-            <ProtectedRoute roles={["candidate"]}>
-              <MyBookings />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/mentor/dashboard"
           element={

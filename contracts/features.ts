@@ -11,14 +11,15 @@ const file = (features as FeaturesFile) ?? {};
 function envDisabled(): string[] {
   try {
     if (typeof process !== "undefined" && process.env?.DISABLED_FEATURES) {
-      return process.env.DISABLED_FEATURES.split(",").map((s) => s.trim()).filter(Boolean);
+      return process.env.DISABLED_FEATURES.split(",").map((s: string) => s.trim()).filter(Boolean);
     }
   } catch {
     // ignore
   }
   try {
-    if (typeof import.meta !== "undefined" && import.meta.env?.VITE_DISABLED_FEATURES) {
-      return import.meta.env.VITE_DISABLED_FEATURES.split(",").map((s) => s.trim()).filter(Boolean);
+    const viteEnv = (import.meta as unknown as { env?: Record<string, string> }).env;
+    if (typeof import.meta !== "undefined" && viteEnv?.VITE_DISABLED_FEATURES) {
+      return viteEnv.VITE_DISABLED_FEATURES.split(",").map((s: string) => s.trim()).filter(Boolean);
     }
   } catch {
     // ignore

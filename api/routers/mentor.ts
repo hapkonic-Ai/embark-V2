@@ -186,6 +186,7 @@ export const mentorRouter = createRouter({
         request: guestLectureRequests,
         campusName: users.name,
         campusEmail: users.email,
+        campusPhone: users.phone,
       })
       .from(guestLectureRequests)
       .innerJoin(users, eq(users.id, guestLectureRequests.campusId))
@@ -200,6 +201,7 @@ export const mentorRouter = createRouter({
         requestId: z.number(),
         status: z.enum(["accepted", "rejected"]),
         confirmedDate: z.string().datetime().optional(),
+        mentorContact: z.string().max(255).optional(),
         mentorNote: z.string().max(2000).optional(),
       }),
     )
@@ -227,6 +229,7 @@ export const mentorRouter = createRouter({
         .set({
           status: input.status,
           confirmedDate: input.confirmedDate ? new Date(input.confirmedDate) : req.proposedDate,
+          mentorContact: input.mentorContact,
           mentorNote: input.mentorNote,
         })
         .where(eq(guestLectureRequests.id, input.requestId));

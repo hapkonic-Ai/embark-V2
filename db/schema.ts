@@ -145,6 +145,30 @@ export const mentorships = mysqlTable("mentorships", {
 
 export type Mentorship = typeof mentorships.$inferSelect;
 
+export const mentorshipPayments = mysqlTable("mentorship_payments", {
+  id: serial("id").primaryKey(),
+  mentorshipId: bigint("mentorshipId", { mode: "number", unsigned: true })
+    .notNull()
+    .unique(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  mentorProfileId: bigint("mentorProfileId", { mode: "number", unsigned: true })
+    .notNull(),
+  amount: int("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).default("INR").notNull(),
+  provider: varchar("provider", { length: 32 }).default("demo").notNull(),
+  providerPaymentId: varchar("providerPaymentId", { length: 128 }),
+  status: mysqlEnum("status", ["pending", "success", "failed"])
+    .default("pending")
+    .notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export type MentorshipPayment = typeof mentorshipPayments.$inferSelect;
+
 export const mockSessions = mysqlTable("mock_sessions", {
   id: serial("id").primaryKey(),
   mentorshipId: bigint("mentorshipId", { mode: "number", unsigned: true })
@@ -177,6 +201,7 @@ export const playbooks = mysqlTable("playbooks", {
   pages: int("pages").default(40).notNull(),
   emoji: varchar("emoji", { length: 16 }).default("📘").notNull(),
   coverImage: text("coverImage"),
+  fileUrl: text("fileUrl"),
   isPublished: boolean("isPublished").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -208,6 +233,7 @@ export const events = mysqlTable("events", {
     .notNull(),
   prize: varchar("prize", { length: 255 }),
   emoji: varchar("emoji", { length: 16 }).default("🏆").notNull(),
+  coverImage: text("coverImage"),
   startAt: timestamp("startAt"),
   endAt: timestamp("endAt"),
   status: mysqlEnum("status", ["draft", "live", "closed"])
@@ -281,10 +307,13 @@ export const guestLectureRequests = mysqlTable("guest_lecture_requests", {
   status: mysqlEnum("status", ["pending", "accepted", "rejected"])
     .default("pending")
     .notNull(),
+  topic: varchar("topic", { length: 255 }),
   proposedDate: timestamp("proposedDate"),
   confirmedDate: timestamp("confirmedDate"),
   campusNote: text("campusNote"),
+  campusContact: text("campusContact"),
   mentorNote: text("mentorNote"),
+  mentorContact: text("mentorContact"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()

@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
-import { BookOpen, Check } from "lucide-react";
+import { BookOpen, Check, Download } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,7 +46,19 @@ type Playbook = {
   pages: number;
   emoji: string;
   coverImage: string | null;
+  fileUrl: string | null;
 };
+
+function downloadBase64(fileName: string, mime: string, base64: string) {
+  const link = document.createElement("a");
+  link.href = `data:${mime};base64,${base64}`;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+const MotionLink = motion(Link);
 
 export default function Playbooks() {
   const { user, isAuthenticated } = useAuth();
@@ -63,6 +76,18 @@ export default function Playbooks() {
     onSuccess: () => {
       toast.success("Playbook added to your library!");
       utils.candidate.myPlaybooks.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const download = trpc.candidate.downloadPlaybook.useMutation({
+    onSuccess: (res) => {
+      if (!res.fileBase64) {
+        toast.error("Playbook file is empty.");
+        return;
+      }
+      downloadBase64(res.fileName, res.fileMime, res.fileBase64);
+      toast.success("Download started!");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -133,8 +158,9 @@ export default function Playbooks() {
               const isOwned = ownedIds.has(p.id);
               const cover = p.coverImage || fallbackCover(p.id, p.title);
               return (
-                <motion.div
+                <MotionLink
                   key={p.id}
+                  to={`/playbooks/${p.id}`}
                   initial={reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
@@ -164,17 +190,23 @@ export default function Playbooks() {
                     <div className="mt-5 flex items-center justify-between border-t border-stone-800 pt-4">
                       <span className="font-display text-xl font-bold text-stone-100">{formatINR(p.price)}</span>
                       {isOwned ? (
-                        <Button size="sm" variant="secondary" disabled className="rounded-full bg-card text-muted-foreground">
-                          <Check className="mr-1.5 h-3.5 w-3.5" /> Owned
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full bg-card text-muted-foreground hover:bg-stone-100 hover:text-stone-900"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); download.mutate({ playbookId: p.id }); }}
+                          disabled={download.isPending}
+                        >
+                          <Download className="mr-1.5 h-3.5 w-3.5" /> Download
                         </Button>
                       ) : (
-                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={() => buy(p)}>
+                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); buy(p); }}>
                           Get it
                         </Button>
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </MotionLink>
               );
             })}
           </div>

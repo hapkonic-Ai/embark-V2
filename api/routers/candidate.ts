@@ -1,10 +1,12 @@
 import { and, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { nanoid } from "nanoid";
 import {
   events,
   mentorProfiles,
   mentorships,
+  mentorshipPayments,
   mockSessions,
   playbookPurchases,
   playbooks,
@@ -14,6 +16,7 @@ import {
 import { getDb } from "../queries/connection";
 import { createRouter } from "../middleware";
 import { roleQuery } from "../rbac";
+import { parseDataUrl, resolveAssetUrl } from "../lib/file-assets";
 
 const candidate = roleQuery("candidate");
 
@@ -60,14 +63,33 @@ export const candidateRouter = createRouter({
           message: "You already have an active mentorship with this mentor.",
         });
       }
-      await db.insert(mentorships).values({
-        candidateId: ctx.user.id,
+      const [inserted] = await db
+        .insert(mentorships)
+        .values({
+          candidateId: ctx.user.id,
+          mentorProfileId: input.mentorProfileId,
+          price: mentor.profile.price,
+          gdTotal: mentor.profile.mockGds,
+          piTotal: mentor.profile.mockPis,
+        })
+        .$returningId();
+
+      await db.insert(mentorshipPayments).values({
+        mentorshipId: inserted.id,
+        userId: ctx.user.id,
         mentorProfileId: input.mentorProfileId,
-        price: mentor.profile.price,
-        gdTotal: mentor.profile.mockGds,
-        piTotal: mentor.profile.mockPis,
+        amount: mentor.profile.price,
+        currency: "INR",
+        provider: "demo",
+        providerPaymentId: `demo_${nanoid(16)}`,
+        status: "success",
       });
-      return { success: true, whatsapp: mentor.profile.whatsapp };
+
+      return {
+        success: true,
+        mentorshipId: inserted.id,
+        whatsapp: mentor.profile.whatsapp,
+      };
     }),
 
   myMentorships: candidate.query(async ({ ctx }) => {
@@ -195,6 +217,59 @@ export const candidateRouter = createRouter({
       .where(eq(playbookPurchases.userId, ctx.user.id))
       .orderBy(desc(playbookPurchases.createdAt));
   }),
+
+  downloadPlaybook: candidate
+    .input(z.object({ playbookId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const purchase = await db
+        .select({ id: playbookPurchases.id })
+        .from(playbookPurchases)
+        .where(
+          and(
+            eq(playbookPurchases.userId, ctx.user.id),
+            eq(playbookPurchases.playbookId, input.playbookId),
+          ),
+        )
+        .limit(1);
+      if (!purchase[0]) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't own this playbook.",
+        });
+      }
+      const pb = await db
+        .select()
+        .from(playbooks)
+        .where(eq(playbooks.id, input.playbookId))
+        .limit(1);
+      if (!pb[0] || !pb[0].fileUrl) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Playbook file not found.",
+        });
+      }
+      const resolved = await resolveAssetUrl(pb[0].fileUrl, db);
+      if (!resolved) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Playbook file could not be resolved.",
+        });
+      }
+      const parsed = parseDataUrl(resolved);
+      if (parsed) {
+        return {
+          fileName: `${pb[0].title}.${parsed.mimeType.split("/").pop() ?? "txt"}`,
+          fileMime: parsed.mimeType,
+          fileBase64: parsed.base64,
+        };
+      }
+      return {
+        fileName: `${pb[0].title}.txt`,
+        fileMime: "text/plain",
+        fileBase64: "",
+      };
+    }),
 
   // -------------------------------------------------------------- events
   submitEvent: candidate
