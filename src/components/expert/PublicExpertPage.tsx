@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
   Star,
@@ -13,10 +13,13 @@ import {
   Github,
   Mail,
   Check,
+  CalendarCheck,
+  ShoppingCart,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/providers/cart";
 import { SafeImg } from "@/components/site/SafeImg";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
@@ -70,6 +73,108 @@ function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function BookMentorship({
+  mentorProfileId,
+  price,
+  accentStyle,
+  btnRadius,
+  displayName,
+  gdTotal,
+  piTotal,
+}: {
+  mentorProfileId: number;
+  price?: number | null;
+  accentStyle: React.CSSProperties;
+  btnRadius: string;
+  displayName: string;
+  gdTotal?: number | null;
+  piTotal?: number | null;
+}) {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { addItem, items } = useCart();
+  const [open, setOpen] = useState(false);
+
+  const inCart = items.some((i) => i.type === "mentorship" && i.mentorProfileId === mentorProfileId);
+
+  const handleClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login?mode=register&role=candidate");
+      return;
+    }
+    if (user?.role !== "candidate") {
+      toast("Only candidates can book a mentor", { description: "Sign up as a candidate to request a session." });
+      return;
+    }
+    setOpen(true);
+  };
+
+  const addToCart = () => {
+    if (price == null) return;
+    const item: Omit<import("@/providers/cart").MentorshipCartItem, "id"> = {
+      type: "mentorship",
+      mentorProfileId,
+      mentorName: displayName,
+      price,
+      gdTotal: gdTotal ?? 0,
+      piTotal: piTotal ?? 0,
+    };
+    addItem(item);
+    toast.success("Added to cart", { description: "Go to your dashboard Orders section to checkout." });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <div className="rounded-3xl border p-6 bg-card">
+        <h3 className="font-display text-lg font-semibold mb-2">Book a session</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          {price ? `Mock GDs & PIs starting at ${formatINR(price)}.` : "Request a mock GD/PI or profile review."}
+        </p>
+        <Button className={`w-full ${btnRadius}`} style={accentStyle} onClick={handleClick}>
+          <CalendarCheck className="mr-1.5 h-4 w-4" /> Book mentorship
+        </Button>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Book mentorship</DialogTitle>
+            <DialogDescription>
+              Add {displayName}’s mentorship package to your cart and checkout from your dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-2xl border bg-muted/40 p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Mentor</span>
+                <span className="font-medium">{displayName}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Package</span>
+                <span className="font-medium">{gdTotal} GD + {piTotal} PI</span>
+              </div>
+              <div className="flex items-center justify-between text-lg font-semibold pt-2 border-t">
+                <span>Total</span>
+                <span>{price ? formatINR(price) : "Free"}</span>
+              </div>
+            </div>
+            <Button
+              className="w-full rounded-full"
+              style={accentStyle}
+              disabled={inCart || price == null}
+              onClick={addToCart}
+            >
+              <ShoppingCart className="mr-1.5 h-4 w-4" />
+              {inCart ? "Already in cart" : "Add to cart"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
 
 function ReviewSummary({ expertUserId }: { expertUserId: number }) {
@@ -303,7 +408,17 @@ function ReviewCTA({ expertUserId }: { expertUserId: number }) {
               />
             </div>
 
-            <Button className="w-full rounded-full" disabled={!canSubmit} onClick={() => create.mutate({ bookingId: pending.bookingId, rating, title: title || undefined, content: content || undefined })}>
+            <Button
+              className="w-full rounded-full"
+              disabled={!canSubmit}
+              onClick={() => {
+                if ("bookingId" in pending) {
+                  create.mutate({ bookingId: pending.bookingId, rating, title: title || undefined, content: content || undefined });
+                } else if ("mentorshipId" in pending) {
+                  create.mutate({ mentorshipId: pending.mentorshipId, rating, title: title || undefined, content: content || undefined });
+                }
+              }}
+            >
               {create.isPending && <Clock className="mr-2 h-4 w-4 animate-spin" />}
               Submit review
             </Button>
@@ -616,6 +731,17 @@ export default function PublicExpertPage({ data }: { data: NonNullable<ExpertPag
 
             <aside className="space-y-6">
               <div className="sticky top-24 space-y-6">
+                {profile?.id && (
+                  <BookMentorship
+                    mentorProfileId={profile.id}
+                    price={profile.price}
+                    accentStyle={accentStyle}
+                    btnRadius={btnRadius}
+                    displayName={displayName}
+                    gdTotal={profile.mockGds}
+                    piTotal={profile.mockPis}
+                  />
+                )}
                 {(orderedSections.includes("cta") && config.ctaType !== "none") || socials.length > 0 ? (
                   <div className={`rounded-3xl border p-6 ${cardBg}`}>
                     <h3 className="font-display text-lg font-semibold mb-4">{SECTION_LABELS.social_links}</h3>

@@ -18,6 +18,17 @@ export function hashPassword(password: string): string {
   return `${salt}:${hash}`;
 }
 
+async function getOnboardingForUser(userId: number, role: string) {
+  if (role !== "expert" && role !== "mentor") return null;
+  const db = getDb();
+  const rows = await db
+    .select({ currentStep: expertOnboarding.currentStep, status: expertOnboarding.status })
+    .from(expertOnboarding)
+    .where(eq(expertOnboarding.userId, userId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export function verifyPassword(password: string, stored: string): boolean {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;
@@ -110,8 +121,6 @@ export const accountRouter = createRouter({
           publicSlug: `${handle}-${user.id}`,
           linkedinUrl: input.linkedinUrl,
         });
-      }
-      if (input.role === "expert") {
         await db.insert(expertOnboarding).values({
           userId: user.id,
           currentStep: "account",
@@ -124,8 +133,9 @@ export const accountRouter = createRouter({
           .where(eq(mentorProfiles.userId, user.id));
       }
       await issueSession(ctx.resHeaders, ctx.req.headers, unionId);
+      const onboarding = await getOnboardingForUser(user.id, user.role);
       const { passwordHash: _ph, ...safe } = user;
-      return safe;
+      return { ...safe, onboarding };
     }),
 
   login: publicQuery.input(creds).mutation(async ({ ctx, input }) => {
@@ -158,8 +168,9 @@ export const accountRouter = createRouter({
       .set({ lastSignInAt: new Date() })
       .where(eq(users.id, user.id));
     await issueSession(ctx.resHeaders, ctx.req.headers, unionId);
+    const onboarding = await getOnboardingForUser(user.id, user.role);
     const { passwordHash: _ph, ...safe } = user;
-    return safe;
+    return { ...safe, onboarding };
   }),
 
   updateProfile: authedQuery

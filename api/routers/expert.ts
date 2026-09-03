@@ -5,6 +5,7 @@ import {
   expertEducation,
   expertExperience,
   expertOnboarding,
+  expertPages,
   expertResumes,
   expertVerifications,
   fileAssets,
@@ -13,21 +14,28 @@ import {
 import { calculateProfileCompletion } from "../lib/profile-completion";
 import { regexParser } from "../lib/resume-parsers/regex-parser";
 import { getDb } from "../queries/connection";
-import { createRouter } from "../middleware";
-import { roleQuery } from "../rbac";
+import { createRouter, authedQuery } from "../middleware";
 import {
   approxBase64Bytes,
-  assetRef,
-  buildDataUrl,
   isDataUrl,
   parseAssetRef,
   parseDataUrl,
   resolveAssetFields,
-  saveBase64Asset,
 } from "../lib/file-assets";
 import { isValidTimezone } from "../lib/calendar";
+import { uploadObject } from "../lib/s3-client";
+import { nanoid } from "nanoid";
+import { slugify } from "../lib/expert-page";
 
-const expert = roleQuery("expert");
+const expert = authedQuery.use(async ({ ctx, next }) => {
+  if (ctx.user.role !== "mentor" && ctx.user.role !== "expert") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Requires role: mentor or expert",
+    });
+  }
+  return next({ ctx });
+});
 
 const ACCEPTED_RESUME_MIMES = [
   "application/pdf",
@@ -36,6 +44,34 @@ const ACCEPTED_RESUME_MIMES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 const MAX_RESUME_BYTES = 8 * 1024 * 1024;
+
+const ACCEPTED_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+async function uploadBase64Image(userId: number, dataUrlOrBase64: string, fileName = "upload"): Promise<string> {
+  const parsed = parseDataUrl(dataUrlOrBase64);
+  const mimeType = parsed?.mimeType ?? "image/png";
+  const base64 = parsed?.base64 ?? dataUrlOrBase64;
+  if (!ACCEPTED_IMAGE_MIMES.includes(mimeType)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Unsupported image type. Accepted: JPG, PNG, GIF, WebP.",
+    });
+  }
+  const approxBytes = approxBase64Bytes(base64);
+  if (approxBytes > MAX_IMAGE_BYTES) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Image must be under 5 MB." });
+  }
+  const buffer = Buffer.from(base64, "base64");
+  const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+  const key = `users/${userId}/images/${nanoid(8)}-${safeName}`;
+  return uploadObject(key, buffer, mimeType);
+}
 
 async function getMyProfile(userId: number) {
   const rows = await getDb()
@@ -121,6 +157,7 @@ export const expertRouter = createRouter({
         isActive: ctx.user.isActive,
       },
       onboarding,
+      isOnboardingComplete: onboarding.status === "completed",
       profile: resolvedProfile,
       completion,
       verification: latestVerification,
@@ -149,6 +186,44 @@ export const expertRouter = createRouter({
     const completion = await computeAndPersistCompletion(ctx.user.id);
     return { profile: resolvedProfile, experiences, educations, completion };
   }),
+
+  checkSlugAvailability: expert
+    .input(
+      z.object({
+        slug: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(
+            /^[a-z0-9-]+$/,
+            "Slug may only contain lowercase letters, numbers, and hyphens.",
+          ),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const desired = slugify(input.slug);
+      const [profile, page] = await Promise.all([
+        db
+          .select({ userId: mentorProfiles.userId })
+          .from(mentorProfiles)
+          .where(eq(mentorProfiles.publicSlug, desired))
+          .limit(1)
+          .then((r) => r[0] ?? null),
+        db
+          .select({ userId: expertPages.userId })
+          .from(expertPages)
+          .where(eq(expertPages.slug, desired))
+          .limit(1)
+          .then((r) => r[0] ?? null),
+      ]);
+
+      const takenByOther =
+        (profile && profile.userId !== ctx.user.id) ||
+        (page && page.userId !== ctx.user.id);
+
+      return { available: !takenByOther, slug: desired };
+    }),
 
   upsertProfile: expert
     .input(
@@ -183,6 +258,13 @@ export const expertRouter = createRouter({
           .regex(/^[a-z0-9-]+$/, "Slug may only contain lowercase letters, numbers, and hyphens.")
           .optional()
           .or(z.literal("")),
+        // legacy mentor fields editable from the mentor dashboard
+        bschool: z.string().max(255).optional().or(z.literal("")),
+        yearsExp: z.number().int().min(0).max(50).optional(),
+        whatsapp: z.string().max(32).optional().or(z.literal("")),
+        price: z.number().int().min(0).max(2000000).optional(),
+        mockGds: z.number().int().min(0).max(100).optional(),
+        mockPis: z.number().int().min(0).max(100).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -204,35 +286,17 @@ export const expertRouter = createRouter({
         if (value === "") return null;
         if (!isDataUrl(value)) return value;
 
-        const approxBytes = approxBase64Bytes(parseDataUrl(value)?.base64 ?? value);
-        if (approxBytes > 5 * 1024 * 1024) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `${field === "profileImage" ? "Profile photo" : "Cover image"} must be under 5 MB.`,
-          });
-        }
-
-        // If the uploaded image matches what's already stored, keep the existing asset.
+        // If the uploaded image matches what's already stored in MinIO, keep it.
         const existingValue = existing?.[field] as string | null | undefined;
-        if (existingRef) {
-          const [existingAsset] = await db
-            .select()
-            .from(fileAssets)
-            .where(eq(fileAssets.id, existingRef))
-            .limit(1);
-          if (existingAsset) {
-            const existingUrl = existingAsset.data
-              ? buildDataUrl(existingAsset.mimeType, existingAsset.data)
-              : existingAsset.url;
-            if (existingUrl === value) return assetRef(existingAsset.id);
-          }
-        } else if (existingValue === value) {
-          return existingValue;
-        }
+        if (existingValue === value) return existingValue;
 
-        const asset = await saveBase64Asset(ctx.user.id, value, { db });
+        const url = await uploadBase64Image(
+          ctx.user.id,
+          value,
+          `${field === "profileImage" ? "profile" : "cover"}.png`,
+        );
         if (existingRef) staleAssetIds.push(existingRef);
-        return assetRef(asset.id);
+        return url;
       }
 
       const [profileImage, coverImage] = await Promise.all([
@@ -251,6 +315,23 @@ export const expertRouter = createRouter({
         } else if (value !== undefined) {
           set[key] = value;
         }
+      }
+
+      if (typeof set.publicSlug === "string" && set.publicSlug) {
+        const desired = slugify(set.publicSlug);
+        const conflict = await db
+          .select({ userId: mentorProfiles.userId })
+          .from(mentorProfiles)
+          .where(eq(mentorProfiles.publicSlug, desired))
+          .limit(1)
+          .then((r) => r[0] ?? null);
+        if (conflict && conflict.userId !== ctx.user.id) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "That public slug is already taken.",
+          });
+        }
+        set.publicSlug = desired;
       }
 
       if (!existing) {
@@ -291,8 +372,6 @@ export const expertRouter = createRouter({
           "profile",
           "experience",
           "education",
-          "expertise",
-          "services",
           "verification",
           "complete",
         ]),
@@ -316,11 +395,14 @@ export const expertRouter = createRouter({
         .set(set)
         .where(eq(expertOnboarding.id, existing.id));
 
+      const profileStatus = input.status === "completed" ? "active" : "onboarding";
+      const onboardingStatus = input.status ?? existing.status;
       await db
         .update(mentorProfiles)
         .set({
-          onboardingStatus: input.status ?? existing.status,
-          status: input.status === "completed" ? "active" : "onboarding",
+          onboardingStatus,
+          status: profileStatus,
+          updatedAt: new Date(),
         })
         .where(eq(mentorProfiles.userId, ctx.user.id));
 
@@ -484,6 +566,20 @@ export const expertRouter = createRouter({
     await db.delete(expertResumes).where(eq(expertResumes.id, rows[0].id));
     return { success: true };
   }),
+
+  uploadImage: expert
+    .input(
+      z.object({
+        fileName: z.string().min(1).max(255),
+        fileMime: z.string().max(128),
+        fileBase64: z.string().min(1).max(8_000_000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const base64 = input.fileBase64.includes(",") ? input.fileBase64.split(",")[1] : input.fileBase64;
+      const url = await uploadBase64Image(ctx.user.id, base64, input.fileName);
+      return { url };
+    }),
 
   confirmParsedProfile: expert
     .input(

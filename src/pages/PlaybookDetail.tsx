@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useParams, Link, Navigate } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -6,16 +5,16 @@ import {
   BookOpen,
   Check,
   Download,
-  Lock,
+  ShoppingCart,
   Sparkles,
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/providers/cart";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
-import PaymentModal from "@/components/PaymentModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -43,8 +42,7 @@ export default function PlaybookDetail() {
   const playbookId = Number(id);
   const { user, isAuthenticated } = useAuth();
   const reduce = useReducedMotion();
-  const [showPayment, setShowPayment] = useState(false);
-  const utils = trpc.useUtils();
+  const { addItem, items } = useCart();
 
   const { data: playbook, isLoading: pbLoading } = trpc.catalog.playbook.useQuery(
     { id: playbookId },
@@ -57,15 +55,7 @@ export default function PlaybookDetail() {
   );
 
   const isOwned = owned?.some((o) => o.playbook.id === playbookId);
-
-  const purchase = trpc.candidate.purchasePlaybook.useMutation({
-    onSuccess: () => {
-      toast.success("Playbook added to your library!");
-      utils.candidate.myPlaybooks.invalidate();
-      setShowPayment(false);
-    },
-    onError: (e) => toast.error(e.message),
-  });
+  const inCart = items.some((i) => i.type === "playbook" && i.playbookId === playbookId);
 
   const download = trpc.candidate.downloadPlaybook.useMutation({
     onSuccess: (res) => {
@@ -78,6 +68,25 @@ export default function PlaybookDetail() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const addToCart = () => {
+    if (!isAuthenticated) {
+      toast("Sign in first", { description: "Create a free candidate account to buy playbooks." });
+      return;
+    }
+    if (user?.role !== "candidate") {
+      toast.error("Only candidate accounts can purchase playbooks.");
+      return;
+    }
+    if (!playbook) return;
+    addItem({
+      type: "playbook",
+      playbookId: playbook.id,
+      title: playbook.title,
+      price: playbook.price,
+    });
+    toast.success("Added to cart", { description: "Checkout from your dashboard Orders section." });
+  };
 
   if (!Number.isNaN(playbookId) && pbLoading) {
     return (
@@ -105,20 +114,6 @@ export default function PlaybookDetail() {
   }
 
   const cover = playbook.coverImage || generateBookCover(playbook.title, playbook.description ?? undefined);
-
-  const handleBuy = () => {
-    if (!isAuthenticated) {
-      toast("Sign in first", {
-        description: "Create a free candidate account to buy playbooks.",
-      });
-      return;
-    }
-    if (user?.role !== "candidate") {
-      toast.error("Only candidate accounts can purchase playbooks.");
-      return;
-    }
-    setShowPayment(true);
-  };
 
   return (
     <SiteLayout>
@@ -211,11 +206,11 @@ export default function PlaybookDetail() {
                     <Button
                       size="lg"
                       className="rounded-full btn-shine"
-                      onClick={handleBuy}
-                      disabled={purchase.isPending || ownedLoading}
+                      onClick={addToCart}
+                      disabled={inCart || ownedLoading}
                     >
-                      <Lock className="mr-2 h-4 w-4" />
-                      {purchase.isPending || ownedLoading ? "Please wait..." : "Buy now"}
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      {inCart ? "In cart" : ownedLoading ? "Please wait..." : "Add to cart"}
                     </Button>
                   )}
                 </div>
@@ -238,18 +233,6 @@ export default function PlaybookDetail() {
           </div>
         </div>
       </div>
-
-      {showPayment && (
-        <PaymentModal
-          open={showPayment}
-          onOpenChange={(v) => !v && setShowPayment(false)}
-          amount={playbook.price}
-          title={playbook.title}
-          onConfirm={async () => {
-            await purchase.mutateAsync({ playbookId });
-          }}
-        />
-      )}
     </SiteLayout>
   );
 }

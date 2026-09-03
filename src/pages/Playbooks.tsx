@@ -1,17 +1,16 @@
-import { useState } from "react";
 import { Link } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
-import { BookOpen, Check, Download } from "lucide-react";
+import { BookOpen, Check, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/providers/cart";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
 import { EditorialHero } from "@/components/site/EditorialHero";
 import { GsapCardStack, type StackBook } from "@/components/site/GsapCardStack";
 import { StorySection } from "@/components/site/StorySection";
 import { JourneySteps } from "@/components/site/JourneySteps";
-import PaymentModal from "@/components/PaymentModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
@@ -49,50 +48,16 @@ type Playbook = {
   fileUrl: string | null;
 };
 
-function downloadBase64(fileName: string, mime: string, base64: string) {
-  const link = document.createElement("a");
-  link.href = `data:${mime};base64,${base64}`;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-}
-
 const MotionLink = motion(Link);
 
 export default function Playbooks() {
   const { user, isAuthenticated } = useAuth();
   const reduce = useReducedMotion();
+  const { addItem, items } = useCart();
   const { data: playbooks, isLoading } = trpc.catalog.playbooks.useQuery();
-  const { data: owned } = trpc.candidate.myPlaybooks.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "candidate",
-  });
-  const [selected, setSelected] = useState<Playbook | null>(null);
-  const utils = trpc.useUtils();
+  const cartPlaybookIds = new Set(items.filter((i) => i.type === "playbook").map((i) => i.playbookId));
 
-  const ownedIds = new Set(owned?.map((o) => o.playbook.id) ?? []);
-
-  const purchase = trpc.candidate.purchasePlaybook.useMutation({
-    onSuccess: () => {
-      toast.success("Playbook added to your library!");
-      utils.candidate.myPlaybooks.invalidate();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const download = trpc.candidate.downloadPlaybook.useMutation({
-    onSuccess: (res) => {
-      if (!res.fileBase64) {
-        toast.error("Playbook file is empty.");
-        return;
-      }
-      downloadBase64(res.fileName, res.fileMime, res.fileBase64);
-      toast.success("Download started!");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const buy = (p: Playbook) => {
+  const addToCart = (p: Playbook) => {
     if (!isAuthenticated) {
       toast("Sign in first", { description: "Create a free candidate account to buy playbooks." });
       return;
@@ -101,7 +66,14 @@ export default function Playbooks() {
       toast.error("Only candidate accounts can purchase playbooks.");
       return;
     }
-    setSelected(p);
+    const item: Omit<import("@/providers/cart").PlaybookCartItem, "id"> = {
+      type: "playbook",
+      playbookId: p.id,
+      title: p.title,
+      price: p.price,
+    };
+    addItem(item);
+    toast.success("Added to cart", { description: "Checkout from your dashboard Orders section." });
   };
 
   return (
@@ -155,7 +127,6 @@ export default function Playbooks() {
                 <Skeleton key={i} className="h-80 rounded-3xl bg-stone-800" />
               ))}
             {playbooks?.map((p, i) => {
-              const isOwned = ownedIds.has(p.id);
               const cover = p.coverImage || fallbackCover(p.id, p.title);
               return (
                 <MotionLink
@@ -189,19 +160,13 @@ export default function Playbooks() {
                     </div>
                     <div className="mt-5 flex items-center justify-between border-t border-stone-800 pt-4">
                       <span className="font-display text-xl font-bold text-stone-100">{formatINR(p.price)}</span>
-                      {isOwned ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="rounded-full bg-card text-muted-foreground hover:bg-stone-100 hover:text-stone-900"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); download.mutate({ playbookId: p.id }); }}
-                          disabled={download.isPending}
-                        >
-                          <Download className="mr-1.5 h-3.5 w-3.5" /> Download
+                      {cartPlaybookIds.has(p.id) ? (
+                        <Button size="sm" variant="outline" disabled className="rounded-full">
+                          <Check className="mr-1.5 h-3.5 w-3.5" /> In cart
                         </Button>
                       ) : (
-                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); buy(p); }}>
-                          Get it
+                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }}>
+                          <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Add to cart
                         </Button>
                       )}
                     </div>
@@ -254,17 +219,6 @@ export default function Playbooks() {
         </div>
       </section>
 
-      {selected && (
-        <PaymentModal
-          open={!!selected}
-          onOpenChange={(v) => !v && setSelected(null)}
-          amount={selected.price}
-          title={selected.title}
-          onConfirm={async () => {
-            await purchase.mutateAsync({ playbookId: selected.id });
-          }}
-        />
-      )}
     </SiteLayout>
   );
 }

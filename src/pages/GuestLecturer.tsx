@@ -21,13 +21,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { mentorImage, eventCoverImage, speakerImage, fallbackFace } from "@/lib/images";
+import { mentorImage, eventCoverImage, speakerImage } from "@/lib/images";
 import type { MentorProfile } from "../../db/schema";
 
 type MentorRow = { profile: MentorProfile; name: string | null; };
 
 function MentorImage({ m }: { m: MentorRow }) {
-  const src = m.profile.profileImage || mentorImage(m.name ?? "Mentor", m.profile.bschool ?? "IIM");
+  const fallback = mentorImage(m.name ?? "Mentor", m.profile.bschool ?? "IIM");
+  const src = m.profile.profileImage || fallback;
   return (
     <img
       src={src}
@@ -35,7 +36,7 @@ function MentorImage({ m }: { m: MentorRow }) {
       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
       onError={(e) => {
         const target = e.currentTarget;
-        target.src = fallbackFace(m.name ?? "Mentor");
+        target.src = fallback;
       }}
     />
   );

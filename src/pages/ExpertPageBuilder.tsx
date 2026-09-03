@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import {
+  AlertCircle,
   ArrowDown,
   ArrowRight,
   ArrowUp,
@@ -19,9 +20,11 @@ import {
   MapPin,
   Save,
   Star,
+  X,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { useDebounce } from "@/hooks/use-debounce";
 import type { AppRouter } from "../../api/router";
 import type { inferRouterOutputs } from "@trpc/server";
 
@@ -144,6 +147,11 @@ export default function ExpertPageBuilder() {
   const [activeTab, setActiveTab] = useState<"content" | "sections" | "design" | "seo">("content");
   const [slugEdit, setSlugEdit] = useState(false);
   const [slugDraft, setSlugDraft] = useState("");
+  const debouncedSlugDraft = useDebounce(slugDraft, 400);
+  const slugCheck = trpc.expert.checkSlugAvailability.useQuery(
+    { slug: debouncedSlugDraft },
+    { enabled: slugEdit && debouncedSlugDraft.length >= 2 },
+  );
 
   const { data, isLoading, refetch } = trpc.expertPage.myPage.useQuery(undefined, {
     enabled: !!user,
@@ -792,30 +800,37 @@ export default function ExpertPageBuilder() {
                     <div className="rounded-2xl border bg-muted/40 p-4 space-y-3">
                       <Label className="text-sm">Public URL slug</Label>
                       {slugEdit ? (
-                        <div className="flex gap-2">
-                          <Input
-                            value={slugDraft}
-                            onChange={(e) =>
-                              setSlugDraft(
-                                e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
-                              )
-                            }
-                            className="rounded-xl"
-                            placeholder="your-name"
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              value={slugDraft}
+                              onChange={(e) =>
+                                setSlugDraft(
+                                  e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                                )
+                              }
+                              className="rounded-xl"
+                              placeholder="your-name"
+                            />
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="rounded-xl"
+                              disabled={!slugDraft || updateSlug.isPending || slugCheck.data?.available === false}
+                              onClick={() => updateSlug.mutate({ slug: slugDraft })}
+                            >
+                              {updateSlug.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                          <SlugAvailabilityHint
+                            slug={slugDraft}
+                            currentSlug={page.slug}
+                            check={slugCheck as SlugCheckState}
                           />
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="rounded-xl"
-                            disabled={!slugDraft || updateSlug.isPending}
-                            onClick={() => updateSlug.mutate({ slug: slugDraft })}
-                          >
-                            {updateSlug.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Check className="h-4 w-4" />
-                            )}
-                          </Button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
@@ -1148,4 +1163,63 @@ function PagePreview({
       </div>
     </div>
   );
+}
+
+type SlugCheckState = {
+  isLoading: boolean;
+  data?: { available: boolean; slug: string } | null;
+  error?: { message: string } | null;
+};
+
+function SlugAvailabilityHint({
+  slug,
+  currentSlug,
+  check,
+}: {
+  slug: string;
+  currentSlug: string | null;
+  check: SlugCheckState;
+}) {
+  if (!slug || slug.length < 2) return null;
+  if (slug === currentSlug) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Check className="h-3.5 w-3.5 text-green-600" />
+        <span>This is your current slug</span>
+      </div>
+    );
+  }
+  if (check.isLoading) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <span>Checking availability…</span>
+      </div>
+    );
+  }
+  if (check.data?.available) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-green-600">
+        <Check className="h-3.5 w-3.5" />
+        <span>Available</span>
+      </div>
+    );
+  }
+  if (check.data && !check.data.available) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-destructive">
+        <X className="h-3.5 w-3.5" />
+        <span>Already taken</span>
+      </div>
+    );
+  }
+  if (check.error) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-destructive">
+        <AlertCircle className="h-3.5 w-3.5" />
+        <span>{check.error.message}</span>
+      </div>
+    );
+  }
+  return null;
 }

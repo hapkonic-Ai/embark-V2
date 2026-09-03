@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Menu, X, LayoutDashboard, LogOut, Calendar } from "lucide-react";
+import { ArrowRight, Menu, X, LayoutDashboard, LogOut, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/providers/cart";
 import { isExpertEnabled } from "@contracts/features";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { count: cartCount } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -87,7 +89,22 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-2.5">
             {isAuthenticated && user ? (
-              <DropdownMenu>
+              <>
+                {user.role === "candidate" && (
+                  <button
+                    onClick={() => navigate("/dashboard?tab=orders")}
+                    className="relative flex h-9 w-9 items-center justify-center rounded-full border bg-card hover:shadow-md transition-shadow"
+                    aria-label="Cart"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    {cartCount > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full border bg-card px-2 py-1.5 hover:shadow-md transition-shadow">
                     <Avatar className="h-7 w-7">
@@ -107,16 +124,13 @@ export default function Navbar() {
                   <DropdownMenuItem onClick={() => navigate(dashboardPath(user.role))}>
                     <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
                   </DropdownMenuItem>
-                  {user.role === "candidate" && (
-                    <DropdownMenuItem onClick={() => navigate("/bookings")}>
-                      <Calendar className="mr-2 h-4 w-4" /> My bookings
-                    </DropdownMenuItem>
-                  )}
+
                   <DropdownMenuItem onClick={() => logout()}>
                     <LogOut className="mr-2 h-4 w-4" /> Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </>
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild>
@@ -162,6 +176,11 @@ export default function Navbar() {
               <div className="pt-2 flex gap-2">
                 {isAuthenticated ? (
                   <>
+                    {user?.role === "candidate" && (
+                      <Button variant="outline" className="flex-1" asChild>
+                        <Link to="/dashboard?tab=orders">Orders ({cartCount})</Link>
+                      </Button>
+                    )}
                     <Button className="flex-1" asChild>
                       <Link to={dashboardPath(user?.role)}>Dashboard</Link>
                     </Button>

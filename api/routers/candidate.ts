@@ -1,15 +1,15 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { nanoid } from "nanoid";
 import {
   events,
   mentorProfiles,
   mentorships,
-  mentorshipPayments,
   mockSessions,
+  orders,
   playbookPurchases,
   playbooks,
+  reviews,
   submissions,
   users,
 } from "@db/schema";
@@ -63,63 +63,105 @@ export const candidateRouter = createRouter({
           message: "You already have an active mentorship with this mentor.",
         });
       }
-      const [inserted] = await db
-        .insert(mentorships)
-        .values({
-          candidateId: ctx.user.id,
-          mentorProfileId: input.mentorProfileId,
-          price: mentor.profile.price,
-          gdTotal: mentor.profile.mockGds,
-          piTotal: mentor.profile.mockPis,
-        })
-        .$returningId();
-
-      await db.insert(mentorshipPayments).values({
-        mentorshipId: inserted.id,
-        userId: ctx.user.id,
-        mentorProfileId: input.mentorProfileId,
-        amount: mentor.profile.price,
-        currency: "INR",
-        provider: "demo",
-        providerPaymentId: `demo_${nanoid(16)}`,
-        status: "success",
+      const result = await db.transaction(async (tx) => {
+        const [m] = await tx
+          .insert(mentorships)
+          .values({
+            candidateId: ctx.user.id,
+            mentorProfileId: input.mentorProfileId,
+            price: mentor.profile.price,
+            gdTotal: mentor.profile.mockGds,
+            piTotal: mentor.profile.mockPis,
+          })
+          .$returningId();
+        const [order] = await tx
+          .insert(orders)
+          .values({
+            studentId: ctx.user.id,
+            mentorshipId: m.id,
+            amount: mentor.profile.price,
+            currency: "INR",
+            status: "pending",
+            snapshot: {
+              type: "mentorship",
+              mentorProfileId: input.mentorProfileId,
+              mentorName: mentor.name,
+              gdTotal: mentor.profile.mockGds,
+              piTotal: mentor.profile.mockPis,
+            },
+          })
+          .$returningId();
+        return { mentorshipId: m.id, orderId: order.id };
       });
-
-      return {
-        success: true,
-        mentorshipId: inserted.id,
-        whatsapp: mentor.profile.whatsapp,
-      };
+      return { success: true, whatsapp: mentor.profile.whatsapp, ...result };
     }),
 
-  myMentorships: candidate.query(async ({ ctx }) => {
-    const db = getDb();
-    const rows = await db
-      .select({
-        mentorship: mentorships,
-        profile: mentorProfiles,
-        mentorName: users.name,
-      })
-      .from(mentorships)
-      .innerJoin(
-        mentorProfiles,
-        eq(mentorProfiles.id, mentorships.mentorProfileId),
-      )
-      .innerJoin(users, eq(users.id, mentorProfiles.userId))
-      .where(eq(mentorships.candidateId, ctx.user.id))
-      .orderBy(desc(mentorships.createdAt));
-    const all = await Promise.all(
-      rows.map(async (r) => {
-        const s = await db
-          .select()
-          .from(mockSessions)
-          .where(eq(mockSessions.mentorshipId, r.mentorship.id))
-          .orderBy(desc(mockSessions.createdAt));
-        return { ...r, sessions: s };
-      }),
-    );
-    return all;
-  }),
+  myMentorships: candidate
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(50).default(10),
+      }).optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const page = input?.page ?? 1;
+      const pageSize = input?.pageSize ?? 10;
+      const db = getDb();
+      const offset = (page - 1) * pageSize;
+      const [totalRow, rows] = await Promise.all([
+        db
+          .select({ count: count() })
+          .from(mentorships)
+          .where(eq(mentorships.candidateId, ctx.user.id)),
+        db
+          .select({
+            mentorship: mentorships,
+            profile: mentorProfiles,
+            mentorName: users.name,
+          })
+          .from(mentorships)
+          .innerJoin(
+            mentorProfiles,
+            eq(mentorProfiles.id, mentorships.mentorProfileId),
+          )
+          .innerJoin(users, eq(users.id, mentorProfiles.userId))
+          .where(eq(mentorships.candidateId, ctx.user.id))
+          .orderBy(desc(mentorships.createdAt))
+          .limit(pageSize)
+          .offset(offset),
+      ]);
+      const all = await Promise.all(
+        rows.map(async (r) => {
+          const [s, order, review] = await Promise.all([
+            db
+              .select()
+              .from(mockSessions)
+              .where(eq(mockSessions.mentorshipId, r.mentorship.id))
+              .orderBy(desc(mockSessions.createdAt)),
+            db
+              .select()
+              .from(orders)
+              .where(eq(orders.mentorshipId, r.mentorship.id))
+              .orderBy(desc(orders.createdAt))
+              .limit(1)
+              .then((x) => x[0] ?? null),
+            db
+              .select()
+              .from(reviews)
+              .where(
+                and(
+                  eq(reviews.mentorshipId, r.mentorship.id),
+                  eq(reviews.studentId, ctx.user.id),
+                ),
+              )
+              .limit(1)
+              .then((x) => x[0] ?? null),
+          ]);
+          return { ...r, sessions: s, order, review };
+        }),
+      );
+      return { rows: all, total: Number(totalRow[0]?.count ?? 0), page, pageSize };
+    }),
 
   requestMock: candidate
     .input(
@@ -144,6 +186,18 @@ export const candidateRouter = createRouter({
       const m = rows[0];
       if (!m || m.status !== "active") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Mentorship not found" });
+      }
+      const [order] = await db
+        .select({ status: orders.status })
+        .from(orders)
+        .where(eq(orders.mentorshipId, m.id))
+        .orderBy(desc(orders.createdAt))
+        .limit(1);
+      if (order && order.status !== "paid") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Complete payment for this mentorship before requesting sessions.",
+        });
       }
       const used = input.type === "gd" ? m.gdUsed : m.piUsed;
       const total = input.type === "gd" ? m.gdTotal : m.piTotal;
@@ -200,12 +254,33 @@ export const candidateRouter = createRouter({
           message: "You already own this playbook.",
         });
       }
-      await db.insert(playbookPurchases).values({
-        userId: ctx.user.id,
-        playbookId: input.playbookId,
-        price: pb[0].price,
+      const { orderId } = await db.transaction(async (tx) => {
+        const [purchase] = await tx
+          .insert(playbookPurchases)
+          .values({
+            userId: ctx.user.id,
+            playbookId: input.playbookId,
+            price: pb[0].price,
+          })
+          .$returningId();
+        const [order] = await tx
+          .insert(orders)
+          .values({
+            studentId: ctx.user.id,
+            playbookPurchaseId: purchase.id,
+            amount: pb[0].price,
+            currency: "INR",
+            status: "pending",
+            snapshot: {
+              type: "playbook",
+              playbookId: input.playbookId,
+              playbookTitle: pb[0].title,
+            },
+          })
+          .$returningId();
+        return { orderId: order.id };
       });
-      return { success: true };
+      return { success: true, orderId };
     }),
 
   myPlaybooks: candidate.query(async ({ ctx }) => {

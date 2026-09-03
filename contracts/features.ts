@@ -17,9 +17,9 @@ function envDisabled(): string[] {
     // ignore
   }
   try {
-    const viteEnv = (import.meta as unknown as { env?: Record<string, string> }).env;
-    if (typeof import.meta !== "undefined" && viteEnv?.VITE_DISABLED_FEATURES) {
-      return viteEnv.VITE_DISABLED_FEATURES.split(",").map((s: string) => s.trim()).filter(Boolean);
+    const meta = import.meta as unknown as { env?: Record<string, string> };
+    if (typeof import.meta !== "undefined" && meta.env?.VITE_DISABLED_FEATURES) {
+      return meta.env.VITE_DISABLED_FEATURES.split(",").map((s) => s.trim()).filter(Boolean);
     }
   } catch {
     // ignore

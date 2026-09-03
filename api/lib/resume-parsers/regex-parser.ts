@@ -431,18 +431,6 @@ function parseText(rawText: string): ParseResult {
     if (parsed.skills.length) confidence["skills"] = 0.5;
   }
 
-  if (sections.certifications) {
-    const certs = parseSkills(sections.certifications);
-    parsed.certifications = certs.slice(0, 10);
-    if (parsed.certifications.length) confidence["certifications"] = 0.5;
-  }
-
-  if (sections.achievements) {
-    const achievements = parseSkills(sections.achievements);
-    parsed.achievements = achievements.slice(0, 10);
-    if (parsed.achievements.length) confidence["achievements"] = 0.5;
-  }
-
   parsed.confidence = confidence;
 
   const extractedCount = Object.keys(confidence).length;

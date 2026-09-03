@@ -10,8 +10,7 @@ import {
   mentorProfiles,
 } from "@db/schema";
 import { getDb } from "../queries/connection";
-import { createRouter } from "../middleware";
-import { roleQuery } from "../rbac";
+import { createRouter, authedQuery } from "../middleware";
 import {
   generateUniqueSlug,
   getExpertPageWithDetails,
@@ -20,7 +19,15 @@ import {
 } from "../lib/expert-page";
 import { resolveAssetFields } from "../lib/file-assets";
 
-const expert = roleQuery("expert");
+const expert = authedQuery.use(async ({ ctx, next }) => {
+  if (ctx.user.role !== "mentor" && ctx.user.role !== "expert") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Requires role: mentor or expert",
+    });
+  }
+  return next({ ctx });
+});
 
 const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 

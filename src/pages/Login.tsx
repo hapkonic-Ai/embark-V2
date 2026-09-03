@@ -56,11 +56,28 @@ export default function Login() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
 
-  const onSuccess = async (user: { role: string }, isNew: boolean) => {
+  const onSuccess = async (
+    user: { role: string; onboarding?: { currentStep: string; status: string } | null },
+    isNew: boolean,
+  ) => {
     await utils.invalidate();
     if (isNew) fireConfetti(true);
     toast.success(isNew ? "Welcome aboard!" : "Welcome back!");
-    navigate(dashboardPath(user.role));
+    const from = params.get("from");
+    if (
+      (user.role === "mentor" || user.role === "expert") &&
+      user.onboarding?.status !== "completed"
+    ) {
+      navigate(user.role === "mentor" ? "/mentor/onboarding" : "/expert/onboarding", {
+        replace: true,
+      });
+      return;
+    }
+    if (from && from.startsWith("/") && !from.startsWith("/login")) {
+      navigate(from, { replace: true });
+      return;
+    }
+    navigate(dashboardPath(user.role), { replace: true });
   };
 
   const loginMut = trpc.account.login.useMutation({

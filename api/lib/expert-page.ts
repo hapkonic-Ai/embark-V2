@@ -300,7 +300,7 @@ export async function getPublishedExpertPageBySlug(slug: string) {
     .select({
       page: expertPages,
       profile: mentorProfiles,
-      user: { id: mentorProfiles.userId, name: mentorProfiles.displayName, email: users.email },
+      user: { id: mentorProfiles.userId, name: mentorProfiles.displayName, email: users.email, role: users.role },
     })
     .from(expertPages)
     .innerJoin(mentorProfiles, eq(mentorProfiles.userId, expertPages.userId))

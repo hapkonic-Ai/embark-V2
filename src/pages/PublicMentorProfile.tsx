@@ -5,7 +5,6 @@ import { ArrowLeft, BadgeCheck, Briefcase, GraduationCap, Linkedin, Lock, Messag
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { isExpertEnabled } from "@contracts/features";
 import SiteLayout from "@/components/site/SiteLayout";
 import { DocumentHead } from "@/components/site/DocumentHead";
 import PublicExpertPage from "@/components/expert/PublicExpertPage";
@@ -19,16 +18,14 @@ import { mentorImage, fallbackFace } from "@/lib/images";
 export default function PublicMentorProfile() {
   const { slug } = useParams<{ slug: string }>();
   const { user, isAuthenticated } = useAuth();
-  const expertEnabled = isExpertEnabled();
   const [payOpen, setPayOpen] = useState(false);
-
   const { data: expertData, isLoading: expertLoading } = trpc.catalog.expertPageBySlug.useQuery(
     { slug: slug ?? "" },
-    { enabled: !!slug && expertEnabled },
+    { enabled: !!slug },
   );
   const { data, isLoading: mentorLoading } = trpc.catalog.mentorBySlug.useQuery(
     { slug: slug ?? "" },
-    { enabled: !!slug && (!expertEnabled || !expertData) },
+    { enabled: !!slug && !expertData },
   );
 
   const utils = trpc.useUtils();
@@ -47,7 +44,7 @@ export default function PublicMentorProfile() {
     onError: (e) => toast.error(e.message),
   });
 
-  const isLoading = (expertEnabled && expertLoading) || (mentorLoading && (!expertEnabled || !expertData));
+  const isLoading = expertLoading || (mentorLoading && !expertData);
 
   if (isLoading) {
     return (
@@ -60,7 +57,7 @@ export default function PublicMentorProfile() {
     );
   }
 
-  if (expertEnabled && expertData?.page) {
+  if (expertData?.page) {
     const expertProfile = expertData.profile;
     const expertTitle = expertProfile?.displayName || expertData.user?.name || "Expert profile";
     return (

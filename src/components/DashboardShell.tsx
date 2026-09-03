@@ -14,16 +14,41 @@ export default function DashboardShell({
   subtitle,
   tabs,
   roles,
+  layout = "sidebar",
+  initialTab,
   children,
 }: {
   title: string;
   subtitle?: string;
   tabs: DashTab[];
   roles: string[];
+  layout?: "sidebar" | "topbar";
+  initialTab?: string;
   children: (activeTab: string) => ReactNode;
 }) {
   const { user, isLoading } = useAuth();
-  const [active, setActive] = useState(tabs[0].id);
+  const [active, setActive] = useState(() => {
+    return tabs.find((t) => t.id === initialTab)?.id ?? tabs[0]?.id ?? "";
+  });
+
+  const TabNav = (
+    <nav className={cn("flex gap-1.5 overflow-x-auto pb-1", layout === "topbar" ? "mb-8" : "lg:flex-col")}>
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => setActive(t.id)}
+          className={cn(
+            "flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
+            active === t.id
+              ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+          )}
+        >
+          <t.icon className="h-4 w-4" /> {t.label}
+        </button>
+      ))}
+    </nav>
+  );
 
   if (isLoading) {
     return (
@@ -44,25 +69,15 @@ export default function DashboardShell({
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight">{title}</h1>
           {subtitle && <p className="mt-1.5 text-muted-foreground">{subtitle}</p>}
         </div>
-        <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
-          <nav className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActive(t.id)}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
-                  active === t.id
-                    ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                <t.icon className="h-4 w-4" /> {t.label}
-              </button>
-            ))}
-          </nav>
+        {layout === "topbar" && TabNav}
+        {layout === "topbar" ? (
           <div className="min-w-0">{children(active)}</div>
-        </div>
+        ) : (
+          <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
+            {TabNav}
+            <div className="min-w-0">{children(active)}</div>
+          </div>
+        )}
       </div>
 
       <footer className="border-t bg-background mt-16">

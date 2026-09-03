@@ -18,6 +18,14 @@ import { generateUniqueSlug, getOrCreateExpertPage } from "../lib/expert-page";
 const admin = roleQuery("admin", "superadmin");
 const superadmin = roleQuery("superadmin");
 
+async function unpublishExpertPage(userId: number) {
+  const db = getDb();
+  await db
+    .update(expertPages)
+    .set({ status: "draft", updatedAt: new Date() })
+    .where(eq(expertPages.userId, userId));
+}
+
 const eventInput = z.object({
   title: z.string().min(3).max(255),
   description: z.string().max(8000).optional(),
@@ -271,6 +279,8 @@ export const adminRouter = createRouter({
             })
             .where(eq(expertPages.id, page.id));
         }
+      } else {
+        await unpublishExpertPage(verification.userId);
       }
 
       return { success: true };
@@ -329,6 +339,8 @@ export const adminRouter = createRouter({
             })
             .where(eq(expertPages.id, page.id));
         }
+      } else {
+        await unpublishExpertPage(profile.userId);
       }
 
       return { success: true };

@@ -812,7 +812,9 @@ export const orderStatusEnum = ["pending", "paid", "failed", "refunded", "cancel
 
 export const orders = mysqlTable("orders", {
   id: serial("id").primaryKey(),
-  bookingId: bigint("bookingId", { mode: "number", unsigned: true }).notNull(),
+  bookingId: bigint("bookingId", { mode: "number", unsigned: true }),
+  mentorshipId: bigint("mentorshipId", { mode: "number", unsigned: true }),
+  playbookPurchaseId: bigint("playbookPurchaseId", { mode: "number", unsigned: true }),
   studentId: bigint("studentId", { mode: "number", unsigned: true }).notNull(),
   amount: int("amount").notNull(),
   currency: varchar("currency", { length: 3 }).default("INR").notNull(),
@@ -823,6 +825,8 @@ export const orders = mysqlTable("orders", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 }, (t) => [
   uniqueIndex("orders_booking_unique").on(t.bookingId),
+  index("orders_mentorship_idx").on(t.mentorshipId),
+  index("orders_playbook_purchase_idx").on(t.playbookPurchaseId),
   index("orders_student_idx").on(t.studentId),
 ]);
 
@@ -881,10 +885,12 @@ export const reviews = mysqlTable(
   "reviews",
   {
     id: serial("id").primaryKey(),
-    bookingId: bigint("bookingId", { mode: "number", unsigned: true }).notNull(),
+    bookingId: bigint("bookingId", { mode: "number", unsigned: true }),
+    mentorshipId: bigint("mentorshipId", { mode: "number", unsigned: true }),
+    mockSessionId: bigint("mockSessionId", { mode: "number", unsigned: true }),
     studentId: bigint("studentId", { mode: "number", unsigned: true }).notNull(),
     expertUserId: bigint("expertUserId", { mode: "number", unsigned: true }).notNull(),
-    serviceId: bigint("serviceId", { mode: "number", unsigned: true }).notNull(),
+    serviceId: bigint("serviceId", { mode: "number", unsigned: true }),
     rating: int("rating").notNull(),
     title: varchar("title", { length: 255 }),
     content: text("content"),
@@ -898,6 +904,7 @@ export const reviews = mysqlTable(
   },
   (t) => [
     uniqueIndex("reviews_booking_unique").on(t.bookingId),
+    uniqueIndex("reviews_mentorship_unique").on(t.mentorshipId),
     index("reviews_expert_user_idx").on(t.expertUserId),
     index("reviews_service_idx").on(t.serviceId),
     index("reviews_student_idx").on(t.studentId),

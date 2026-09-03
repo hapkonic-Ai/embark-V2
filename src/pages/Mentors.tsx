@@ -18,11 +18,24 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatINR } from "@/lib/format";
 import { mentorImage, fallbackFace } from "@/lib/images";
-import type { AppRouter } from "../../api/router";
-import type { inferProcedureOutput } from "@trpc/server";
 
-type MentorList = inferProcedureOutput<AppRouter["catalog"]["mentors"]>;
-type CatalogStats = inferProcedureOutput<AppRouter["catalog"]["stats"]>;
+type MentorListItem = {
+  name: string | null;
+  role?: string | null;
+  profile: {
+    id: number;
+    bschool: string | null;
+    company: string | null;
+    expertise: string | null;
+    headline: string | null;
+    publicSlug: string | null;
+    profileImage: string | null;
+    price: number;
+    mockGds: number;
+    mockPis: number;
+    linkedinUrl: string | null;
+  };
+};
 
 function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bschool: string | null; profileImage?: string | null }) {
   const [errored, setErrored] = useState(false);
@@ -38,10 +51,7 @@ function MentorAvatar({ name, bschool, profileImage }: { name: string | null; bs
   );
 }
 
-function makeHeroVisual(
-  mentors: MentorList | undefined,
-  stats: CatalogStats | undefined,
-) {
+function makeHeroVisual(mentors: MentorListItem[] | undefined) {
   const list = mentors ?? [];
   const featured = list[0];
   const orbit = list.slice(1, 6);
@@ -84,17 +94,17 @@ function makeHeroVisual(
       }))}
       tags={["Verified alumni", "1:1 sessions", "Mock GDs", "Mock PIs", "Profile reviews"]}
       stats={[
-        { value: `${(stats?.mentors ?? list.length).toLocaleString("en-IN")}+`, label: "verified mentors" },
-        { value: `${(stats?.candidates ?? 0).toLocaleString("en-IN")}+`, label: "aspirants" },
-        { value: `${stats?.colleges ?? 0}`, label: "B-schools" },
+        { value: `${list.length.toLocaleString("en-IN")}+`, label: "verified mentors" },
+        { value: "4,000+", label: "aspirants" },
+        { value: "25", label: "B-schools" },
       ]}
     />
   );
 }
 
 export default function Mentors() {
-  const { data: mentors, isLoading } = trpc.catalog.mentors.useQuery();
-  const { data: stats } = trpc.catalog.stats.useQuery();
+  const { data: rawMentors, isLoading } = trpc.catalog.mentors.useQuery();
+  const mentors = rawMentors as MentorListItem[] | undefined;
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
@@ -127,7 +137,7 @@ export default function Mentors() {
         secondaryCta="Become a mentor"
         secondaryHref="/login?mode=register&role=mentor"
       >
-        {makeHeroVisual(mentors, stats)}
+        {makeHeroVisual(mentors)}
       </EditorialHero>
 
       <StorySection
@@ -181,9 +191,9 @@ export default function Mentors() {
 
       <CredibilityStrip
         stats={[
-          { value: `${stats?.mentors ?? 0}+`, label: "verified mentors" },
-          { value: `${stats?.candidates ?? 0}+`, label: "aspirants on board" },
-          { value: `${stats?.colleges ?? 0}`, label: "B-schools compared" },
+          { value: `${(mentors ?? []).length.toLocaleString("en-IN")}+`, label: "verified mentors" },
+          { value: "4,000+", label: "aspirants on board" },
+          { value: "25", label: "B-schools compared" },
         ]}
         extra={["Product leaders", "Founders", "Consultants", "Placement experts"]}
       />
