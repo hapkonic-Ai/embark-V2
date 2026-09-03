@@ -1099,7 +1099,11 @@ function PlaybooksTab() {
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       {data.map(({ purchase, playbook }) => (
-        <div key={purchase.id} className="rounded-3xl border bg-card p-6 shadow-sm flex gap-4">
+        <Link
+          key={purchase.id}
+          to={`/playbooks/${playbook.id}`}
+          className="rounded-3xl border bg-card p-6 shadow-sm flex gap-4 transition-colors hover:border-orange-200 hover:bg-orange-50/30"
+        >
           <div className="h-12 w-12 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
             <BookOpen className="h-6 w-6" />
           </div>
@@ -1110,7 +1114,7 @@ function PlaybooksTab() {
             </p>
             <Badge variant="secondary" className="mt-2">{playbook.category}</Badge>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );

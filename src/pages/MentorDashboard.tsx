@@ -499,6 +499,7 @@ function GuestLecturesTab() {
     id: number;
     status: "accepted" | "rejected";
     confirmedDate: string;
+    mentorContact: string;
     mentorNote: string;
   } | null>(null);
 
@@ -539,8 +540,13 @@ function GuestLecturesTab() {
               </div>
               <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
             </div>
-            {date && (
+            {request.topic && (
               <p className="mt-3 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Topic:</span> {request.topic}
+              </p>
+            )}
+            {date && (
+              <p className="mt-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Date:</span>{" "}
                 {new Date(date).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
               </p>
@@ -550,8 +556,18 @@ function GuestLecturesTab() {
                 <span className="font-medium text-foreground">Campus note:</span> {request.campusNote}
               </p>
             )}
+            {request.campusContact && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Campus contact:</span> {request.campusContact}
+              </p>
+            )}
             {request.mentorNote && (
               <p className="mt-2 text-sm text-muted-foreground border-l-2 border-orange-400 pl-3">{request.mentorNote}</p>
+            )}
+            {request.mentorContact && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Your shared contact:</span> {request.mentorContact}
+              </p>
             )}
             {request.status === "pending" && (
               <div className="mt-4 flex gap-2">
@@ -563,6 +579,7 @@ function GuestLecturesTab() {
                       id: request.id,
                       status: "accepted",
                       confirmedDate: request.proposedDate ? new Date(request.proposedDate).toISOString().slice(0, 16) : "",
+                      mentorContact: "",
                       mentorNote: "",
                     })
                   }
@@ -578,6 +595,7 @@ function GuestLecturesTab() {
                       id: request.id,
                       status: "rejected",
                       confirmedDate: "",
+                      mentorContact: "",
                       mentorNote: "",
                     })
                   }
@@ -601,7 +619,7 @@ function GuestLecturesTab() {
             <div className="space-y-4">
               {respondFor.status === "accepted" && (
                 <div className="space-y-1.5">
-                  <Label>Confirmed date & time</Label>
+                  <Label>Confirmed date & time (change if needed)</Label>
                   <Input
                     type="datetime-local"
                     value={respondFor.confirmedDate}
@@ -609,6 +627,14 @@ function GuestLecturesTab() {
                   />
                 </div>
               )}
+              <div className="space-y-1.5">
+                <Label>Your contact to share with campus (email or phone)</Label>
+                <Input
+                  value={respondFor.mentorContact}
+                  onChange={(e) => setRespondFor({ ...respondFor, mentorContact: e.target.value })}
+                  placeholder="mentor@email.com or +91 98xxx xxxxx"
+                />
+              </div>
               <div className="space-y-1.5">
                 <Label>Note to campus</Label>
                 <Input
@@ -625,6 +651,7 @@ function GuestLecturesTab() {
                     requestId: respondFor.id,
                     status: respondFor.status,
                     confirmedDate: respondFor.confirmedDate || undefined,
+                    mentorContact: respondFor.mentorContact || undefined,
                     mentorNote: respondFor.mentorNote || undefined,
                   })
                 }

@@ -3,15 +3,12 @@ import { getDb } from "../api/queries/connection";
 import {
   users,
   mentorProfiles,
-  mentorServices,
-  expertOnboarding,
-  mentorships,
-  mockSessions,
   playbooks,
   events,
   colleges,
-  submissions,
 } from "./schema";
+import { saveBase64Asset, assetRef } from "../api/lib/file-assets";
+import { sql } from "drizzle-orm";
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -21,43 +18,100 @@ function hashPassword(password: string): string {
 
 const PASS = hashPassword("Arenafograds@123");
 
+const MENTOR_PHOTOS = {
+  rohan: "/ai-images/mentor-rohan.jpg",
+  ananya:
+    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=faces",
+};
+
+const BOOK_COVERS = [
+  "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&h=800&fit=crop",
+];
+
+const EVENT_COVERS = [
+  "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop",
+];
+
+async function resetData(db: ReturnType<typeof getDb>) {
+  const tables = [
+    "expert_notes",
+    "expert_availability_exceptions",
+    "expert_availability_rules",
+    "payments",
+    "orders",
+    "sessions",
+    "expert_bookings",
+    "reviews",
+    "mentor_service_package_items",
+    "mentor_service_packages",
+    "mentor_services",
+    "expert_service_package_items",
+    "expert_service_packages",
+    "expert_services",
+    "expert_page_sections",
+    "expert_page_configs",
+    "expert_pages",
+    "expert_experience",
+    "expert_education",
+    "expert_resumes",
+    "expert_verifications",
+    "expert_onboarding",
+    "guest_lecture_requests",
+    "mock_sessions",
+    "mentorships",
+    "submissions",
+    "playbook_purchases",
+    "playbooks",
+    "events",
+    "file_assets",
+    "mentor_profiles",
+    "users",
+  ];
+
+  await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
+  for (const name of tables) {
+    try {
+      await db.execute(sql.raw(`TRUNCATE TABLE ${name}`));
+    } catch (e) {
+      console.warn(`truncate ${name} failed:`, (e as Error).message);
+    }
+  }
+  await db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
+}
+
 async function seed() {
   const db = getDb();
-  console.log("Seeding Embark database...");
+  console.log("Resetting Arena for grads demo data...");
+  await resetData(db);
+  console.log("tables reset");
 
   // ---------------------------------------------------------------- users
   const seedUsers = [
     { name: "Super Admin", email: "superadmin@embark.in", role: "superadmin" as const },
     { name: "Admin", email: "admin@embark.in", role: "admin" as const },
-    { name: "Aarya Sharma", email: "candidate@embark.in", role: "candidate" as const },
+    { name: "Aarya Sharma", email: "aarya@embark.in", role: "candidate" as const },
+    { name: "Kabir Verma", email: "kabir.candidate@embark.in", role: "candidate" as const },
+    { name: "Campus Coordinator", email: "campus@embark.in", role: "campus" as const },
     { name: "Rohan Mehta", email: "rohan@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/rohanmehta" },
     { name: "Ananya Iyer", email: "ananya@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/ananyaiyer" },
-    { name: "Vikram Malhotra", email: "vikram@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/vikrammalhotra" },
-    { name: "Sneha Kulkarni", email: "sneha@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/snehakulkarni" },
-    { name: "Arjun Nair", email: "arjun@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/arjunnair" },
-    { name: "Priya Deshmukh", email: "priya@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/priyadeshmukh" },
-    { name: "Kabir Singh Chauhan", email: "kabir@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/kabirchauhan" },
-    { name: "Ishita Banerjee", email: "ishita@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/ishitabanerjee" },
-    { name: "Expert User", email: "expert@embark.in", role: "expert" as const, linkedinUrl: "https://linkedin.com/in/expertuser" },
   ];
 
   const userIds: Record<string, number> = {};
   for (const u of seedUsers) {
     const unionId = `email:${u.email}`;
-    await db
-      .insert(users)
-      .values({
-        unionId,
-        name: u.name,
-        email: u.email,
-        passwordHash: PASS,
-        role: u.role,
-        phone: "+91 98200 12345",
-        linkedinUrl: (u as { linkedinUrl?: string }).linkedinUrl,
-        termsAcceptedAt: new Date(),
-        termsVersion: "1.0",
-      })
-      .onDuplicateKeyUpdate({ set: { name: u.name, role: u.role, termsAcceptedAt: new Date(), termsVersion: "1.0" } });
+    await db.insert(users).values({
+      unionId,
+      name: u.name,
+      email: u.email,
+      passwordHash: PASS,
+      role: u.role,
+      phone: "+91 98200 12345",
+      linkedinUrl: (u as { linkedinUrl?: string }).linkedinUrl,
+      termsAcceptedAt: new Date(),
+      termsVersion: "1.0",
+    });
     const row = await db.query.users.findFirst({
       where: (t, { eq }) => eq(t.unionId, unionId),
     });
@@ -69,6 +123,7 @@ async function seed() {
   const mentors = [
     {
       email: "rohan@embark.in",
+      displayName: "Rohan Mehta",
       headline: "IIM Ahmedabad alum · ex-McKinsey · GD/PI specialist",
       bschool: "IIM Ahmedabad",
       company: "McKinsey & Company",
@@ -79,9 +134,11 @@ async function seed() {
       mockPis: 5,
       bio: "Converted IIMA, IIMB and IIMC. Spent 4 years at McKinsey before switching to full-time mentoring. 300+ mentees in top-20 B-schools.",
       whatsapp: "+91 98110 22334",
+      photo: MENTOR_PHOTOS.rohan,
     },
     {
       email: "ananya@embark.in",
+      displayName: "Ananya Iyer",
       headline: "XLRI Jamshedpur · HR & PI mentor · ex-HUL",
       bschool: "XLRI Jamshedpur",
       company: "Hindustan Unilever",
@@ -92,97 +149,17 @@ async function seed() {
       mockPis: 6,
       bio: "XLRI BM '18. Loves turning nervous candidates into storytellers. Specialises in HR interviews and SOP reviews.",
       whatsapp: "+91 99870 44556",
-    },
-    {
-      email: "vikram@embark.in",
-      headline: "IIM Calcutta · Goldman Sachs · Finance interviews",
-      bschool: "IIM Calcutta",
-      company: "Goldman Sachs",
-      expertise: "PI, Finance, Case Prep, CFA",
-      yearsExp: 9,
-      price: 12999,
-      mockGds: 4,
-      mockPis: 4,
-      bio: "Fin-grad turned IIMC alum. Preps candidates for finance-heavy interviews and case competitions.",
-      whatsapp: "+91 98300 11223",
-    },
-    {
-      email: "sneha@embark.in",
-      headline: "FMS Delhi · Product @ Swiggy · Case comp coach",
-      bschool: "FMS Delhi",
-      company: "Swiggy",
-      expertise: "Case Competitions, Product, GD",
-      yearsExp: 5,
-      price: 7999,
-      mockGds: 4,
-      mockPis: 3,
-      bio: "National winner of 6 case comps including HUL LIME and TAS. Now coaches teams to do the same.",
-      whatsapp: "+91 98118 33445",
-    },
-    {
-      email: "arjun@embark.in",
-      headline: "ISB Hyderabad · BCG · GMAT & profile strategy",
-      bschool: "ISB Hyderabad",
-      company: "Boston Consulting Group",
-      expertise: "GMAT, ISB Essays, Consulting, PI",
-      yearsExp: 7,
-      price: 14999,
-      mockGds: 2,
-      mockPis: 6,
-      bio: "ISB '19, GMAT 760. Helps working professionals crack ISB and global M7 programs.",
-      whatsapp: "+91 99401 55667",
-    },
-    {
-      email: "priya@embark.in",
-      headline: "IIM Bangalore · Marketing & GD specialist · ex-Amazon",
-      bschool: "IIM Bangalore",
-      company: "Amazon",
-      expertise: "GD, Marketing, WAT, Extempore",
-      yearsExp: 6,
-      price: 9999,
-      mockGds: 6,
-      mockPis: 3,
-      bio: "Runs legendary mock GD batches. Known for brutal-but-kind feedback that sticks.",
-      whatsapp: "+91 97420 66778",
-    },
-    {
-      email: "kabir@embark.in",
-      headline: "SPJIMR Mumbai · Ops & analytics interviews",
-      bschool: "SPJIMR Mumbai",
-      company: "Tata Consultancy Services",
-      expertise: "PI, Operations, Analytics, WAT",
-      yearsExp: 5,
-      price: 6999,
-      mockGds: 3,
-      mockPis: 4,
-      bio: "SPJIMR '20. Makes engineers sound like managers. Calm, structured, data-driven prep.",
-      whatsapp: "+91 98923 77889",
-    },
-    {
-      email: "ishita@embark.in",
-      headline: "IIFT Delhi · International business · GK & WAT coach",
-      bschool: "IIFT Delhi",
-      company: "Aditya Birla Group",
-      expertise: "WAT, GK, Trade, PI",
-      yearsExp: 4,
-      price: 5999,
-      mockGds: 3,
-      mockPis: 3,
-      bio: "IIFT '21. Keeps you updated on trade, policy and everything the WAT topics come from.",
-      whatsapp: "+91 98733 88990",
+      photo: MENTOR_PHOTOS.ananya,
     },
   ];
 
   for (const m of mentors) {
     const uid = userIds[m.email];
-    const existing = await db.query.mentorProfiles.findFirst({
-      where: (t, { eq }) => eq(t.userId, uid),
-    });
-    if (existing) continue;
-    const handle = m.email.replace("@embark.in", "");
+    const handle = m.email.replace("@embark.in", "").replace(".", "-");
     await db.insert(mentorProfiles).values({
       userId: uid,
       publicSlug: handle,
+      displayName: m.displayName,
       headline: m.headline,
       bschool: m.bschool,
       company: m.company,
@@ -194,133 +171,58 @@ async function seed() {
       bio: m.bio,
       whatsapp: m.whatsapp,
       linkedinUrl: `https://linkedin.com/in/${handle}`,
+      profileImage: m.photo,
+      coverImage: "",
       isVerified: true,
+      verificationStatus: "verified",
+      status: "active",
+      onboardingStatus: "completed",
+      profileCompletionPercent: 100,
     });
   }
   console.log("mentors done");
 
-  // ------------------------------------------------------------- demo expert
-  const expertUid = userIds["expert@embark.in"];
-  if (expertUid) {
-    await db
-      .insert(mentorProfiles)
-      .values({
-        userId: expertUid,
-        publicSlug: "expert-user",
-        displayName: "Expert User",
-        headline: "Product leader · ex-Flipkart · Strategy & Ops",
-        bio: "15+ years in product and strategy across consumer internet and fintech.",
-        company: "Independent",
-        currentRole: "Product Leader",
-        expertise: "Product Management, Strategy, Growth, Analytics",
-        industries: "Consumer Internet, Fintech",
-        location: "Bangalore",
-        country: "India",
-        timezone: "Asia/Kolkata",
-        linkedinUrl: "https://linkedin.com/in/expertuser",
-        profileImage: "",
-        status: "active",
-        onboardingStatus: "completed",
-        verificationStatus: "verified",
-        isVerified: true,
-        profileCompletionPercent: 100,
-      })
-      .onDuplicateKeyUpdate({
-        set: {
-          publicSlug: "expert-user",
-          displayName: "Expert User",
-          headline: "Product leader · ex-Flipkart · Strategy & Ops",
-          bio: "15+ years in product and strategy across consumer internet and fintech.",
-          company: "Independent",
-          currentRole: "Product Leader",
-          expertise: "Product Management, Strategy, Growth, Analytics",
-          industries: "Consumer Internet, Fintech",
-          location: "Bangalore",
-          country: "India",
-          timezone: "Asia/Kolkata",
-          linkedinUrl: "https://linkedin.com/in/expertuser",
-          profileImage: "",
-          status: "active",
-          onboardingStatus: "completed",
-          verificationStatus: "verified",
-          isVerified: true,
-          profileCompletionPercent: 100,
-        },
-      });
+  // ---------------------------------------------------------------- playbooks
+  const adminId = userIds["admin@embark.in"];
+  const playbookFiles = [
+    { title: "Crack the GD", body: "This is a placeholder playbook file for Crack the GD." },
+    { title: "Master the PI", body: "This is a placeholder playbook file for Master the PI." },
+  ];
 
-    await db
-      .insert(expertOnboarding)
-      .values({
-        userId: expertUid,
-        currentStep: "complete",
-        status: "completed",
-        completedAt: new Date(),
-        lastCompletedStep: "complete",
-      })
-      .onDuplicateKeyUpdate({
-        set: {
-          currentStep: "complete",
-          status: "completed",
-          completedAt: new Date(),
-          lastCompletedStep: "complete",
-        },
-      });
-
-    const existingServices = await db.query.mentorServices.findFirst({
-      where: (t, { eq }) => eq(t.userId, expertUid),
+  const fileAssetIds: number[] = [];
+  for (const pf of playbookFiles) {
+    const base64 = Buffer.from(pf.body).toString("base64");
+    const dataUrl = `data:text/plain;base64,${base64}`;
+    const asset = await saveBase64Asset(adminId, dataUrl, {
+      mimeTypes: ["text/plain"],
+      fileName: `${pf.title.toLowerCase().replace(/\s+/g, "-")}.txt`,
     });
-    if (!existingServices) {
-      await db.insert(mentorServices).values([
-        {
-          userId: expertUid,
-          title: "1:1 Product Management Mentorship",
-          slug: "product-management-mentorship",
-          description:
-            "Get personalized guidance on product strategy, interviews, and career planning. Ideal for aspiring PMs and early-career product managers.",
-          serviceType: "one_on_one",
-          price: 1499,
-          currency: "INR",
-          durationMinutes: 60,
-          deliveryMode: "online",
-          requirements: "Please share your resume and 2 target companies or roles.",
-          outcomes: "Career assessment\nInterview guidance\nAction plan",
-          status: "published",
-          displayOrder: 0,
-        },
-        {
-          userId: expertUid,
-          title: "Resume & LinkedIn Review",
-          slug: "resume-linkedin-review",
-          description:
-            "Detailed feedback on your resume and LinkedIn profile to position yourself for top B-schools and product roles.",
-          serviceType: "review",
-          price: 799,
-          currency: "INR",
-          durationMinutes: 45,
-          deliveryMode: "async",
-          requirements: "Upload your current resume and LinkedIn URL.",
-          outcomes: "Edited resume\nLinkedIn optimization tips\nMessaging framework",
-          status: "published",
-          displayOrder: 1,
-        },
-      ]);
-    }
+    fileAssetIds.push(asset.id);
   }
 
-  // ------------------------------------------------------------- playbooks
   const pbs = [
-    { title: "GD Mastery Playbook", category: "GDPI", price: 499, pages: 68, emoji: "", description: "Frameworks, opening lines, 40 practice topics, and the exact etiquette panelists look for in group discussions." },
-    { title: "PI Crusher: 200 Real Questions", category: "GDPI", price: 599, pages: 112, emoji: "", description: "200 actual interview questions from IIM/XLRI/FMS panels with model answer structures and traps to avoid." },
-    { title: "WAT & Essay Toolkit", category: "WAT", price: 399, pages: 54, emoji: "", description: "50 solved WAT topics, intro-body-conclusion templates, and a 15-minute daily writing routine." },
-    { title: "Case Competition Bible", category: "Case Comps", price: 899, pages: 140, emoji: "", description: "How national winners structure decks: guesstimates, MECE issue trees, storytelling and Q&A defence." },
-    { title: "Consulting Casebook 2026", category: "Case Comps", price: 999, pages: 180, emoji: "", description: "35 full cases — market entry, profitability, pricing — with interviewer scripts and math drills." },
-    { title: "Resume to Shortlist", category: "Profile", price: 299, pages: 36, emoji: "", description: "Bullet-by-bullet resume surgery, spike-building and the humblebrag formula for B-school forms." },
+    {
+      title: "Crack the GD",
+      category: "GDPI",
+      price: 499,
+      pages: 68,
+      description: "Frameworks, opening lines, 40 practice topics, and the exact etiquette panelists look for in group discussions.",
+      coverImage: BOOK_COVERS[0],
+      fileUrl: assetRef(fileAssetIds[0]),
+    },
+    {
+      title: "Master the PI",
+      category: "GDPI",
+      price: 599,
+      pages: 112,
+      description: "200 actual interview questions from IIM/XLRI/FMS panels with model answer structures and traps to avoid.",
+      coverImage: BOOK_COVERS[1],
+      fileUrl: assetRef(fileAssetIds[1]),
+    },
   ];
+
   for (const p of pbs) {
-    const existing = await db.query.playbooks.findFirst({
-      where: (t, { eq }) => eq(t.title, p.title),
-    });
-    if (!existing) await db.insert(playbooks).values(p);
+    await db.insert(playbooks).values(p);
   }
   console.log("playbooks done");
 
@@ -329,13 +231,14 @@ async function seed() {
   const day = 24 * 60 * 60 * 1000;
   const evs = [
     {
-      title: "HackCAT 2026 — Product Teardown Hackathon",
+      title: "Startup Hack — Build your B-plan",
       type: "hackathon" as const,
       emoji: "",
       prize: "₹1,00,000 + fast-track interviews",
       status: "live" as const,
       startAt: new Date(now - 2 * day),
       endAt: new Date(now + 12 * day),
+      coverImage: EVENT_COVERS[0],
       description:
         "Pick any Indian consumer app and tear it down: growth loops, monetisation leaks, and a 90-day roadmap. Submit a PPT or PDF deck (max 12 slides).",
       rules:
@@ -349,112 +252,31 @@ async function seed() {
       status: "live" as const,
       startAt: new Date(now - 1 * day),
       endAt: new Date(now + 20 * day),
+      coverImage: EVENT_COVERS[1],
       description:
         "A D2C skincare brand is bleeding cash despite 3x revenue growth. Diagnose, model unit economics, and recommend a path to profitability.",
       rules:
         "1. Solo or duo participation.\n2. Submit a PDF report (max 10 pages) or PPT.\n3. Cite assumptions clearly.\n4. Judged on structure, math and practicality.",
     },
-    {
-      title: "Summer Strategy League 2025",
-      type: "case_competition" as const,
-      emoji: "",
-      prize: "₹25,000",
-      status: "closed" as const,
-      startAt: new Date(now - 90 * day),
-      endAt: new Date(now - 30 * day),
-      description:
-        "Our pilot case competition — a market-entry strategy for an EV two-wheeler startup entering tier-2 India.",
-      rules: "Closed event. Winners announced.",
-    },
   ];
-  const eventIds: number[] = [];
+
   for (const e of evs) {
-    const existing = await db.query.events.findFirst({
-      where: (t, { eq }) => eq(t.title, e.title),
-    });
-    if (existing) {
-      eventIds.push(Number(existing.id));
-    } else {
-      const res = await db.insert(events).values({ ...e, createdBy: userIds["admin@embark.in"] });
-      eventIds.push(Number(res[0].insertId));
-    }
+    await db.insert(events).values({ ...e, createdBy: adminId });
   }
   console.log("events done");
-
-  // seed a winner for the closed event
-  const closedEventId = eventIds[2];
-  const existingSub = await db.query.submissions.findFirst({
-    where: (t, { eq, and }) =>
-      and(eq(t.eventId, closedEventId), eq(t.userId, userIds["candidate@embark.in"])),
-  });
-  if (!existingSub) {
-    await db.insert(submissions).values({
-      eventId: closedEventId,
-      userId: userIds["candidate@embark.in"],
-      teamName: "Orange Theory",
-      title: "ChargePoint Bharat: Tier-2 EV Entry Strategy",
-      note: "A phased cluster-based entry with battery-swap partnerships.",
-      fileName: "orange-theory-ev.pdf",
-      fileMime: "application/pdf",
-      fileData: "",
-      fileSize: 0,
-      score: 92,
-      feedback: "Crisp structure, realistic CAC math. Well deserved win.",
-      status: "winner",
-    });
-  }
-
-  // ----------------------------------------------------------- demo mentorship
-  const rohanProfile = await db.query.mentorProfiles.findFirst({
-    where: (t, { eq }) => eq(t.userId, userIds["rohan@embark.in"]),
-  });
-  if (rohanProfile) {
-    const existingMs = await db.query.mentorships.findFirst({
-      where: (t, { eq, and }) =>
-        and(eq(t.candidateId, userIds["candidate@embark.in"]), eq(t.mentorProfileId, rohanProfile.id)),
-    });
-    if (!existingMs) {
-      await db.insert(mentorships).values({
-        candidateId: userIds["candidate@embark.in"],
-        mentorProfileId: rohanProfile.id,
-        plan: "Standard",
-        price: rohanProfile.price,
-        status: "active",
-        gdTotal: rohanProfile.mockGds,
-        gdUsed: 1,
-        piTotal: rohanProfile.mockPis,
-        piUsed: 1,
-      });
-      const msRow = await db.query.mentorships.findFirst({
-        where: (t, { eq, and }) =>
-          and(eq(t.candidateId, userIds["candidate@embark.in"]), eq(t.mentorProfileId, rohanProfile.id)),
-      });
-      if (msRow) {
-        await db.insert(mockSessions).values([
-          {
-            mentorshipId: msRow.id,
-            type: "gd",
-            topic: "AI in Indian agriculture",
-            status: "completed",
-            score: 8,
-            feedback: "Strong opening, keep conclusions tighter. Good structure overall.",
-          },
-          {
-            mentorshipId: msRow.id,
-            type: "pi",
-            topic: "Tell me about yourself",
-            status: "scheduled",
-            scheduledNote: "Sat 10 AM · Google Meet",
-          },
-        ]);
-      }
-    }
-  }
 
   // --------------------------------------------------------------- colleges
   await seedColleges(db);
 
   console.log("Seed complete.");
+  console.log("Demo logins — password for all: Arenafograds@123");
+  console.log("  Candidate: aarya@embark.in");
+  console.log("  Candidate: kabir.candidate@embark.in");
+  console.log("  Campus:    campus@embark.in");
+  console.log("  Mentor:    rohan@embark.in");
+  console.log("  Mentor:    ananya@embark.in");
+  console.log("  Admin:     admin@embark.in");
+  console.log("  Super:     superadmin@embark.in");
   process.exit(0);
 }
 

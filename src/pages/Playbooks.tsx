@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import { BookOpen, Check, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -44,18 +45,16 @@ type Playbook = {
   pages: number;
   emoji: string;
   coverImage: string | null;
+  fileUrl: string | null;
 };
+
+const MotionLink = motion(Link);
 
 export default function Playbooks() {
   const { user, isAuthenticated } = useAuth();
   const reduce = useReducedMotion();
   const { addItem, items } = useCart();
   const { data: playbooks, isLoading } = trpc.catalog.playbooks.useQuery();
-  const { data: owned } = trpc.candidate.myPlaybooks.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "candidate",
-  });
-
-  const ownedIds = new Set(owned?.map((o) => o.playbook.id) ?? []);
   const cartPlaybookIds = new Set(items.filter((i) => i.type === "playbook").map((i) => i.playbookId));
 
   const addToCart = (p: Playbook) => {
@@ -128,11 +127,11 @@ export default function Playbooks() {
                 <Skeleton key={i} className="h-80 rounded-3xl bg-stone-800" />
               ))}
             {playbooks?.map((p, i) => {
-              const isOwned = ownedIds.has(p.id);
               const cover = p.coverImage || fallbackCover(p.id, p.title);
               return (
-                <motion.div
+                <MotionLink
                   key={p.id}
+                  to={`/playbooks/${p.id}`}
                   initial={reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
@@ -161,22 +160,18 @@ export default function Playbooks() {
                     </div>
                     <div className="mt-5 flex items-center justify-between border-t border-stone-800 pt-4">
                       <span className="font-display text-xl font-bold text-stone-100">{formatINR(p.price)}</span>
-                      {isOwned ? (
-                        <Button size="sm" variant="secondary" disabled className="rounded-full bg-card text-muted-foreground">
-                          <Check className="mr-1.5 h-3.5 w-3.5" /> Owned
-                        </Button>
-                      ) : cartPlaybookIds.has(p.id) ? (
+                      {cartPlaybookIds.has(p.id) ? (
                         <Button size="sm" variant="outline" disabled className="rounded-full">
                           <Check className="mr-1.5 h-3.5 w-3.5" /> In cart
                         </Button>
                       ) : (
-                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={() => addToCart(p)}>
+                        <Button size="sm" className="rounded-full bg-stone-100 text-stone-900 hover:bg-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }}>
                           <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Add to cart
                         </Button>
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </MotionLink>
               );
             })}
           </div>

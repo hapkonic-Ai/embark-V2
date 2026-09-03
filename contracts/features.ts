@@ -11,7 +11,7 @@ const file = (features as FeaturesFile) ?? {};
 function envDisabled(): string[] {
   try {
     if (typeof process !== "undefined" && process.env?.DISABLED_FEATURES) {
-      return process.env.DISABLED_FEATURES.split(",").map((s) => s.trim()).filter(Boolean);
+      return process.env.DISABLED_FEATURES.split(",").map((s: string) => s.trim()).filter(Boolean);
     }
   } catch {
     // ignore

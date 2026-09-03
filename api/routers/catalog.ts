@@ -140,6 +140,18 @@ export const catalogRouter = createRouter({
       .orderBy(desc(playbooks.createdAt));
   }),
 
+  playbook: publicQuery
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(playbooks)
+        .where(and(eq(playbooks.id, input.id), eq(playbooks.isPublished, true)))
+        .limit(1);
+      return rows[0] ?? null;
+    }),
+
   events: publicQuery.query(async () => {
     const db = getDb();
     const rows = await db

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { CreditCard, Loader2, ShieldCheck, Smartphone } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatINR } from "@/lib/format";
 import { fireConfetti } from "@/components/site/EasterEggs";
+import { demoProvider, type PaymentProvider } from "@/lib/payments";
 
 type Props = {
   open: boolean;
@@ -21,16 +23,21 @@ type Props = {
   amount: number;
   title: string;
   onConfirm: () => Promise<void> | void;
+  provider?: PaymentProvider;
 };
 
-/** Simulated checkout — no real payment is processed. */
-export default function PaymentModal({ open, onOpenChange, amount, title, onConfirm }: Props) {
+/** Demo checkout — swap the provider prop for Razorpay when ready. */
+export default function PaymentModal({ open, onOpenChange, amount, title, onConfirm, provider = demoProvider }: Props) {
   const [processing, setProcessing] = useState(false);
 
   const pay = async () => {
     setProcessing(true);
-    await new Promise((r) => setTimeout(r, 1400));
     try {
+      const result = await provider.processPayment(amount, "INR");
+      if (!result.success) {
+        toast.error(result.message || "Payment failed");
+        return;
+      }
       await onConfirm();
       fireConfetti(true);
       onOpenChange(false);

@@ -113,16 +113,32 @@ function RequestsTab() {
               </div>
               <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
             </div>
-            {date && (
+            {request.topic && (
               <p className="mt-4 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Topic:</span> {request.topic}
+              </p>
+            )}
+            {date && (
+              <p className="mt-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Date:</span> {new Date(date).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
               </p>
             )}
             {request.campusNote && (
               <p className="mt-2 text-sm text-muted-foreground"><span className="font-medium text-foreground">Your note:</span> {request.campusNote}</p>
             )}
+            {request.campusContact && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Your shared contact:</span> {request.campusContact}
+              </p>
+            )}
             {request.mentorNote && (
               <p className="mt-2 text-sm text-muted-foreground border-l-2 border-orange-400 pl-3">{request.mentorNote}</p>
+            )}
+            {request.status === "accepted" && request.mentorContact && (
+              <div className="mt-4 rounded-2xl bg-green-50 border border-green-100 p-4">
+                <p className="text-sm font-semibold text-green-800">Mentor contact</p>
+                <p className="text-sm text-green-700 mt-1">{request.mentorContact}</p>
+              </div>
             )}
           </div>
         );

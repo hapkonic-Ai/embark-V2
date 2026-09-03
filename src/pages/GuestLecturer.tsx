@@ -51,13 +51,17 @@ function RequestDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const [topic, setTopic] = useState("");
   const [date, setDate] = useState("");
+  const [contact, setContact] = useState("");
   const [note, setNote] = useState("");
   const utils = trpc.useUtils();
   const request = trpc.campus.createRequest.useMutation({
     onSuccess: () => {
       toast.success("Guest lecture request sent");
+      setTopic("");
       setDate("");
+      setContact("");
       setNote("");
       utils.campus.myRequests.invalidate();
       onClose();
@@ -74,17 +78,33 @@ function RequestDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
+            <Label>Topic / title</Label>
+            <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Consulting case cracking" required />
+          </div>
+          <div className="space-y-1.5">
             <Label>Preferred date & time</Label>
             <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
           <div className="space-y-1.5">
+            <Label>Campus contact (email or phone)</Label>
+            <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="coordinator@college.in or +91 98xxx xxxxx" required />
+          </div>
+          <div className="space-y-1.5">
             <Label>Note for the mentor</Label>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Topic, audience size, format…" />
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Audience size, format, logistics…" />
           </div>
           <Button
             className="w-full rounded-full"
-            disabled={!date || request.isPending}
-            onClick={() => request.mutate({ mentorProfileId: mentor.profile.id, proposedDate: new Date(date).toISOString(), campusNote: note || undefined })}
+            disabled={!topic || !date || !contact || request.isPending}
+            onClick={() =>
+              request.mutate({
+                mentorProfileId: mentor.profile.id,
+                topic,
+                proposedDate: new Date(date).toISOString(),
+                campusContact: contact,
+                campusNote: note || undefined,
+              })
+            }
           >
             {request.isPending ? "Sending…" : "Send request"}
           </Button>

@@ -8,6 +8,7 @@ import { EditorialHero } from "@/components/site/EditorialHero";
 import { StorySection } from "@/components/site/StorySection";
 import { EventCard, EventSkeleton } from "@/components/site/EventCard";
 import { eventCoverImage } from "@/lib/images";
+import type { EmbarkEvent } from "@db/schema";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -30,8 +31,15 @@ const CATEGORIES = [
   "Leadership",
 ];
 
-function EventsCollage() {
+type EventItem = EmbarkEvent & { submissionCount: number };
+
+function EventsCollage({ events, participantCount }: { events: EventItem[]; participantCount: number }) {
   const reduce = useReducedMotion();
+  const first = events[0];
+  const second = events[1];
+  const nextDate = first?.startAt
+    ? new Date(first.startAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+    : "12 Sept";
 
   return (
     <div className="relative h-full w-full min-h-[480px]">
@@ -44,14 +52,14 @@ function EventsCollage() {
         className="absolute left-0 top-2 h-80 w-60 overflow-hidden rounded-3xl border-4 border-white shadow-2xl"
       >
         <img
-          src={eventCoverImage("hackathon", "Startup Hack")}
-          alt="Startup Hack"
+          src={first?.coverImage || eventCoverImage("hackathon", first?.title ?? "Startup Hack")}
+          alt={first?.title ?? "Startup Hack"}
           className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/30 to-transparent" />
         <div className="absolute bottom-5 left-5 right-5 text-white">
-          <div className="font-display text-lg font-bold">Startup Hack</div>
-          <div className="text-sm text-white/80">Build your B-plan</div>
+          <div className="font-display text-lg font-bold">{first?.title ?? "Startup Hack"}</div>
+          <div className="text-sm text-white/80">{first?.type === "hackathon" ? "Build your B-plan" : "Case competition"}</div>
         </div>
       </motion.div>
 
@@ -64,14 +72,14 @@ function EventsCollage() {
         className="absolute right-0 top-14 h-72 w-56 overflow-hidden rounded-3xl border-4 border-white shadow-2xl"
       >
         <img
-          src={eventCoverImage("case_competition", "Case Sprint")}
-          alt="Case Sprint"
+          src={second?.coverImage || eventCoverImage("case_competition", second?.title ?? "Case Sprint")}
+          alt={second?.title ?? "Case Sprint"}
           className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/30 to-transparent" />
         <div className="absolute bottom-5 left-5 right-5 text-white">
-          <div className="font-display text-lg font-bold">Case Sprint</div>
-          <div className="text-sm text-white/80">₹50,000 prize</div>
+          <div className="font-display text-lg font-bold">{second?.title ?? "Case Sprint"}</div>
+          <div className="text-sm text-white/80">{second?.prize ?? "₹50,000 prize"}</div>
         </div>
       </motion.div>
 
@@ -87,7 +95,7 @@ function EventsCollage() {
           <Users className="h-7 w-7" />
         </div>
         <div>
-          <div className="font-display text-2xl font-bold">1,200+</div>
+          <div className="font-display text-2xl font-bold">{participantCount.toLocaleString("en-IN")}{participantCount === 0 ? "" : "+"}</div>
           <div className="text-xs text-stone-500">students joined events</div>
         </div>
       </motion.div>
@@ -99,7 +107,7 @@ function EventsCollage() {
         transition={{ duration: 0.7, delay: 0.7, ease: EASE }}
         className="absolute bottom-28 right-4 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-900 shadow-lg"
       >
-        Next: 12 Sept
+        Next: {nextDate}
       </motion.div>
     </div>
   );
@@ -109,6 +117,7 @@ export default function Events() {
   const { data: events, isLoading } = trpc.catalog.events.useQuery();
   const liveEvents = events?.filter(e => e.status === "live") ?? [];
   const closedEvents = events?.filter(e => e.status === "closed") ?? [];
+  const participantCount = events?.reduce((sum, e) => sum + (e.submissionCount ?? 0), 0) ?? 0;
 
   return (
     <SiteLayout>
@@ -127,7 +136,7 @@ export default function Events() {
         secondaryCta="Host with us"
         secondaryHref="/guest-lecturer"
       >
-        <EventsCollage />
+        <EventsCollage events={events ?? []} participantCount={participantCount} />
       </EditorialHero>
 
       <section id="whats-happening" className="section-dark py-20 sm:py-28">

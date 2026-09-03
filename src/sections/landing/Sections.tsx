@@ -48,10 +48,10 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
 export function Stats() {
   const { data } = trpc.catalog.stats.useQuery();
   const items = [
-    { illustration: Illustrations.mentor, value: data?.mentors ?? 8, suffix: "", label: "Verified mentors" },
-    { illustration: Illustrations.college, value: data?.colleges ?? 48, suffix: "", label: "B-schools to compare" },
-    { illustration: Illustrations.competition, value: data?.events ?? 3, suffix: "", label: "Live competitions" },
-    { illustration: Illustrations.aspirants, value: (data?.candidates ?? 0) + 500, suffix: "+", label: "Aspirants on board" },
+    { illustration: Illustrations.mentor, value: data?.mentors ?? 0, suffix: "", label: "Verified mentors" },
+    { illustration: Illustrations.college, value: data?.colleges ?? 0, suffix: "", label: "B-schools to compare" },
+    { illustration: Illustrations.competition, value: data?.events ?? 0, suffix: "", label: "Live competitions" },
+    { illustration: Illustrations.aspirants, value: data?.candidates ?? 0, suffix: "+", label: "Aspirants on board" },
   ];
   return (
     <section className="section-light py-16">

@@ -63,38 +63,40 @@ function makeHeroVisual(mentors: MentorListItem[] | undefined) {
     { angle: 300, distance: 160, size: 56 },
   ];
 
+  const fallbackFeatured = {
+    name: "Rohan Mehta",
+    avatar: mentorImage("Rohan Mehta", "IIM Ahmedabad"),
+    school: "IIM Ahmedabad",
+    company: "ex-McKinsey",
+    expertise: "GD · PI · Placements",
+    students: 247,
+  };
+
   return (
     <ProfileNetwork
       featured={
         featured
           ? {
               name: featured.name ?? "Mentor",
-              avatar: mentorImage(featured.name ?? "Mentor", featured.profile.bschool ?? "IIM"),
+              avatar: featured.profile.profileImage || mentorImage(featured.name ?? "Mentor", featured.profile.bschool ?? "IIM"),
               school: featured.profile.bschool ?? "",
               company: featured.profile.company ?? "",
               expertise: featured.profile.expertise?.split(",").slice(0, 3).join(" · ") ?? "",
               students: 247,
             }
-          : {
-              name: "Rohan Mehta",
-              avatar: mentorImage("Rohan Mehta", "IIM Ahmedabad"),
-              school: "IIM Ahmedabad",
-              company: "ex-McKinsey",
-              expertise: "GD · PI · Placements",
-              students: 247,
-            }
+          : fallbackFeatured
       }
       orbit={orbit.map((m, i) => ({
         name: m.name ?? "Mentor",
-        avatar: mentorImage(m.name ?? "Mentor", m.profile.bschool ?? "IIM"),
+        avatar: m.profile.profileImage || mentorImage(m.name ?? "Mentor", m.profile.bschool ?? "IIM"),
         label: m.profile.expertise?.split(",").slice(0, 2).join(" · ") ?? "Mentor",
         ...orbitPositions[i],
       }))}
       tags={["Verified alumni", "1:1 sessions", "Mock GDs", "Mock PIs", "Profile reviews"]}
       stats={[
-        { value: "4,000+", label: "mentors" },
-        { value: "1,200+", label: "reviews" },
-        { value: "4.9", label: "rating" },
+        { value: `${list.length.toLocaleString("en-IN")}+`, label: "verified mentors" },
+        { value: "4,000+", label: "aspirants" },
+        { value: "25", label: "B-schools" },
       ]}
     />
   );
@@ -189,9 +191,9 @@ export default function Mentors() {
 
       <CredibilityStrip
         stats={[
-          { value: "4,000+", label: "verified mentors" },
-          { value: "1,200+", label: "student reviews" },
-          { value: "4.9/5", label: "average rating" },
+          { value: `${(mentors ?? []).length.toLocaleString("en-IN")}+`, label: "verified mentors" },
+          { value: "4,000+", label: "aspirants on board" },
+          { value: "25", label: "B-schools compared" },
         ]}
         extra={["Product leaders", "Founders", "Consultants", "Placement experts"]}
       />

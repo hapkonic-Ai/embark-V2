@@ -29,7 +29,9 @@ export const campusRouter = createRouter({
     .input(
       z.object({
         mentorProfileId: z.number(),
+        topic: z.string().min(1).max(255),
         proposedDate: z.string().datetime(),
+        campusContact: z.string().min(1).max(255),
         campusNote: z.string().max(2000).optional(),
       }),
     )
@@ -63,7 +65,9 @@ export const campusRouter = createRouter({
       await db.insert(guestLectureRequests).values({
         campusId: ctx.user.id,
         mentorProfileId: input.mentorProfileId,
+        topic: input.topic,
         proposedDate: new Date(input.proposedDate),
+        campusContact: input.campusContact,
         campusNote: input.campusNote,
       });
       return { success: true };

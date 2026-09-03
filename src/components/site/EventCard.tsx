@@ -15,7 +15,7 @@ const statusStyle: Record<string, string> = {
 };
 
 function coverImageForEvent(e: EventItem): string {
-  return eventCoverImage(e.type, e.title);
+  return e.coverImage || eventCoverImage(e.type, e.title);
 }
 
 function categoryLabel(e: EventItem) {
