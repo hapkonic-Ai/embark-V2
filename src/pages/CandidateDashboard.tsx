@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
+import type { inferProcedureOutput } from "@trpc/server";
+import type { AppRouter } from "../../api/router";
 import {
-  ArrowRight, Award, BookOpen, Calendar, Check, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
+  ArrowLeft, ArrowRight, Award, BookOpen, Calendar, Check, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
   Loader2, MessageCircle, ShieldCheck, Smartphone, Star, Trophy, Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { downloadBase64 } from "@/lib/format";
+import { downloadBase64, formatINR } from "@/lib/format";
 import { fallbackFace } from "@/lib/images";
 
 
@@ -242,10 +244,15 @@ function Overview({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
 
 const MENTORSHIPS_PAGE_SIZE = 5;
 
+type MyMentorshipsOutput = inferProcedureOutput<AppRouter["candidate"]["myMentorships"]>;
+type MentorshipRow = MyMentorshipsOutput["rows"][number];
+
 function MentorshipsTab() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = trpc.candidate.myMentorships.useQuery({ page, pageSize: MENTORSHIPS_PAGE_SIZE });
   const utils = trpc.useUtils();
+  const [view, setView] = useState<"list" | "detail">("list");
+  const [selected, setSelected] = useState<MentorshipRow | null>(null);
   const [reqOpen, setReqOpen] = useState<{ id: number; type: "gd" | "pi" } | null>(null);
   const [reviewFor, setReviewFor] = useState<{ mentorshipId: number; mentorName: string | null } | null>(null);
   const [topic, setTopic] = useState("");
@@ -261,6 +268,16 @@ function MentorshipsTab() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const openDetail = (row: MentorshipRow) => {
+    setSelected(row);
+    setView("detail");
+  };
+
+  const backToList = () => {
+    setSelected(null);
+    setView("list");
+  };
 
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
   if (!data || data.rows.length === 0) {
@@ -280,65 +297,22 @@ function MentorshipsTab() {
 
   return (
     <div className="space-y-5">
-      {data.rows.map(({ mentorship: m, profile, mentorName, sessions, order, review }) => {
-        const gdPct = m.gdTotal ? (m.gdUsed / m.gdTotal) * 100 : 0;
-        const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
-        const isPaid = !order || order.status === "paid";
-        const isCompleted = m.status === "completed";
-        const needsReview = isCompleted && !review;
-        return (
-          <MentorshipCard
-            key={m.id}
-            mentorship={m}
-            profile={profile}
-            mentorName={mentorName}
-            sessions={sessions}
-            isPaid={isPaid}
-            isCompleted={isCompleted}
-            needsReview={needsReview}
-            hasReview={!!review}
-            gdPct={gdPct}
-            piPct={piPct}
-            onRequest={(type) => setReqOpen({ id: m.id, type })}
-            onReview={() => setReviewFor({ mentorshipId: m.id, mentorName })}
-          />
-        );
-      })}
-
-      {totalPages > 1 && (
-        <div className="flex flex-col items-center gap-2 pt-2">
-          <p className="text-xs text-muted-foreground">
-            Showing {Math.min((page - 1) * MENTORSHIPS_PAGE_SIZE + 1, data.total)}–{Math.min(page * MENTORSHIPS_PAGE_SIZE, data.total)} of {data.total}
-          </p>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <PaginationItem key={i + 1}>
-                  <PaginationLink
-                    isActive={page === i + 1}
-                    onClick={() => setPage(i + 1)}
-                    className="cursor-pointer"
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      {view === "list" ? (
+        <MentorshipList
+          rows={data.rows}
+          totalPages={totalPages}
+          page={page}
+          setPage={setPage}
+          onOpen={openDetail}
+        />
+      ) : selected ? (
+        <MentorshipDetail
+          row={selected}
+          onBack={backToList}
+          onRequest={(type) => setReqOpen({ id: selected.mentorship.id, type })}
+          onReview={() => setReviewFor({ mentorshipId: selected.mentorship.id, mentorName: selected.mentorName })}
+        />
+      ) : null}
 
       <Dialog open={!!reqOpen} onOpenChange={(v) => !v && setReqOpen(null)}>
         <DialogContent>
@@ -376,159 +350,316 @@ function MentorshipsTab() {
   );
 }
 
-function MentorshipCard({
-  mentorship,
-  profile,
-  mentorName,
-  sessions,
-  isPaid,
-  isCompleted,
-  needsReview,
-  hasReview,
-  gdPct,
-  piPct,
+function MentorshipList({
+  rows,
+  totalPages,
+  page,
+  setPage,
+  onOpen,
+}: {
+  rows: MentorshipRow[];
+  totalPages: number;
+  page: number;
+  setPage: (p: number) => void;
+  onOpen: (row: MentorshipRow) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {rows.map((row) => {
+        const { mentorship: m, profile, mentorName, order, review } = row;
+        const isPaid = !order || order.status === "paid";
+        const isCompleted = m.status === "completed";
+        const needsReview = isCompleted && !review;
+        const active = m.status === "active" && isPaid;
+
+        const statusMeta = active
+          ? { label: "Ongoing", cls: "bg-green-100 text-green-700" }
+          : needsReview
+            ? { label: "Review pending", cls: "bg-amber-100 text-amber-700" }
+            : isCompleted
+              ? { label: "Completed", cls: "bg-stone-200 text-stone-600" }
+              : { label: "Pending payment", cls: "bg-amber-100 text-amber-700 border border-amber-300" };
+
+        const gdPct = m.gdTotal ? (m.gdUsed / m.gdTotal) * 100 : 0;
+        const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
+
+        return (
+          <button
+            key={m.id}
+            onClick={() => onOpen(row)}
+            className="w-full text-left rounded-3xl border bg-card p-6 shadow-sm transition-colors hover:border-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                {profile.profileImage ? (
+                  <img
+                    src={profile.profileImage}
+                    alt={mentorName ?? "Mentor"}
+                    className="h-14 w-14 rounded-2xl object-cover"
+                    onError={(e) => { e.currentTarget.src = fallbackFace(mentorName ?? "Mentor"); }}
+                  />
+                ) : (
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-xl font-bold text-white">
+                    {mentorName?.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-display text-lg font-semibold">{mentorName ?? "Mentor"}</h3>
+                  <p className="text-sm text-orange-600">{profile.bschool} · {profile.company}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {review && (
+                  <Badge className="bg-amber-100 text-amber-700 border-0">
+                    <Star className="mr-1 h-3 w-3 fill-amber-500 text-amber-500" /> Review given
+                  </Badge>
+                )}
+                <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-muted-foreground">Mock GDs</span>
+                  <b>{m.gdUsed}/{m.gdTotal}</b>
+                </div>
+                <Progress value={gdPct} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-muted-foreground">Mock Interviews</span>
+                  <b>{m.piUsed}/{m.piTotal}</b>
+                </div>
+                <Progress value={piPct} className="h-2" />
+              </div>
+            </div>
+          </button>
+        );
+      })}
+
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <p className="text-xs text-muted-foreground">
+            Showing {Math.min((page - 1) * MENTORSHIPS_PAGE_SIZE + 1, rows.length)}–{Math.min(page * MENTORSHIPS_PAGE_SIZE, rows.length)} of {rows.length}
+          </p>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <PaginationItem key={i + 1}>
+                  <PaginationLink
+                    isActive={page === i + 1}
+                    onClick={() => setPage(i + 1)}
+                    className="cursor-pointer"
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MentorshipDetail({
+  row,
+  onBack,
   onRequest,
   onReview,
 }: {
-  mentorship: { id: number; status: string; gdUsed: number; gdTotal: number; piUsed: number; piTotal: number };
-  profile: { profileImage: string | null; bschool: string | null; company: string | null; whatsapp: string | null };
-  mentorName: string | null;
-  sessions: { id: number; type: "gd" | "pi"; topic: string | null; status: string; score: number | null; feedback: string | null; scheduledNote: string | null }[];
-  isPaid: boolean;
-  isCompleted: boolean;
-  needsReview: boolean;
-  hasReview: boolean;
-  gdPct: number;
-  piPct: number;
+  row: MentorshipRow;
+  onBack: () => void;
   onRequest: (type: "gd" | "pi") => void;
   onReview: () => void;
 }) {
-  const [showHistory, setShowHistory] = useState(false);
-  const active = mentorship.status === "active" && isPaid;
+  const { mentorship: m, profile, mentorName, sessions, order, review } = row;
+  const isPaid = !order || order.status === "paid";
+  const isCompleted = m.status === "completed";
+  const needsReview = isCompleted && !review;
+  const active = m.status === "active" && isPaid;
+
+  const statusMeta = active
+    ? { label: "Ongoing", cls: "bg-green-100 text-green-700" }
+    : needsReview
+      ? { label: "Review pending", cls: "bg-amber-100 text-amber-700" }
+      : isCompleted
+        ? { label: "Completed", cls: "bg-stone-200 text-stone-600" }
+        : { label: "Pending payment", cls: "bg-amber-100 text-amber-700 border border-amber-300" };
+
+  const gdPct = m.gdTotal ? (m.gdUsed / m.gdTotal) * 100 : 0;
+  const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
 
   return (
-    <div className="rounded-3xl border bg-card p-7 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          {profile.profileImage ? (
-            <img
-              src={profile.profileImage}
-              alt={mentorName ?? "Mentor"}
-              className="h-14 w-14 rounded-2xl object-cover"
-              onError={(e) => { e.currentTarget.src = fallbackFace(mentorName ?? "Mentor"); }}
-            />
-          ) : (
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-xl font-bold text-white">
-              {mentorName?.slice(0, 2).toUpperCase()}
-            </div>
-          )}
-          <div>
-            <h3 className="font-display text-lg font-semibold">{mentorName}</h3>
-            <p className="text-sm text-orange-600">{profile.bschool} · {profile.company}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className={active ? "bg-green-100 text-green-700" : needsReview ? "bg-amber-100 text-amber-700" : "bg-stone-200 text-stone-600"}>
-            {needsReview ? "review pending" : active ? "active" : isCompleted ? "completed" : "pending payment"}
-          </Badge>
-          {profile.whatsapp && (
-            <Button size="sm" variant="outline" className="rounded-full" asChild>
-              <a href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer">
-                <MessageCircle className="mr-1.5 h-3.5 w-3.5 text-green-600" /> {profile.whatsapp}
-              </a>
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="space-y-5">
+      <Button variant="outline" className="rounded-full" onClick={onBack}>
+        <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to mentorships
+      </Button>
 
-      <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        <div>
-          <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-muted-foreground">Mock GDs</span>
-            <b>{mentorship.gdUsed}/{mentorship.gdTotal}</b>
-          </div>
-          <Progress value={gdPct} className="h-2" />
-          <Button
-            size="sm" variant="outline" className="mt-3 rounded-full"
-            disabled={!active || mentorship.gdUsed >= mentorship.gdTotal}
-            onClick={() => onRequest("gd")}
-          >
-            Request mock GD
-          </Button>
-          {!isPaid && (
-            <p className="text-xs text-muted-foreground mt-1">Complete payment in Orders to request sessions.</p>
-          )}
-        </div>
-        <div>
-          <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-muted-foreground">Mock Interviews</span>
-            <b>{mentorship.piUsed}/{mentorship.piTotal}</b>
-          </div>
-          <Progress value={piPct} className="h-2" />
-          <Button
-            size="sm" variant="outline" className="mt-3 rounded-full"
-            disabled={!active || mentorship.piUsed >= mentorship.piTotal}
-            onClick={() => onRequest("pi")}
-          >
-            Request mock PI
-          </Button>
-        </div>
-      </div>
-
-      {needsReview && (
-        <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4">
-          <p className="text-sm text-amber-900 font-medium">All sessions completed!</p>
-          <p className="text-xs text-amber-800 mt-0.5">Leave a review to close this mentorship.</p>
-          <Button size="sm" className="mt-2 rounded-full" onClick={onReview}>
-            <Star className="mr-1.5 h-3.5 w-3.5" /> Give review
-          </Button>
-        </div>
-      )}
-      {hasReview && (
-        <div className="mt-5 rounded-2xl border bg-green-50 p-4">
-          <p className="text-sm text-green-800 font-medium">Review submitted</p>
-          <p className="text-xs text-green-700 mt-0.5">This mentorship is closed.</p>
-        </div>
-      )}
-
-      <div className="mt-5 border-t pt-5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold">Sessions</h4>
-          <Button variant="ghost" size="sm" onClick={() => setShowHistory((s) => !s)}>
-            {showHistory ? "Hide history" : "Show history"}
-          </Button>
-        </div>
-        {showHistory && (
-          <div className="space-y-2.5">
-            {sessions.length === 0 && (
-              <p className="text-sm text-muted-foreground">No sessions yet.</p>
-            )}
-            {sessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-muted/60 px-4 py-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="uppercase">{s.type}</Badge>
-                  <span>{s.topic || (s.type === "gd" ? "Group discussion" : "Personal interview")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {s.scheduledNote && <span className="text-xs text-muted-foreground">{s.scheduledNote}</span>}
-                  {s.score !== null && <Badge className="bg-orange-500">{s.score}/10</Badge>}
-                  <Badge className={
-                    s.status === "completed" ? "bg-green-100 text-green-700"
-                    : s.status === "scheduled" ? "bg-blue-100 text-blue-700"
-                    : "bg-stone-200 text-stone-600"
-                  }>
-                    {s.status}
-                  </Badge>
-                </div>
-                {s.feedback && (
-                  <p className="w-full text-xs text-muted-foreground border-l-2 border-orange-400 pl-3 mt-1">
-                    “{s.feedback}”
-                  </p>
-                )}
+      <div className="rounded-3xl border bg-card p-7 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {profile.profileImage ? (
+              <img
+                src={profile.profileImage}
+                alt={mentorName ?? "Mentor"}
+                className="h-16 w-16 rounded-2xl object-cover"
+                onError={(e) => { e.currentTarget.src = fallbackFace(mentorName ?? "Mentor"); }}
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-2xl font-bold text-white">
+                {mentorName?.slice(0, 2).toUpperCase()}
               </div>
-            ))}
+            )}
+            <div>
+              <h2 className="font-display text-2xl font-bold">{mentorName ?? "Mentor"}</h2>
+              <p className="text-sm text-orange-600">{profile.bschool} · {profile.company}</p>
+            </div>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
+            {profile.whatsapp && (
+              <Button size="sm" variant="outline" className="rounded-full" asChild>
+                <a href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer">
+                  <MessageCircle className="mr-1.5 h-3.5 w-3.5 text-green-600" /> WhatsApp
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="space-y-5">
+            <div className="rounded-2xl border bg-muted/40 p-4 space-y-2 text-sm">
+              <p><span className="text-muted-foreground">Package price:</span> <b>{formatINR(m.price)}</b></p>
+              <p><span className="text-muted-foreground">Package:</span> {m.gdTotal} GD + {m.piTotal} PI</p>
+              <p><span className="text-muted-foreground">Started:</span> {new Date(m.createdAt).toLocaleDateString("en-IN")}</p>
+              {!isPaid && <p className="text-amber-700 font-medium">Complete payment in Orders to request sessions.</p>}
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Progress</h4>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Mock GDs</span>
+                    <b>{m.gdUsed}/{m.gdTotal}</b>
+                  </div>
+                  <Progress value={gdPct} className="h-2" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Mock Interviews</span>
+                    <b>{m.piUsed}/{m.piTotal}</b>
+                  </div>
+                  <Progress value={piPct} className="h-2" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Request a session</h4>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm" variant="outline" className="rounded-full"
+                  disabled={!active || m.gdUsed >= m.gdTotal}
+                  onClick={() => onRequest("gd")}
+                >
+                  Request mock GD
+                </Button>
+                <Button
+                  size="sm" variant="outline" className="rounded-full"
+                  disabled={!active || m.piUsed >= m.piTotal}
+                  onClick={() => onRequest("pi")}
+                >
+                  Request mock PI
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Your review</h4>
+              {review ? (
+                <div className="rounded-2xl border bg-amber-50 p-4 space-y-2">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-stone-300"}`}
+                      />
+                    ))}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {new Date(review.createdAt).toLocaleDateString("en-IN")}
+                    </span>
+                  </div>
+                  {review.title && <p className="font-medium text-sm">{review.title}</p>}
+                  {review.content && <p className="text-sm text-muted-foreground">{review.content}</p>}
+                </div>
+              ) : needsReview ? (
+                <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 space-y-2">
+                  <p className="text-sm text-amber-900 font-medium">All sessions completed!</p>
+                  <p className="text-xs text-amber-800">Leave a review to close this mentorship.</p>
+                  <Button size="sm" className="rounded-full" onClick={onReview}>
+                    <Star className="mr-1.5 h-3.5 w-3.5" /> Give review
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No review yet.</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold mb-3">Session history</h4>
+            <div className="space-y-2.5">
+              {sessions.length === 0 && (
+                <p className="text-sm text-muted-foreground">No sessions yet.</p>
+              )}
+              {sessions.map((s) => (
+                <div key={s.id} className="rounded-2xl border bg-muted/40 px-4 py-3 text-sm space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="uppercase">{s.type}</Badge>
+                      <span>{s.topic || (s.type === "gd" ? "Group discussion" : "Personal interview")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {s.score !== null && <Badge className="bg-orange-500">{s.score}/10</Badge>}
+                      <Badge className={
+                        s.status === "completed" ? "bg-green-100 text-green-700"
+                        : s.status === "scheduled" ? "bg-blue-100 text-blue-700"
+                        : "bg-stone-200 text-stone-600"
+                      }>
+                        {s.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  {s.scheduledNote && (
+                    <p className="text-xs text-muted-foreground"><span className="font-medium">Note:</span> {s.scheduledNote}</p>
+                  )}
+                  {s.feedback && (
+                    <p className="text-xs text-muted-foreground border-l-2 border-orange-400 pl-3">
+                      <span className="font-medium">Feedback:</span> {s.feedback}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
