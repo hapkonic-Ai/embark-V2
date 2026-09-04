@@ -462,6 +462,32 @@ export const expertEducation = mysqlTable(
 
 export type ExpertEducation = typeof expertEducation.$inferSelect;
 
+// ------------------------------------------------------ student onboarding
+
+export const studentOnboarding = mysqlTable("student_onboarding", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true })
+    .notNull()
+    .unique(),
+  currentStep: varchar("currentStep", { length: 64 })
+    .default("resume")
+    .notNull(),
+  status: mysqlEnum("status", ["not_started", "in_progress", "completed"])
+    .default("not_started")
+    .notNull(),
+  resumeFileAssetId: bigint("resumeFileAssetId", { mode: "number", unsigned: true }),
+  parsedData: json("parsedData"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export type StudentOnboarding = typeof studentOnboarding.$inferSelect;
+
 export const expertVerifications = mysqlTable("expert_verifications", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),

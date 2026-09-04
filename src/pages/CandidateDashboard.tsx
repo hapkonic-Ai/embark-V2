@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useDeferredValue, useMemo, useState } from "react";
+import { Link, Navigate, useSearchParams } from "react-router";
 import type { inferProcedureOutput } from "@trpc/server";
 import type { AppRouter } from "../../api/router";
 import {
-  ArrowLeft, ArrowRight, Award, BookOpen, Calendar, Check, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
-  Loader2, MessageCircle, ShieldCheck, Smartphone, Star, Trophy, Users,
+  ArrowRight, Award, BookOpen, Calendar, Check, Compass, CreditCard, Download, LayoutDashboard, Lightbulb,
+  Loader2, ShieldCheck, Smartphone, Star, Trophy, UserRound, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
@@ -16,17 +16,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
-import { downloadBase64, formatINR } from "@/lib/format";
+import { downloadBase64 } from "@/lib/format";
 import { fallbackFace } from "@/lib/images";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { FilterChips, ListPager, SearchBox, usePager } from "@/components/ListControls";
+import { ProfileContent } from "@/pages/StudentProfile";
 
 
 const subStatus: Record<string, { label: string; cls: string }> = {
@@ -39,6 +34,12 @@ const subStatus: Record<string, { label: string; cls: string }> = {
 export default function CandidateDashboard() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const { data: onboarding, isLoading: onboardingLoading } =
+    trpc.candidate.studentOnboarding.useQuery();
+  if (onboardingLoading) return null;
+  if (onboarding?.status !== "completed") {
+    return <Navigate to="/student/onboarding" replace />;
+  }
   return (
     <DashboardShell
       title={`Hey, ${user?.name?.split(" ")[0] ?? "there"}`}
@@ -52,6 +53,7 @@ export default function CandidateDashboard() {
         { id: "orders", label: "Orders", icon: CreditCard },
         { id: "playbooks", label: "My Playbooks", icon: BookOpen },
         { id: "submissions", label: "Submissions", icon: Trophy },
+        { id: "profile", label: "My Profile", icon: UserRound },
       ]}
     >
       {(tab) => (
@@ -61,6 +63,7 @@ export default function CandidateDashboard() {
           {tab === "orders" && <OrdersTab />}
           {tab === "playbooks" && <PlaybooksTab />}
           {tab === "submissions" && <SubmissionsTab />}
+          {tab === "profile" && <ProfileContent />}
         </>
       )}
     </DashboardShell>
@@ -73,6 +76,7 @@ function Overview({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
   const { data: subs } = trpc.candidate.mySubmissions.useQuery();
   const { data: recommendedMentors } = trpc.catalog.mentors.useQuery();
   const { data: events } = trpc.catalog.events.useQuery();
+  const { data: onboarding } = trpc.candidate.studentOnboarding.useQuery();
   const active = ms?.rows.filter((m) => m.mentorship.status === "active") ?? [];
   const readiness = Math.min(100, active.length * 25 + (pbs?.length ?? 0) * 15 + (subs?.length ?? 0) * 20);
 
@@ -83,8 +87,9 @@ function Overview({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
   ];
 
   const profileComplete = !!(user?.phone && user?.linkedinUrl);
+  const onboardingDone = onboarding?.status === "completed";
   const nextSteps = [
-    { label: "Complete your profile", desc: "Add LinkedIn & phone so mentors can vet you.", done: profileComplete, to: "/dashboard" },
+    { label: "Complete your profile", desc: "Add LinkedIn & phone so mentors can vet you.", done: profileComplete, to: onboardingDone ? "/dashboard?tab=profile" : "/student/onboarding" },
     { label: "Book a mentor", desc: "Pick a verified mentor and start your GD/PI prep.", done: active.length > 0, to: "/mentors" },
     { label: "Join an event", desc: "Build your B-school resume with real case wins.", done: (subs?.length ?? 0) > 0, to: "/events" },
     { label: "Read a playbook", desc: "GD frameworks, PI questions, WAT templates.", done: (pbs?.length ?? 0) > 0, to: "/playbooks" },
@@ -242,38 +247,22 @@ type MentorshipRow = MyMentorshipsOutput["rows"][number];
 
 function MentorshipsTab() {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = trpc.candidate.myMentorships.useQuery({ page, pageSize: MENTORSHIPS_PAGE_SIZE });
-  const utils = trpc.useUtils();
-  const [view, setView] = useState<"list" | "detail">("list");
-  const [selected, setSelected] = useState<MentorshipRow | null>(null);
-  const [reqOpen, setReqOpen] = useState<{ id: number; type: "gd" | "pi" } | null>(null);
-  const [reviewFor, setReviewFor] = useState<{ mentorshipId: number; mentorName: string | null } | null>(null);
-  const [topic, setTopic] = useState("");
-
-  const request = trpc.candidate.requestMock.useMutation({
-    onSuccess: () => {
-      toast.success("Mock session requested!", {
-        description: "Your mentor will schedule it over WhatsApp.",
-      });
-      setReqOpen(null);
-      setTopic("");
-      utils.candidate.myMentorships.invalidate();
-    },
-    onError: (e) => toast.error(e.message),
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "cancelled">("all");
+  const [mentorQuery, setMentorQuery] = useState("");
+  const deferredQuery = useDeferredValue(mentorQuery);
+  const { data, isLoading } = trpc.candidate.myMentorships.useQuery({
+    page,
+    pageSize: MENTORSHIPS_PAGE_SIZE,
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(deferredQuery.trim() ? { search: deferredQuery.trim() } : {}),
   });
 
-  const openDetail = (row: MentorshipRow) => {
-    setSelected(row);
-    setView("detail");
-  };
-
-  const backToList = () => {
-    setSelected(null);
-    setView("list");
-  };
-
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
-  if (!data || data.rows.length === 0) {
+  if (!data) return null;
+
+  const hasFilters = statusFilter !== "all" || deferredQuery.trim() !== "";
+
+  if (data.total === 0 && !hasFilters) {
     return (
       <div className="rounded-3xl border bg-card p-12 text-center">
         <div className="mx-auto h-16 w-16 rounded-2xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
@@ -287,59 +276,30 @@ function MentorshipsTab() {
   }
 
   const totalPages = Math.ceil(data.total / data.pageSize);
+  const sc = data.statusCounts;
 
   return (
     <div className="space-y-5">
-      {view === "list" ? (
-        <MentorshipList
-          rows={data.rows}
-          total={data.total}
-          totalPages={totalPages}
-          page={page}
-          setPage={setPage}
-          onOpen={openDetail}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <FilterChips
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v as typeof statusFilter); setPage(1); }}
+          options={[
+            { id: "all", label: "All", count: sc.active + sc.completed + sc.cancelled },
+            { id: "active", label: "Ongoing", count: sc.active },
+            { id: "completed", label: "Completed", count: sc.completed },
+            { id: "cancelled", label: "Cancelled", count: sc.cancelled },
+          ]}
         />
-      ) : selected ? (
-        <MentorshipDetail
-          row={selected}
-          onBack={backToList}
-          onRequest={(type) => setReqOpen({ id: selected.mentorship.id, type })}
-          onReview={() => setReviewFor({ mentorshipId: selected.mentorship.id, mentorName: selected.mentorName })}
-        />
-      ) : null}
-
-      <Dialog open={!!reqOpen} onOpenChange={(v) => !v && setReqOpen(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-display">
-              Request a mock {reqOpen?.type === "gd" ? "GD" : "interview"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Topic / focus area (optional)</Label>
-              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. AI in Indian agriculture" />
-            </div>
-            <Button
-              className="w-full rounded-full"
-              disabled={request.isPending}
-              onClick={() => reqOpen && request.mutate({ mentorshipId: reqOpen.id, type: reqOpen.type, topic: topic || undefined })}
-            >
-              {request.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Send request
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {reviewFor && (
-        <MentorshipReviewDialog
-          mentorshipId={reviewFor.mentorshipId}
-          mentorName={reviewFor.mentorName}
-          open
-          onClose={() => setReviewFor(null)}
-        />
-      )}
+        <SearchBox value={mentorQuery} onChange={(v) => { setMentorQuery(v); setPage(1); }} placeholder="Search mentors…" />
+      </div>
+      <MentorshipList
+        rows={data.rows}
+        total={data.total}
+        totalPages={totalPages}
+        page={page}
+        setPage={setPage}
+      />
     </div>
   );
 }
@@ -350,15 +310,18 @@ function MentorshipList({
   totalPages,
   page,
   setPage,
-  onOpen,
 }: {
   rows: MentorshipRow[];
   total: number;
   totalPages: number;
   page: number;
   setPage: (p: number) => void;
-  onOpen: (row: MentorshipRow) => void;
 }) {
+  if (rows.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">No mentorships match your filters.</p>
+    );
+  }
   return (
     <div className="space-y-4">
       {rows.map((row) => {
@@ -380,10 +343,10 @@ function MentorshipList({
         const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
 
         return (
-          <button
+          <Link
             key={m.id}
-            onClick={() => onOpen(row)}
-            className="w-full text-left rounded-3xl border bg-card p-6 shadow-sm transition-colors hover:border-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            to={`/dashboard/mentorships/${m.id}`}
+            className="block w-full text-left rounded-3xl border bg-card p-6 shadow-sm transition-colors hover:border-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -430,7 +393,7 @@ function MentorshipList({
                 <Progress value={piPct} className="h-2" />
               </div>
             </div>
-          </button>
+          </Link>
         );
       })}
 
@@ -442,274 +405,6 @@ function MentorshipList({
         pageSize={MENTORSHIPS_PAGE_SIZE}
       />
     </div>
-  );
-}
-
-function MentorshipDetail({
-  row,
-  onBack,
-  onRequest,
-  onReview,
-}: {
-  row: MentorshipRow;
-  onBack: () => void;
-  onRequest: (type: "gd" | "pi") => void;
-  onReview: () => void;
-}) {
-  const { mentorship: m, profile, mentorName, sessions, order, review } = row;
-  const isPaid = !order || order.status === "paid";
-  const isCompleted = m.status === "completed";
-  const needsReview = isCompleted && !review;
-  const active = m.status === "active" && isPaid;
-
-  const statusMeta = active
-    ? { label: "Ongoing", cls: "bg-green-100 text-green-700" }
-    : needsReview
-      ? { label: "Review pending", cls: "bg-amber-100 text-amber-700" }
-      : isCompleted
-        ? { label: "Completed", cls: "bg-stone-200 text-stone-600" }
-        : { label: "Pending payment", cls: "bg-amber-100 text-amber-700 border border-amber-300" };
-
-  const gdPct = m.gdTotal ? (m.gdUsed / m.gdTotal) * 100 : 0;
-  const piPct = m.piTotal ? (m.piUsed / m.piTotal) * 100 : 0;
-
-  return (
-    <div className="space-y-5">
-      <Button variant="outline" className="rounded-full" onClick={onBack}>
-        <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to mentorships
-      </Button>
-
-      <div className="rounded-3xl border bg-card p-7 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {profile.profileImage ? (
-              <img
-                src={profile.profileImage}
-                alt={mentorName ?? "Mentor"}
-                className="h-16 w-16 rounded-2xl object-cover"
-                onError={(e) => { e.currentTarget.src = fallbackFace(mentorName ?? "Mentor"); }}
-              />
-            ) : (
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center font-display text-2xl font-bold text-white">
-                {mentorName?.slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <h2 className="font-display text-2xl font-bold">{mentorName ?? "Mentor"}</h2>
-              <p className="text-sm text-orange-600">{profile.bschool} · {profile.company}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className={statusMeta.cls}>{statusMeta.label}</Badge>
-            {profile.whatsapp && (
-              <Button size="sm" variant="outline" className="rounded-full" asChild>
-                <a href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer">
-                  <MessageCircle className="mr-1.5 h-3.5 w-3.5 text-green-600" /> WhatsApp
-                </a>
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <div className="space-y-5">
-            <div className="rounded-2xl border bg-muted/40 p-4 space-y-2 text-sm">
-              <p><span className="text-muted-foreground">Package price:</span> <b>{formatINR(m.price)}</b></p>
-              <p><span className="text-muted-foreground">Package:</span> {m.gdTotal} GD + {m.piTotal} PI</p>
-              <p><span className="text-muted-foreground">Started:</span> {new Date(m.createdAt).toLocaleDateString("en-IN")}</p>
-              {!isPaid && <p className="text-amber-700 font-medium">Complete payment in Orders to request sessions.</p>}
-            </div>
-
-            <div>
-              <h4 className="text-sm font-semibold mb-3">Progress</h4>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-sm mb-1.5">
-                    <span className="text-muted-foreground">Mock GDs</span>
-                    <b>{m.gdUsed}/{m.gdTotal}</b>
-                  </div>
-                  <Progress value={gdPct} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1.5">
-                    <span className="text-muted-foreground">Mock Interviews</span>
-                    <b>{m.piUsed}/{m.piTotal}</b>
-                  </div>
-                  <Progress value={piPct} className="h-2" />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-semibold mb-3">Request a session</h4>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm" variant="outline" className="rounded-full"
-                  disabled={!active || m.gdUsed >= m.gdTotal}
-                  onClick={() => onRequest("gd")}
-                >
-                  Request mock GD
-                </Button>
-                <Button
-                  size="sm" variant="outline" className="rounded-full"
-                  disabled={!active || m.piUsed >= m.piTotal}
-                  onClick={() => onRequest("pi")}
-                >
-                  Request mock PI
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-semibold mb-3">Your review</h4>
-              {review ? (
-                <div className="rounded-2xl border bg-amber-50 p-4 space-y-2">
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-stone-300"}`}
-                      />
-                    ))}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {new Date(review.createdAt).toLocaleDateString("en-IN")}
-                    </span>
-                  </div>
-                  {review.title && <p className="font-medium text-sm">{review.title}</p>}
-                  {review.content && <p className="text-sm text-muted-foreground">{review.content}</p>}
-                </div>
-              ) : needsReview ? (
-                <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 space-y-2">
-                  <p className="text-sm text-amber-900 font-medium">All sessions completed!</p>
-                  <p className="text-xs text-amber-800">Leave a review to close this mentorship.</p>
-                  <Button size="sm" className="rounded-full" onClick={onReview}>
-                    <Star className="mr-1.5 h-3.5 w-3.5" /> Give review
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No review yet.</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold mb-3">Session history</h4>
-            <div className="space-y-2.5">
-              {sessions.length === 0 && (
-                <p className="text-sm text-muted-foreground">No sessions yet.</p>
-              )}
-              {sessions.map((s) => (
-                <div key={s.id} className="rounded-2xl border bg-muted/40 px-4 py-3 text-sm space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="uppercase">{s.type}</Badge>
-                      <span>{s.topic || (s.type === "gd" ? "Group discussion" : "Personal interview")}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {s.score !== null && <Badge className="bg-orange-500">{s.score}/10</Badge>}
-                      <Badge className={
-                        s.status === "completed" ? "bg-green-100 text-green-700"
-                        : s.status === "scheduled" ? "bg-blue-100 text-blue-700"
-                        : "bg-stone-200 text-stone-600"
-                      }>
-                        {s.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  {s.scheduledNote && (
-                    <p className="text-xs text-muted-foreground"><span className="font-medium">Note:</span> {s.scheduledNote}</p>
-                  )}
-                  {s.feedback && (
-                    <p className="text-xs text-muted-foreground border-l-2 border-orange-400 pl-3">
-                      <span className="font-medium">Feedback:</span> {s.feedback}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MentorshipReviewDialog({
-  mentorshipId,
-  mentorName,
-  open,
-  onClose,
-}: {
-  mentorshipId: number;
-  mentorName: string | null;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const utils = trpc.useUtils();
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const create = trpc.reviews.create.useMutation({
-    onSuccess: () => {
-      toast.success("Review submitted");
-      utils.candidate.myMentorships.invalidate();
-      setRating(0);
-      setHoverRating(0);
-      setTitle("");
-      setContent("");
-      onClose();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md rounded-3xl">
-        <DialogHeader>
-          <DialogTitle className="font-display">Review {mentorName ?? "Mentor"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="flex items-center justify-center gap-1">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const active = i < (hoverRating || rating);
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className="p-1"
-                  onMouseEnter={() => setHoverRating(i + 1)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  onClick={() => setRating(i + 1)}
-                >
-                  <Star
-                    className={`h-8 w-8 transition-colors ${
-                      active ? "fill-amber-400 text-amber-400" : "text-stone-300"
-                    }`}
-                  />
-                </button>
-              );
-            })}
-          </div>
-          <div className="space-y-2">
-            <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Insightful mock interview" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label>Review</Label>
-            <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="What went well? What could be better?" rows={4} className="rounded-xl" />
-          </div>
-          <Button
-            className="w-full rounded-full"
-            disabled={rating === 0 || create.isPending}
-            onClick={() => create.mutate({ mentorshipId, rating, title: title || undefined, content: content || undefined })}
-          >
-            {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit review
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 

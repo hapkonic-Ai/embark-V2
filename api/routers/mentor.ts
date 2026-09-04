@@ -131,6 +131,49 @@ export const mentorRouter = createRouter({
       };
     }),
 
+  myMenteeDetail: mentor
+    .input(z.object({ id: z.number().int() }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const profile = await getMyProfile(ctx.user.id);
+      if (!profile) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Mentee not found" });
+      }
+      const rows = await db
+        .select({
+          mentorship: mentorships,
+          candidateName: users.name,
+          candidateEmail: users.email,
+          candidatePhone: users.phone,
+        })
+        .from(mentorships)
+        .innerJoin(users, eq(users.id, mentorships.candidateId))
+        .where(
+          and(
+            eq(mentorships.id, input.id),
+            eq(mentorships.mentorProfileId, profile.id),
+          ),
+        )
+        .limit(1);
+      if (!rows[0]) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Mentee not found" });
+      }
+      const [sessions, review] = await Promise.all([
+        db
+          .select()
+          .from(mockSessions)
+          .where(eq(mockSessions.mentorshipId, rows[0].mentorship.id))
+          .orderBy(desc(mockSessions.createdAt)),
+        db
+          .select()
+          .from(reviews)
+          .where(eq(reviews.mentorshipId, rows[0].mentorship.id))
+          .limit(1)
+          .then((x) => x[0] ?? null),
+      ]);
+      return { ...rows[0], sessions, review };
+    }),
+
   scheduleSession: mentor
     .input(
       z.object({

@@ -11,6 +11,10 @@ import MentorDetail from "./pages/MentorDetail";
 import PublicMentorProfile from "./pages/PublicMentorProfile";
 import PublicServiceDetail from "./pages/PublicServiceDetail";
 import StudentBookingDetail from "./pages/StudentBookingDetail";
+import StudentProfile from "./pages/StudentProfile";
+import StudentOnboarding from "./pages/StudentOnboarding";
+import StudentMentorshipDetail from "./pages/StudentMentorshipDetail";
+import MentorMenteeDetail from "./pages/MentorMenteeDetail";
 import Playbooks from "./pages/Playbooks";
 import PlaybookDetail from "./pages/PlaybookDetail";
 import Events from "./pages/Events";
@@ -207,6 +211,30 @@ export default function App() {
           }
         />
         <Route
+          path="/dashboard/profile"
+          element={
+            <ProtectedRoute roles={["candidate"]}>
+              <StudentProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/onboarding"
+          element={
+            <ProtectedRoute roles={["candidate"]}>
+              <StudentOnboarding />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/mentorships/:id"
+          element={
+            <ProtectedRoute roles={["candidate"]}>
+              <StudentMentorshipDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/dashboard/orders/:id"
           element={
             <ProtectedRoute roles={["candidate"]}>
@@ -220,6 +248,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={["mentor"]}>
               <MentorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mentor/mentees/:id"
+          element={
+            <ProtectedRoute roles={["mentor"]}>
+              <MentorMenteeDetail />
             </ProtectedRoute>
           }
         />

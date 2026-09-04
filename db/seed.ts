@@ -3,8 +3,17 @@ import { getDb } from "../api/queries/connection";
 import {
   users,
   mentorProfiles,
+  expertOnboarding,
+  studentOnboarding,
+  mentorships,
+  mockSessions,
+  orders,
+  reviews,
   playbooks,
+  playbookPurchases,
   events,
+  submissions,
+  guestLectureRequests,
   colleges,
 } from "./schema";
 import { saveBase64Asset, assetRef } from "../api/lib/file-assets";
@@ -18,21 +27,115 @@ function hashPassword(password: string): string {
 
 const PASS = hashPassword("Arenafograds@123");
 
-const MENTOR_PHOTOS = {
-  rohan: "/ai-images/mentor-rohan.jpg",
-  ananya:
-    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=faces",
-};
+// Deterministic PRNG so every reseed produces the same demo data.
+let seedState = 42;
+function rnd() {
+  seedState = (seedState * 1103515245 + 12345) % 2147483648;
+  return seedState / 2147483648;
+}
+function rndInt(min: number, max: number) {
+  return min + Math.floor(rnd() * (max - min + 1));
+}
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(rnd() * arr.length)];
+}
 
 const BOOK_COVERS = [
   "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=800&fit=crop",
   "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=600&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&h=800&fit=crop",
 ];
 
 const EVENT_COVERS = [
   "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&h=600&fit=crop",
   "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&h=600&fit=crop",
 ];
+
+const FIRST = [
+  "Aarav", "Vivaan", "Aditya", "Arjun", "Sai", "Reyansh", "Krishna", "Ishaan", "Rohan", "Kabir",
+  "Ananya", "Diya", "Aadhya", "Myra", "Sara", "Ira", "Priya", "Riya", "Anika", "Navya",
+  "Aarohi", "Kiara", "Meera", "Anvi", "Avni",
+];
+const LAST = [
+  "Sharma", "Verma", "Patel", "Mehta", "Shah", "Gupta", "Reddy", "Nair", "Iyer", "Khan",
+  "Singh", "Chopra", "Joshi", "Desai", "Kulkarni", "Mukherjee", "Banerjee", "Das", "Chauhan", "Rathore",
+  "Thakur", "Pillai", "Menon", "Rao", "Agarwal",
+];
+
+const BSCHOOLS = [
+  "IIM Ahmedabad", "IIM Bangalore", "IIM Calcutta", "XLRI Jamshedpur", "IIM Lucknow",
+  "SPJIMR Mumbai", "IIM Kozhikode", "FMS Delhi", "MDI Gurgaon", "IIFT Delhi",
+  "IIM Indore", "SIBM Pune", "NMIMS Mumbai", "IIM Trichy", "ISB Hyderabad",
+  "IIM Udaipur", "IIM Ranchi", "IIM Raipur", "JBIMS Mumbai", "MICA Ahmedabad",
+  "IMT Ghaziabad", "XIMB Bhubaneswar", "SCMHRD Pune", "IIM Shillong", "TAPMI Manipal",
+];
+const COMPANIES = [
+  "McKinsey & Company", "Bain & Company", "Boston Consulting Group", "Hindustan Unilever", "Procter & Gamble",
+  "Amazon", "Flipkart", "Google", "Microsoft", "Goldman Sachs",
+  "JP Morgan", "Deloitte", "KPMG", "Accenture", "Titan",
+  "Asian Paints", "Nestlé", "ITC", "Aditya Birla Group", "Reliance Industries",
+  "Airtel", "Ola", "Swiggy", "Zomato", "Paytm",
+];
+const EXPERTISE = [
+  "GD, PI, Consulting", "PI, HR Interview, SOP", "CAT Quant, DILR", "WAT, SOP, Profile Building",
+  "GD, Current Affairs", "PI, Operations, Supply Chain", "Marketing, GD", "Finance, PI",
+  "Strategy, Case Interviews", "HR, WAT",
+];
+
+const CAMPUS_COLLEGES = [
+  "SJMSOM, IIT Bombay", "DoMS, IIT Delhi", "Department of Management, BITS Pilani",
+  "Symbiosis Centre for Management Studies, Pune", "Christ University, Bengaluru",
+  "St. Xavier's College, Kolkata", "Hansraj College, Delhi University", "Loyola College, Chennai",
+  "St. Stephen's College, Delhi", "Fergusson College, Pune",
+  "Presidency University, Kolkata", "Madras Christian College, Chennai", "Hindu College, Delhi",
+  "Narsee Monjee College, Mumbai", "St. Joseph's College, Bengaluru",
+  "Ashoka University, Sonipat", "FLAME University, Pune", "Shiv Nadar University, Noida",
+  "Manipal Institute of Technology, Manipal", "VIT University, Vellore",
+  "SRM Institute of Science and Technology, Chennai", "Thapar Institute, Patiala",
+  "KIIT University, Bhubaneswar", "Amity University, Noida", "Chandigarh University, Mohali",
+];
+
+const REVIEW_TITLES = [
+  "Insightful mock interviews", "Worth every rupee", "From waitlist to convert",
+  "Brutal but brilliant feedback", "Structured GD prep", "Best decision of my prep",
+];
+const REVIEW_BODIES = [
+  "The mocks felt harder than the real panel — exactly what I needed. My PI answers went from rambling to crisp in three sessions.",
+  "Weekly GDs with instant debriefs changed how I structure arguments. Converted my first call.",
+  "Personalised SOP review and honest profile feedback. The WhatsApp access between sessions was gold.",
+  "Feedback was direct and actionable. Fixed my filler words and weak opening statements within two weeks.",
+];
+const SESSION_TOPICS = [
+  "AI in Indian agriculture", "Cashless economy", "Work from home vs office", "EV adoption in India",
+  "Startup valuation bubbles", "Gig economy workers' rights", "Privacy vs national security",
+  "Renewable energy transition", "Tier-2 city startups", "Gen-Z workplace expectations",
+];
+const SESSION_FEEDBACK = [
+  "Good structure — open with a framework next time. Avoid leading with data dumps.",
+  "Strong content; work on eye contact and pace. Summarise in the last 30 seconds.",
+  "Great energy. Counter-arguments need evidence — bring one stat per point.",
+  "Well organised answer. Cut the jargon; the panel prefers plain language.",
+];
+const GUEST_TOPICS = [
+  "Careers in management consulting", "Cracking CAT: a topper's playbook", "AI and the future of B-schools",
+  "From campus to corporate: first 90 days", "Case competitions as a career lever",
+  "Finance careers beyond investment banking", "Building a personal brand on LinkedIn",
+  "Operations & supply chain careers", "Entrepreneurship right after B-school", "The art of the personal interview",
+];
+const SUBMISSION_TITLES = [
+  "D2C Skincare: Path to Profitability", "Reviving Heritage Retail", "EV Charging Network Blueprint",
+  "EdTech for Bharat 2.0", "Gig Worker Welfare Model", "Dairy Supply Chain Optimisation",
+  "FinTech for Tier-3 India", "D2C Pet Care Playbook", "Campus Food Delivery Reboot",
+];
+
+function phoneFor(i: number, prefix: string) {
+  return `+91 ${prefix}${String(20000000 + i * 1234567).slice(0, 8)}`;
+}
 
 async function resetData(db: ReturnType<typeof getDb>) {
   const tables = [
@@ -58,6 +161,7 @@ async function resetData(db: ReturnType<typeof getDb>) {
     "expert_resumes",
     "expert_verifications",
     "expert_onboarding",
+    "student_onboarding",
     "guest_lecture_requests",
     "mock_sessions",
     "mentorships",
@@ -83,23 +187,20 @@ async function resetData(db: ReturnType<typeof getDb>) {
 
 async function seed() {
   const db = getDb();
-  console.log("Resetting Arena for grads demo data...");
+  console.log("Resetting and seeding Arena for grads demo data...");
   await resetData(db);
   console.log("tables reset");
 
-  // ---------------------------------------------------------------- users
-  const seedUsers = [
-    { name: "Super Admin", email: "superadmin@embark.in", role: "superadmin" as const },
-    { name: "Admin", email: "admin@embark.in", role: "admin" as const },
-    { name: "Aarya Sharma", email: "aarya@embark.in", role: "candidate" as const },
-    { name: "Kabir Verma", email: "kabir.candidate@embark.in", role: "candidate" as const },
-    { name: "Campus Coordinator", email: "campus@embark.in", role: "campus" as const },
-    { name: "Rohan Mehta", email: "rohan@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/rohanmehta" },
-    { name: "Ananya Iyer", email: "ananya@embark.in", role: "mentor" as const, linkedinUrl: "https://linkedin.com/in/ananyaiyer" },
-  ];
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
 
+  // ---------------------------------------------------------------- users
   const userIds: Record<string, number> = {};
-  for (const u of seedUsers) {
+
+  async function addUser(u: {
+    name: string; email: string; role: "superadmin" | "admin" | "candidate" | "mentor" | "campus";
+    phone?: string; linkedinUrl?: string;
+  }) {
     const unionId = `email:${u.email}`;
     await db.insert(users).values({
       unionId,
@@ -107,176 +208,404 @@ async function seed() {
       email: u.email,
       passwordHash: PASS,
       role: u.role,
-      phone: "+91 98200 12345",
-      linkedinUrl: (u as { linkedinUrl?: string }).linkedinUrl,
+      phone: u.phone,
+      linkedinUrl: u.linkedinUrl,
       termsAcceptedAt: new Date(),
       termsVersion: "1.0",
     });
-    const row = await db.query.users.findFirst({
-      where: (t, { eq }) => eq(t.unionId, unionId),
-    });
+    const row = await db.query.users.findFirst({ where: (t, { eq }) => eq(t.unionId, unionId) });
     userIds[u.email] = Number(row!.id);
   }
-  console.log("users done");
+
+  await addUser({ name: "Super Admin", email: "superadmin@embark.in", role: "superadmin" });
+  await addUser({ name: "Admin", email: "admin@embark.in", role: "admin" });
+
+  const studentEmails: string[] = [];
+  for (let i = 0; i < 25; i++) {
+    const email = i === 0 ? "student@embark.in" : `${FIRST[i].toLowerCase()}.${LAST[i].toLowerCase()}${i}@seed.dev`;
+    studentEmails.push(email);
+    await addUser({
+      name: `${FIRST[i]} ${LAST[i]}`,
+      email,
+      role: "candidate",
+      phone: phoneFor(i, "98"),
+      linkedinUrl: `https://linkedin.com/in/${FIRST[i].toLowerCase()}-${LAST[i].toLowerCase()}${i}`,
+    });
+  }
+
+  const mentorEmails: string[] = [];
+  for (let i = 0; i < 25; i++) {
+    const email = i === 0 ? "mentor@embark.in" : `${FIRST[(i + 9) % 25].toLowerCase()}.${LAST[(i + 9) % 25].toLowerCase()}.m${i}@seed.dev`;
+    mentorEmails.push(email);
+    await addUser({
+      name: `${FIRST[(i + 9) % 25]} ${LAST[(i + 9) % 25]}`,
+      email,
+      role: "mentor",
+      phone: phoneFor(i, "97"),
+      linkedinUrl: `https://linkedin.com/in/mentor-${FIRST[(i + 9) % 25].toLowerCase()}-${i}`,
+    });
+  }
+
+  const campusEmails: string[] = [];
+  for (let i = 0; i < 25; i++) {
+    const email = i === 0 ? "campus@embark.in" : `campus${i}@seed.dev`;
+    campusEmails.push(email);
+    await addUser({
+      name: `${CAMPUS_COLLEGES[i]} — Placement Cell`,
+      email,
+      role: "campus",
+      phone: phoneFor(i, "96"),
+    });
+  }
+  console.log("users done (2 admin + 25 students + 25 mentors + 25 campus)");
 
   // ---------------------------------------------------------- mentor profiles
-  const mentors = [
-    {
-      email: "rohan@embark.in",
-      displayName: "Rohan Mehta",
-      headline: "IIM Ahmedabad alum · ex-McKinsey · GD/PI specialist",
-      bschool: "IIM Ahmedabad",
-      company: "McKinsey & Company",
-      expertise: "GD, PI, Consulting, Profile Building",
-      yearsExp: 8,
-      price: 14999,
-      mockGds: 5,
-      mockPis: 5,
-      bio: "Converted IIMA, IIMB and IIMC. Spent 4 years at McKinsey before switching to full-time mentoring. 300+ mentees in top-20 B-schools.",
-      whatsapp: "+91 98110 22334",
-      photo: MENTOR_PHOTOS.rohan,
-    },
-    {
-      email: "ananya@embark.in",
-      displayName: "Ananya Iyer",
-      headline: "XLRI Jamshedpur · HR & PI mentor · ex-HUL",
-      bschool: "XLRI Jamshedpur",
-      company: "Hindustan Unilever",
-      expertise: "PI, HR Interview, SOP, WAT",
-      yearsExp: 6,
-      price: 9999,
-      mockGds: 3,
-      mockPis: 6,
-      bio: "XLRI BM '18. Loves turning nervous candidates into storytellers. Specialises in HR interviews and SOP reviews.",
-      whatsapp: "+91 99870 44556",
-      photo: MENTOR_PHOTOS.ananya,
-    },
-  ];
+  type MentorSeed = {
+    userId: number; profileId: number; email: string; name: string;
+    price: number; gdTotal: number; piTotal: number;
+  };
+  const mentorSeeds: MentorSeed[] = [];
 
-  for (const m of mentors) {
-    const uid = userIds[m.email];
-    const handle = m.email.replace("@embark.in", "").replace(".", "-");
-    await db.insert(mentorProfiles).values({
-      userId: uid,
+  for (let i = 0; i < 25; i++) {
+    const email = mentorEmails[i];
+    const name = `${FIRST[(i + 9) % 25]} ${LAST[(i + 9) % 25]}`;
+    const bschool = BSCHOOLS[i];
+    const company = COMPANIES[i];
+    const expertise = EXPERTISE[i % EXPERTISE.length];
+    const yearsExp = 4 + (i % 10);
+    const price = 4999 + (i % 8) * 2500;
+    const mockGds = 3 + (i % 3);
+    const mockPis = 3 + ((i + 1) % 4);
+    const handle = email.split("@")[0].replace(/[^a-z0-9-]/g, "-");
+
+    const res = await db.insert(mentorProfiles).values({
+      userId: userIds[email],
       publicSlug: handle,
-      displayName: m.displayName,
-      headline: m.headline,
-      bschool: m.bschool,
-      company: m.company,
-      expertise: m.expertise,
-      yearsExp: m.yearsExp,
-      price: m.price,
-      mockGds: m.mockGds,
-      mockPis: m.mockPis,
-      bio: m.bio,
-      whatsapp: m.whatsapp,
-      linkedinUrl: `https://linkedin.com/in/${handle}`,
-      profileImage: m.photo,
-      coverImage: "",
+      displayName: name,
+      headline: `${bschool} alum · ex-${company} · ${expertise.split(",")[0]} mentor`,
+      bschool,
+      company,
+      expertise,
+      yearsExp,
+      price,
+      mockGds,
+      mockPis,
+      bio: `${bschool} graduate with ${yearsExp} years at ${company}. Specialises in ${expertise.toLowerCase()}. Has guided 100+ aspirants through GD/PI rounds at top B-schools.`,
+      whatsapp: phoneFor(i, "97"),
+      linkedinUrl: `https://linkedin.com/in/mentor-${FIRST[(i + 9) % 25].toLowerCase()}-${i}`,
       isVerified: true,
       verificationStatus: "verified",
       status: "active",
       onboardingStatus: "completed",
       profileCompletionPercent: 100,
+    }).$returningId();
+
+    await db.insert(expertOnboarding).values({
+      userId: userIds[email],
+      currentStep: "verification",
+      status: "completed",
+      startedAt: new Date(now - 90 * day),
+      completedAt: new Date(now - 85 * day),
+      lastCompletedStep: "verification",
+    });
+
+    mentorSeeds.push({
+      userId: userIds[email],
+      profileId: res[0].id,
+      email,
+      name,
+      price,
+      gdTotal: mockGds,
+      piTotal: mockPis,
     });
   }
-  console.log("mentors done");
+  console.log("mentor profiles done");
+
+  // ------------------------------------------------------- student onboarding
+  for (let i = 0; i < 25; i++) {
+    const withResume = i < 10;
+    await db.insert(studentOnboarding).values({
+      userId: userIds[studentEmails[i]],
+      currentStep: "done",
+      status: "completed",
+      startedAt: new Date(now - 60 * day),
+      completedAt: new Date(now - 55 * day),
+      parsedData: withResume
+        ? {
+            headline: `MBA aspirant targeting ${BSCHOOLS[i % 25]}`,
+            summary: `${FIRST[i]} is a final-year student preparing for CAT ${new Date().getFullYear()}, focusing on quant speed and PI storytelling.`,
+            skills: ["Quantitative aptitude", "Public speaking", pick(["Excel", "Python", "Market research", "Financial modelling"])],
+            education: [
+              { institution: CAMPUS_COLLEGES[i], degree: "B.Com (Hons)", fieldOfStudy: "Commerce", startDate: "2021", endDate: "2024", grade: `${7 + (i % 3)}.${i % 10} CGPA` },
+            ],
+            experience: i % 2 === 0
+              ? [{ company: pick(COMPANIES), role: "Summer Intern", startDate: "May 2023", endDate: "Jul 2023", isCurrent: false }]
+              : [],
+          }
+        : null,
+    });
+  }
+  console.log("student onboarding done");
 
   // ---------------------------------------------------------------- playbooks
   const adminId = userIds["admin@embark.in"];
-  const playbookFiles = [
-    { title: "Crack the GD", body: "This is a placeholder playbook file for Crack the GD." },
-    { title: "Master the PI", body: "This is a placeholder playbook file for Master the PI." },
+  const playbookDefs = [
+    { title: "Crack the GD", category: "GDPI", price: 499, pages: 68, description: "Frameworks, opening lines, 40 practice topics, and the exact etiquette panelists look for in group discussions." },
+    { title: "Master the PI", category: "GDPI", price: 599, pages: 112, description: "200 actual interview questions from IIM/XLRI/FMS panels with model answer structures and traps to avoid." },
+    { title: "Case Competition Bible", category: "Competitions", price: 899, pages: 94, description: "How to read a case, build a storyline, and present like a consultant — with 12 winning decks annotated." },
+    { title: "Resume to Shortlist", category: "Profile", price: 299, pages: 45, description: "ATS-proof resume templates and bullet formulas that got 200+ candidates shortlist calls." },
+    { title: "CAT Quant Sprint", category: "CAT", price: 699, pages: 210, description: "A 12-week quant plan with 1,500 graded problems, shortcut sheets and error logs used by 99 percentilers." },
+    { title: "WAT & SOP Mastery", category: "GDPI", price: 399, pages: 60, description: "Written ability test structures and SOP narratives that admissions committees actually remember." },
   ];
 
-  const fileAssetIds: number[] = [];
-  for (const pf of playbookFiles) {
-    const base64 = Buffer.from(pf.body).toString("base64");
-    const dataUrl = `data:text/plain;base64,${base64}`;
-    const asset = await saveBase64Asset(adminId, dataUrl, {
+  const playbookRows: { id: number; price: number; title: string }[] = [];
+  for (const [idx, p] of playbookDefs.entries()) {
+    const base64 = Buffer.from(`Demo playbook file for ${p.title}.`).toString("base64");
+    const asset = await saveBase64Asset(adminId, `data:text/plain;base64,${base64}`, {
       mimeTypes: ["text/plain"],
-      fileName: `${pf.title.toLowerCase().replace(/\s+/g, "-")}.txt`,
+      fileName: `${p.title.toLowerCase().replace(/\s+/g, "-")}.txt`,
     });
-    fileAssetIds.push(asset.id);
-  }
-
-  const pbs = [
-    {
-      title: "Crack the GD",
-      category: "GDPI",
-      price: 499,
-      pages: 68,
-      description: "Frameworks, opening lines, 40 practice topics, and the exact etiquette panelists look for in group discussions.",
-      coverImage: BOOK_COVERS[0],
-      fileUrl: assetRef(fileAssetIds[0]),
-    },
-    {
-      title: "Master the PI",
-      category: "GDPI",
-      price: 599,
-      pages: 112,
-      description: "200 actual interview questions from IIM/XLRI/FMS panels with model answer structures and traps to avoid.",
-      coverImage: BOOK_COVERS[1],
-      fileUrl: assetRef(fileAssetIds[1]),
-    },
-  ];
-
-  for (const p of pbs) {
-    await db.insert(playbooks).values(p);
+    const res = await db.insert(playbooks).values({
+      title: p.title,
+      category: p.category,
+      price: p.price,
+      pages: p.pages,
+      description: p.description,
+      coverImage: BOOK_COVERS[idx % BOOK_COVERS.length],
+      fileUrl: assetRef(asset.id),
+      isPublished: true,
+    }).$returningId();
+    playbookRows.push({ id: res[0].id, price: p.price, title: p.title });
   }
   console.log("playbooks done");
 
   // ---------------------------------------------------------------- events
-  const now = Date.now();
-  const day = 24 * 60 * 60 * 1000;
   const evs = [
     {
-      title: "Startup Hack — Build your B-plan",
-      type: "hackathon" as const,
-      emoji: "",
-      prize: "₹1,00,000 + fast-track interviews",
-      status: "live" as const,
-      startAt: new Date(now - 2 * day),
-      endAt: new Date(now + 12 * day),
-      coverImage: EVENT_COVERS[0],
-      description:
-        "Pick any Indian consumer app and tear it down: growth loops, monetisation leaks, and a 90-day roadmap. Submit a PPT or PDF deck (max 12 slides).",
-      rules:
-        "1. Teams of 1-3.\n2. Deck only — PDF/PPT/PPTX up to 8 MB.\n3. Plagiarism = instant disqualification.\n4. Top 5 teams present live to our jury.",
+      title: "Startup Hack — Build your B-plan", type: "hackathon" as const, emoji: "🚀",
+      prize: "₹1,00,000 + fast-track interviews", status: "live" as const,
+      startAt: new Date(now - 2 * day), endAt: new Date(now + 12 * day), coverImage: EVENT_COVERS[0],
+      description: "Pick any Indian consumer app and tear it down: growth loops, monetisation leaks, and a 90-day roadmap. Submit a PPT or PDF deck (max 12 slides).",
+      rules: "1. Teams of 1-3.\n2. Deck only — PDF/PPT/PPTX up to 8 MB.\n3. Plagiarism = instant disqualification.\n4. Top 5 teams present live to our jury.",
     },
     {
-      title: "National Case Sprint: D2C Edition",
-      type: "case_competition" as const,
-      emoji: "",
-      prize: "₹50,000 + mentorship package",
-      status: "live" as const,
-      startAt: new Date(now - 1 * day),
-      endAt: new Date(now + 20 * day),
-      coverImage: EVENT_COVERS[1],
-      description:
-        "A D2C skincare brand is bleeding cash despite 3x revenue growth. Diagnose, model unit economics, and recommend a path to profitability.",
-      rules:
-        "1. Solo or duo participation.\n2. Submit a PDF report (max 10 pages) or PPT.\n3. Cite assumptions clearly.\n4. Judged on structure, math and practicality.",
+      title: "National Case Sprint: D2C Edition", type: "case_competition" as const, emoji: "🏆",
+      prize: "₹50,000 + mentorship package", status: "live" as const,
+      startAt: new Date(now - 1 * day), endAt: new Date(now + 20 * day), coverImage: EVENT_COVERS[1],
+      description: "A D2C skincare brand is bleeding cash despite 3x revenue growth. Diagnose, model unit economics, and recommend a path to profitability.",
+      rules: "1. Solo or duo participation.\n2. Submit a PDF report (max 10 pages) or PPT.\n3. Cite assumptions clearly.\n4. Judged on structure, math and practicality.",
+    },
+    {
+      title: "FinTech Hack: Bharat Payments", type: "hackathon" as const, emoji: "💳",
+      prize: "₹75,000 + incubation support", status: "closed" as const,
+      startAt: new Date(now - 30 * day), endAt: new Date(now - 5 * day), coverImage: EVENT_COVERS[2],
+      description: "Design payment flows for tier-3 India: UPI credit, offline-first wallets, and agent-led banking.",
+      rules: "1. Teams of 2-4.\n2. Working prototype + 5-slide deck.\n3. Open-source stacks preferred.",
+    },
+    {
+      title: "Agri Case Challenge 2025", type: "case_competition" as const, emoji: "🌾",
+      prize: "₹40,000", status: "draft" as const,
+      startAt: new Date(now + 25 * day), endAt: new Date(now + 45 * day), coverImage: EVENT_COVERS[3],
+      description: "Cold-chain losses cost Indian farmers ₹90,000 crore a year. Build the business case for a viable fix.",
+      rules: "1. Solo or duo.\n2. PDF report, max 12 pages.",
     },
   ];
-
+  const eventIds: number[] = [];
   for (const e of evs) {
-    await db.insert(events).values({ ...e, createdBy: adminId });
+    const res = await db.insert(events).values({ ...e, createdBy: adminId }).$returningId();
+    eventIds.push(res[0].id);
   }
   console.log("events done");
+
+  // -------------------------------------------- mentorships + orders + sessions + reviews
+  const pairs: { s: number; m: number; status: "active" | "completed" | "cancelled"; payment: "paid" | "pending" }[] = [];
+  for (let i = 0; i < 40; i++) {
+    pairs.push({
+      s: (i * 7 + 3) % 25,
+      m: (i * 11 + 5) % 25,
+      status: i % 10 === 9 ? "cancelled" : i % 10 === 7 || i % 10 === 8 ? "completed" : "active",
+      payment: i % 10 === 8 ? "pending" : "paid",
+    });
+  }
+  // Deliberate duplicates: the same student books the same mentor twice (and thrice).
+  pairs.push({ s: 0, m: 0, status: "completed", payment: "paid" });
+  pairs.push({ s: 0, m: 0, status: "active", payment: "paid" });
+  pairs.push({ s: 1, m: 2, status: "completed", payment: "paid" });
+  pairs.push({ s: 1, m: 2, status: "active", payment: "paid" });
+
+  let mentorshipCount = 0;
+  let reviewCount = 0;
+  for (const [i, p] of pairs.entries()) {
+    const mentor = mentorSeeds[p.m];
+    const studentEmail = studentEmails[p.s];
+    const createdAt = new Date(now - (10 + (i % 50)) * day);
+
+    let gdUsed = 0;
+    let piUsed = 0;
+    if (p.status === "completed") {
+      gdUsed = mentor.gdTotal;
+      piUsed = mentor.piTotal;
+    } else if (p.status === "active") {
+      gdUsed = rndInt(0, Math.max(0, mentor.gdTotal - 1));
+      piUsed = rndInt(0, Math.max(0, mentor.piTotal - 1));
+    }
+
+    const res = await db.insert(mentorships).values({
+      candidateId: userIds[studentEmail],
+      mentorProfileId: mentor.profileId,
+      plan: i % 3 === 0 ? "Intensive" : "Standard",
+      price: mentor.price,
+      status: p.status,
+      gdTotal: mentor.gdTotal,
+      gdUsed,
+      piTotal: mentor.piTotal,
+      piUsed,
+      createdAt,
+    }).$returningId();
+    const mentorshipId = res[0].id;
+    mentorshipCount++;
+
+    // Mock sessions
+    const sessionsToCreate: {
+      type: "gd" | "pi"; status: "requested" | "scheduled" | "completed";
+    }[] = [];
+    for (let g = 0; g < gdUsed; g++) sessionsToCreate.push({ type: "gd", status: "completed" });
+    for (let q = 0; q < piUsed; q++) sessionsToCreate.push({ type: "pi", status: "completed" });
+    if (p.status === "active" && rnd() < 0.6) {
+      sessionsToCreate.push({ type: rnd() < 0.5 ? "gd" : "pi", status: pick(["requested", "scheduled"] as const) });
+    }
+    if (p.status === "cancelled") {
+      sessionsToCreate.push({ type: "gd", status: "requested" });
+    }
+    for (const [si, sess] of sessionsToCreate.entries()) {
+      const completed = sess.status === "completed";
+      await db.insert(mockSessions).values({
+        mentorshipId,
+        type: sess.type,
+        topic: pick(SESSION_TOPICS),
+        status: sess.status,
+        scheduledNote: sess.status === "requested" ? null : "Sun 11 AM · Google Meet (link on WhatsApp)",
+        score: completed ? rndInt(6, 10) : null,
+        feedback: completed ? pick(SESSION_FEEDBACK) : null,
+        createdAt: new Date(createdAt.getTime() + si * 3 * day),
+      });
+    }
+
+    // Order
+    await db.insert(orders).values({
+      mentorshipId,
+      studentId: userIds[studentEmail],
+      amount: mentor.price,
+      status: p.payment,
+      provider: p.payment === "paid" ? "mock" : null,
+      snapshot: { label: `Mentorship with ${mentor.name}` },
+      createdAt,
+    });
+
+    // Review for completed mentorships (most, not all)
+    if (p.status === "completed" && i % 4 !== 0) {
+      await db.insert(reviews).values({
+        mentorshipId,
+        studentId: userIds[studentEmail],
+        expertUserId: mentor.userId,
+        rating: rndInt(4, 5),
+        title: pick(REVIEW_TITLES),
+        content: pick(REVIEW_BODIES),
+        isPublic: true,
+        status: "approved",
+        createdAt: new Date(createdAt.getTime() + 20 * day),
+      });
+      reviewCount++;
+    }
+  }
+  console.log(`mentorships done (${mentorshipCount} mentorships, ${reviewCount} reviews)`);
+
+  // -------------------------------------------- playbook purchases + orders
+  let purchaseCount = 0;
+  for (let i = 0; i < 18; i++) {
+    const sIdx = (i * 3 + 2) % 25;
+    const pb = playbookRows[(i * 5 + 1) % playbookRows.length];
+    try {
+      const res = await db.insert(playbookPurchases).values({
+        userId: userIds[studentEmails[sIdx]],
+        playbookId: pb.id,
+        price: pb.price,
+        createdAt: new Date(now - (i % 30) * day),
+      }).$returningId();
+      await db.insert(orders).values({
+        playbookPurchaseId: res[0].id,
+        studentId: userIds[studentEmails[sIdx]],
+        amount: pb.price,
+        status: "paid",
+        provider: "mock",
+        snapshot: { label: pb.title },
+        createdAt: new Date(now - (i % 30) * day),
+      });
+      purchaseCount++;
+    } catch {
+      // unique (userId, playbookId) — skip accidental duplicates
+    }
+  }
+  console.log(`playbook purchases done (${purchaseCount})`);
+
+  // ---------------------------------------------------------------- submissions
+  let subCount = 0;
+  for (let eIdx = 0; eIdx < 2; eIdx++) {
+    for (let i = 0; i < 8; i++) {
+      const sIdx = (i * 2 + eIdx * 11) % 25;
+      const status = i === 0 ? "winner" : i < 3 ? "shortlisted" : i === 7 ? "rejected" : "submitted";
+      const fileBody = Buffer.from(`Demo submission deck for ${SUBMISSION_TITLES[(i + eIdx * 4) % SUBMISSION_TITLES.length]}.`).toString("base64");
+      await db.insert(submissions).values({
+        eventId: eventIds[eIdx],
+        userId: userIds[studentEmails[sIdx]],
+        teamName: `Team ${LAST[(sIdx + eIdx) % 25]}`,
+        title: SUBMISSION_TITLES[(i + eIdx * 4) % SUBMISSION_TITLES.length],
+        note: "We focused on unit economics and a phased go-to-market.",
+        fileName: "submission-deck.pdf",
+        fileMime: "application/pdf",
+        fileData: fileBody,
+        fileSize: Math.floor(fileBody.length * 0.75),
+        status,
+        score: status === "submitted" ? null : rndInt(55, 95),
+        feedback: status === "submitted" ? null : "Strong structure. Sharpen the financial assumptions before the final round.",
+        createdAt: new Date(now - (2 + i) * day),
+      });
+      subCount++;
+    }
+  }
+  console.log(`submissions done (${subCount})`);
+
+  // ------------------------------------------------------ guest lecture requests
+  for (let i = 0; i < 20; i++) {
+    const cIdx = (i * 3 + 1) % 25;
+    const mIdx = (i * 7 + 2) % 25;
+    const status = i < 8 ? "pending" : i < 15 ? "accepted" : "rejected";
+    await db.insert(guestLectureRequests).values({
+      campusId: userIds[campusEmails[cIdx]],
+      mentorProfileId: mentorSeeds[mIdx].profileId,
+      status,
+      topic: GUEST_TOPICS[i % GUEST_TOPICS.length],
+      proposedDate: new Date(now + (3 + (i % 20)) * day),
+      confirmedDate: status === "accepted" ? new Date(now + (3 + (i % 20)) * day) : null,
+      campusNote: "We would love a 60-minute interactive session followed by Q&A with our final-year students.",
+      campusContact: `${campusEmails[cIdx]} · ${phoneFor(cIdx, "96")}`,
+      mentorNote: status === "rejected" ? "Clashing with a client offsite that week — happy to reschedule next month." : null,
+      mentorContact: status === "accepted" ? mentorEmails[mIdx] : null,
+      createdAt: new Date(now - (i % 15) * day),
+    });
+  }
+  console.log("guest lecture requests done");
 
   // --------------------------------------------------------------- colleges
   await seedColleges(db);
 
-  console.log("Seed complete.");
-  console.log("Demo logins — password for all: Arenafograds@123");
-  console.log("  Candidate: aarya@embark.in");
-  console.log("  Candidate: kabir.candidate@embark.in");
-  console.log("  Campus:    campus@embark.in");
-  console.log("  Mentor:    rohan@embark.in");
-  console.log("  Mentor:    ananya@embark.in");
-  console.log("  Admin:     admin@embark.in");
-  console.log("  Super:     superadmin@embark.in");
+  console.log("\nSeed complete.");
+  console.log("Password for every account: Arenafograds@123");
+  console.log("  Super Admin : superadmin@embark.in");
+  console.log("  Admin       : admin@embark.in");
+  console.log("  Student 1   : student@embark.in  (25 students total, *@seed.dev)");
+  console.log("  Mentor 1    : mentor@embark.in   (25 mentors total, *.m*@seed.dev)");
+  console.log("  Campus 1    : campus@embark.in   (25 campus accounts, campusN@seed.dev)");
   process.exit(0);
 }
 
@@ -334,54 +663,22 @@ async function seedColleges(db: any) {
   ] as const;
 
   const logoDomains: Record<string, string> = {
-    "IIM A": "iima.ac.in",
-    "IIM B": "iimb.ac.in",
-    "IIM K": "iimk.ac.in",
-    "DMS IIT Delhi": "iitd.ac.in",
-    "IIM C": "iimcal.ac.in",
-    "IIM Mumbai": "iimmumbai.ac.in",
-    "IIM L": "iiml.ac.in",
-    "IIM I": "iimidr.ac.in",
-    "XLRI": "xlri.ac.in",
-    "SJMSOM IIT-B": "iitb.ac.in",
-    "MDI Gurgaon": "mdi.ac.in",
-    "IIM Rohtak": "iimrohtak.ac.in",
-    "SPJIMR": "spjimr.org",
-    "IIM Raipur": "iimraipur.ac.in",
-    "IIM Ranchi": "iimranchi.ac.in",
-    "FMS Delhi": "fms.edu",
-    "IIM Trichy": "iimtrichy.ac.in",
-    "IIFT Delhi": "iift.edu",
-    "SIBM Pune": "sibm.edu",
-    "IIM Udaipur": "iimu.ac.in",
-    "ISB Hyderabad": "isb.edu",
-    "DoMS IIT-M": "iitm.ac.in",
-    "IIM Shillong": "iimshillong.ac.in",
-    "NMIMS Mumbai": "nmims.edu",
-    "VGSOM IIT-KGP": "iitkgp.ac.in",
-    "IIM Kashipur": "iimkashipur.ac.in",
-    "IIM Nagpur": "iimnagpur.ac.in",
-    "IIM Amritsar": "iimamritsar.ac.in",
-    "IIM Vizag": "iimv.ac.in",
-    "IIM Bodh Gaya": "iimbg.ac.in",
-    "IIM Sambalpur": "iimsambalpur.ac.in",
-    "IIM Sirmaur": "iimsirmaur.ac.in",
-    "IIM Jammu": "iimjammu.ac.in",
-    "XIMB": "ximb.edu.in",
-    "SCMHRD": "scmhrd.edu",
-    "IMT Ghaziabad": "imt.edu",
-    "TISS Mumbai": "tiss.edu",
-    "MICA": "mica.ac.in",
-    "DoMS IIT-R": "iitr.ac.in",
-    "Great Lakes": "greatlakes.edu.in",
-    "GIM Goa": "gim.ac.in",
-    "TAPMI": "tapmi.edu.in",
-    "FORE Delhi": "fsm.ac.in",
-    "JBIMS": "jbims.edu",
-    "IMI Delhi": "imi.edu",
-    "IRMA": "irma.ac.in",
-    "LBSIM": "lbsim.ac.in",
-    "BIMTECH": "bimtech.ac.in",
+    "IIM A": "iima.ac.in", "IIM B": "iimb.ac.in", "IIM K": "iimk.ac.in",
+    "DMS IIT Delhi": "iitd.ac.in", "IIM C": "iimcal.ac.in", "IIM Mumbai": "iimmumbai.ac.in",
+    "IIM L": "iiml.ac.in", "IIM I": "iimidr.ac.in", "XLRI": "xlri.ac.in",
+    "SJMSOM IIT-B": "iitb.ac.in", "MDI Gurgaon": "mdi.ac.in", "IIM Rohtak": "iimrohtak.ac.in",
+    "SPJIMR": "spjimr.org", "IIM Raipur": "iimraipur.ac.in", "IIM Ranchi": "iimranchi.ac.in",
+    "FMS Delhi": "fms.edu", "IIM Trichy": "iimtrichy.ac.in", "IIFT Delhi": "iift.edu",
+    "SIBM Pune": "sibm.edu", "IIM Udaipur": "iimu.ac.in", "ISB Hyderabad": "isb.edu",
+    "DoMS IIT-M": "iitm.ac.in", "IIM Shillong": "iimshillong.ac.in", "NMIMS Mumbai": "nmims.edu",
+    "VGSOM IIT-KGP": "iitkgp.ac.in", "IIM Kashipur": "iimkashipur.ac.in", "IIM Nagpur": "iimnagpur.ac.in",
+    "IIM Amritsar": "iimamritsar.ac.in", "IIM Vizag": "iimv.ac.in", "IIM Bodh Gaya": "iimbg.ac.in",
+    "IIM Sambalpur": "iimsambalpur.ac.in", "IIM Sirmaur": "iimsirmaur.ac.in", "IIM Jammu": "iimjammu.ac.in",
+    "XIMB": "ximb.edu.in", "SCMHRD": "scmhrd.edu", "IMT Ghaziabad": "imt.edu",
+    "TISS Mumbai": "tiss.edu", "MICA": "mica.ac.in", "DoMS IIT-R": "iitr.ac.in",
+    "Great Lakes": "greatlakes.edu.in", "GIM Goa": "gim.ac.in", "TAPMI": "tapmi.edu.in",
+    "FORE Delhi": "fsm.ac.in", "JBIMS": "jbims.edu", "IMI Delhi": "imi.edu",
+    "IRMA": "irma.ac.in", "LBSIM": "lbsim.ac.in", "BIMTECH": "bimtech.ac.in",
   };
 
   for (const c of data) {

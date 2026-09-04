@@ -10,6 +10,7 @@ import {
   Loader2,
   Upload,
   User,
+  XCircle,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -543,27 +544,38 @@ function ProfileStep({ onComplete }: { onComplete: () => void }) {
     websiteUrl: "",
     publicSlug: "",
   }));
+  const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const hasHydratedForm = useRef(false);
+  const slugCheck = trpc.expert.checkSlugAvailability.useQuery(
+    { slug: form.publicSlug },
+    { enabled: false, retry: false },
+  );
 
+  // Hydrate the form from the saved profile exactly once. Re-hydrating on every
+  // query refetch would wipe anything the user has typed (e.g. after a failed save).
   useEffect(() => {
-    if (data?.profile) {
+    if (!hasHydratedForm.current && data) {
+      hasHydratedForm.current = true;
+      if (!data.profile) return;
+      const p = data.profile;
       setForm({
-        displayName: data.profile.displayName ?? "",
-        headline: data.profile.headline ?? "",
-        bio: data.profile.bio ?? "",
-        profileImage: data.profile.profileImage ?? "",
-        coverImage: data.profile.coverImage ?? "",
-        location: data.profile.location ?? "",
-        country: data.profile.country ?? "",
-        timezone: data.profile.timezone || "Asia/Kolkata",
-        currentRole: data.profile.currentRole ?? "",
-        company: data.profile.company ?? "",
-        expertise: data.profile.expertise ?? "",
-        industries: data.profile.industries ?? "",
-        linkedinUrl: data.profile.linkedinUrl ?? "",
-        githubUrl: data.profile.githubUrl ?? "",
-        portfolioUrl: data.profile.portfolioUrl ?? "",
-        websiteUrl: data.profile.websiteUrl ?? "",
-        publicSlug: data.profile.publicSlug ?? "",
+        displayName: p.displayName ?? "",
+        headline: p.headline ?? "",
+        bio: p.bio ?? "",
+        profileImage: p.profileImage ?? "",
+        coverImage: p.coverImage ?? "",
+        location: p.location ?? "",
+        country: p.country ?? "",
+        timezone: p.timezone || "Asia/Kolkata",
+        currentRole: p.currentRole ?? "",
+        company: p.company ?? "",
+        expertise: p.expertise ?? "",
+        industries: p.industries ?? "",
+        linkedinUrl: p.linkedinUrl ?? "",
+        githubUrl: p.githubUrl ?? "",
+        portfolioUrl: p.portfolioUrl ?? "",
+        websiteUrl: p.websiteUrl ?? "",
+        publicSlug: p.publicSlug ?? "",
       });
     }
   }, [data]);
@@ -628,11 +640,50 @@ function ProfileStep({ onComplete }: { onComplete: () => void }) {
         <Field label="Portfolio" value={form.portfolioUrl} onChange={(v) => update("portfolioUrl", v)} />
         <Field label="Website" value={form.websiteUrl} onChange={(v) => update("websiteUrl", v)} />
         <div className="sm:col-span-2">
-          <Field
-            label="Public profile slug"
-            value={form.publicSlug}
-            onChange={(v) => update("publicSlug", v.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-          />
+          <Label className="text-sm">Public profile slug</Label>
+          <div className="mt-1.5 flex gap-2">
+            <Input
+              value={form.publicSlug}
+              placeholder="your-name"
+              onChange={(e) => {
+                update("publicSlug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                setSlugStatus("idle");
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 rounded-full"
+              disabled={!form.publicSlug || slugCheck.isFetching}
+              onClick={async () => {
+                if (!form.publicSlug.trim()) {
+                  toast.error("Type a slug first.");
+                  return;
+                }
+                setSlugStatus("checking");
+                const res = await slugCheck.refetch();
+                if (res.error) {
+                  setSlugStatus("idle");
+                  toast.error(res.error.message);
+                  return;
+                }
+                setSlugStatus(res.data?.available ? "available" : "taken");
+              }}
+            >
+              {slugCheck.isFetching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Check availability
+            </Button>
+          </div>
+          {slugStatus === "available" && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-green-700">
+              <Check className="h-3.5 w-3.5" /> "/m/{form.publicSlug}" is available
+            </p>
+          )}
+          {slugStatus === "taken" && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-red-600">
+              <XCircle className="h-3.5 w-3.5" /> "{form.publicSlug}" is already taken — try another one.
+            </p>
+          )}
         </div>
       </div>
       <div className="mt-6 flex justify-end">
@@ -640,6 +691,10 @@ function ProfileStep({ onComplete }: { onComplete: () => void }) {
           className="rounded-full"
           disabled={upsert.isPending}
           onClick={() => {
+            if (slugStatus === "taken") {
+              toast.error("That slug is taken — pick another and check availability first.");
+              return;
+            }
             if (!form.timezone || !isValidTimezone(form.timezone)) {
               toast.error("Please choose a valid timezone such as Asia/Kolkata.");
               return;

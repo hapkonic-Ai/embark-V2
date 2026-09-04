@@ -99,6 +99,13 @@
       "when": 1788445188918,
       "tag": "0013_offer_percent",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1788502837372,
+      "tag": "0014_smooth_puff_adder",
+      "breakpoints": true
     }
   ]
 }

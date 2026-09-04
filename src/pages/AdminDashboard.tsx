@@ -127,6 +127,77 @@ function EventsTab() {
           <CalendarPlus className="mr-1.5 h-4 w-4" /> New event
         </Button>
       </div>
+      {editing && (
+        <div className="mb-6 rounded-3xl border bg-card p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-semibold">{editing.id ? "Edit event" : "New event"}</h3>
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setEditing(null)}>
+              Cancel
+            </Button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Title</Label>
+              <Input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Description</Label>
+              <Textarea rows={3} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Rules</Label>
+              <Textarea rows={3} value={editing.rules} onChange={(e) => setEditing({ ...editing, rules: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Type</Label>
+              <Select value={editing.type} onValueChange={(v) => setEditing({ ...editing, type: v as EventForm["type"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hackathon">Hackathon</SelectItem>
+                  <SelectItem value="case_competition">Case competition</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={editing.status} onValueChange={(v) => setEditing({ ...editing, status: v as EventForm["status"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="live">Live</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Prize</Label>
+              <Input value={editing.prize} onChange={(e) => setEditing({ ...editing, prize: e.target.value })} placeholder="₹50,000" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Emoji</Label>
+              <Input value={editing.emoji} onChange={(e) => setEditing({ ...editing, emoji: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Starts</Label>
+              <Input type="datetime-local" value={editing.startAt} onChange={(e) => setEditing({ ...editing, startAt: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Deadline</Label>
+              <Input type="datetime-local" value={editing.endAt} onChange={(e) => setEditing({ ...editing, endAt: e.target.value })} />
+            </div>
+            <div className="flex gap-2 sm:col-span-2">
+              <Button className="rounded-full" disabled={create.isPending || update.isPending} onClick={save}>
+                {(create.isPending || update.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save event
+              </Button>
+              <Button variant="outline" className="rounded-full" onClick={() => setEditing(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         {data?.map((e) => (
           <div key={e.id} className="rounded-3xl border bg-card p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
@@ -164,71 +235,6 @@ function EventsTab() {
           </div>
         ))}
       </div>
-
-      <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display">{editing?.id ? "Edit event" : "New event"}</DialogTitle>
-          </DialogHeader>
-          {editing && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2 space-y-1.5">
-                <Label>Title</Label>
-                <Input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
-              </div>
-              <div className="sm:col-span-2 space-y-1.5">
-                <Label>Description</Label>
-                <Textarea rows={3} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
-              </div>
-              <div className="sm:col-span-2 space-y-1.5">
-                <Label>Rules</Label>
-                <Textarea rows={3} value={editing.rules} onChange={(e) => setEditing({ ...editing, rules: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Type</Label>
-                <Select value={editing.type} onValueChange={(v) => setEditing({ ...editing, type: v as EventForm["type"] })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hackathon">Hackathon</SelectItem>
-                    <SelectItem value="case_competition">Case competition</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Select value={editing.status} onValueChange={(v) => setEditing({ ...editing, status: v as EventForm["status"] })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="live">Live</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Prize</Label>
-                <Input value={editing.prize} onChange={(e) => setEditing({ ...editing, prize: e.target.value })} placeholder="₹50,000" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Emoji</Label>
-                <Input value={editing.emoji} onChange={(e) => setEditing({ ...editing, emoji: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Starts</Label>
-                <Input type="datetime-local" value={editing.startAt} onChange={(e) => setEditing({ ...editing, startAt: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Deadline</Label>
-                <Input type="datetime-local" value={editing.endAt} onChange={(e) => setEditing({ ...editing, endAt: e.target.value })} />
-              </div>
-              <Button className="sm:col-span-2 rounded-full" disabled={create.isPending || update.isPending} onClick={save}>
-                {(create.isPending || update.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save event
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

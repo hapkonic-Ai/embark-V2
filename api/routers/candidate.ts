@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, like } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { Buffer } from "node:buffer";
@@ -11,14 +11,27 @@ import {
   playbookPurchases,
   playbooks,
   reviews,
+  studentOnboarding,
   submissions,
   users,
+  fileAssets,
 } from "@db/schema";
 import { getDb } from "../queries/connection";
 import { createRouter } from "../middleware";
 import { roleQuery } from "../rbac";
 import { parseDataUrl, resolveAssetUrl } from "../lib/file-assets";
 import { getObject, parsePublicObjectUrl } from "../lib/s3-client";
+import { regexParser } from "../lib/resume-parsers/regex-parser";
+
+const STUDENT_RESUME_MIMES = [
+  "application/pdf",
+  "text/plain",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+const MAX_STUDENT_RESUME_BYTES = 8 * 1024 * 1024;
+const linkedinUrlCheck = (v: string) =>
+  !v || /^https:\/\/([a-z]{2,3}\.)?linkedin\.com\//.test(v);
 
 const candidate = roleQuery("candidate");
 
@@ -30,6 +43,49 @@ const ACCEPTED_MIMES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
+
+type MentorshipBaseRow = {
+  mentorship: typeof mentorships.$inferSelect;
+  profile: typeof mentorProfiles.$inferSelect;
+  mentorName: string | null;
+};
+
+async function withMentorshipDetails(
+  db: ReturnType<typeof getDb>,
+  rows: MentorshipBaseRow[],
+  candidateId: number,
+) {
+  return Promise.all(
+    rows.map(async (r) => {
+      const [s, order, review] = await Promise.all([
+        db
+          .select()
+          .from(mockSessions)
+          .where(eq(mockSessions.mentorshipId, r.mentorship.id))
+          .orderBy(desc(mockSessions.createdAt)),
+        db
+          .select()
+          .from(orders)
+          .where(eq(orders.mentorshipId, r.mentorship.id))
+          .orderBy(desc(orders.createdAt))
+          .limit(1)
+          .then((x) => x[0] ?? null),
+        db
+          .select()
+          .from(reviews)
+          .where(
+            and(
+              eq(reviews.mentorshipId, r.mentorship.id),
+              eq(reviews.studentId, candidateId),
+            ),
+          )
+          .limit(1)
+          .then((x) => x[0] ?? null),
+      ]);
+      return { ...r, sessions: s, order, review };
+    }),
+  );
+}
 
 export const candidateRouter = createRouter({
   // ---------------------------------------------------------- mentorships
@@ -103,6 +159,8 @@ export const candidateRouter = createRouter({
       z.object({
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(1).max(50).default(10),
+        status: z.enum(["active", "completed", "cancelled"]).optional(),
+        search: z.string().max(100).optional(),
       }).optional(),
     )
     .query(async ({ ctx, input }) => {
@@ -110,11 +168,28 @@ export const candidateRouter = createRouter({
       const pageSize = input?.pageSize ?? 10;
       const db = getDb();
       const offset = (page - 1) * pageSize;
-      const [totalRow, rows] = await Promise.all([
+      const search = input?.search?.trim();
+      const conds = [
+        eq(mentorships.candidateId, ctx.user.id),
+        ...(input?.status ? [eq(mentorships.status, input.status)] : []),
+        ...(search ? [like(users.name, `%${search}%`)] : []),
+      ];
+      const where = and(...conds);
+      const [totalRow, statusRows, rows] = await Promise.all([
         db
           .select({ count: count() })
           .from(mentorships)
-          .where(eq(mentorships.candidateId, ctx.user.id)),
+          .innerJoin(
+            mentorProfiles,
+            eq(mentorProfiles.id, mentorships.mentorProfileId),
+          )
+          .innerJoin(users, eq(users.id, mentorProfiles.userId))
+          .where(where),
+        db
+          .select({ status: mentorships.status, n: count() })
+          .from(mentorships)
+          .where(eq(mentorships.candidateId, ctx.user.id))
+          .groupBy(mentorships.status),
         db
           .select({
             mentorship: mentorships,
@@ -127,42 +202,49 @@ export const candidateRouter = createRouter({
             eq(mentorProfiles.id, mentorships.mentorProfileId),
           )
           .innerJoin(users, eq(users.id, mentorProfiles.userId))
-          .where(eq(mentorships.candidateId, ctx.user.id))
+          .where(where)
           .orderBy(desc(mentorships.createdAt))
           .limit(pageSize)
           .offset(offset),
       ]);
-      const all = await Promise.all(
-        rows.map(async (r) => {
-          const [s, order, review] = await Promise.all([
-            db
-              .select()
-              .from(mockSessions)
-              .where(eq(mockSessions.mentorshipId, r.mentorship.id))
-              .orderBy(desc(mockSessions.createdAt)),
-            db
-              .select()
-              .from(orders)
-              .where(eq(orders.mentorshipId, r.mentorship.id))
-              .orderBy(desc(orders.createdAt))
-              .limit(1)
-              .then((x) => x[0] ?? null),
-            db
-              .select()
-              .from(reviews)
-              .where(
-                and(
-                  eq(reviews.mentorshipId, r.mentorship.id),
-                  eq(reviews.studentId, ctx.user.id),
-                ),
-              )
-              .limit(1)
-              .then((x) => x[0] ?? null),
-          ]);
-          return { ...r, sessions: s, order, review };
-        }),
-      );
-      return { rows: all, total: Number(totalRow[0]?.count ?? 0), page, pageSize };
+      const statusCounts = { active: 0, completed: 0, cancelled: 0 };
+      for (const r of statusRows) {
+        if (r.status === "active") statusCounts.active = Number(r.n);
+        else if (r.status === "completed") statusCounts.completed = Number(r.n);
+        else statusCounts.cancelled = Number(r.n);
+      }
+      const all = await withMentorshipDetails(db, rows, ctx.user.id);
+      return { rows: all, total: Number(totalRow[0]?.count ?? 0), page, pageSize, statusCounts };
+    }),
+
+  myMentorshipDetail: candidate
+    .input(z.object({ id: z.number().int() }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const rows = await db
+        .select({
+          mentorship: mentorships,
+          profile: mentorProfiles,
+          mentorName: users.name,
+        })
+        .from(mentorships)
+        .innerJoin(
+          mentorProfiles,
+          eq(mentorProfiles.id, mentorships.mentorProfileId),
+        )
+        .innerJoin(users, eq(users.id, mentorProfiles.userId))
+        .where(
+          and(
+            eq(mentorships.id, input.id),
+            eq(mentorships.candidateId, ctx.user.id),
+          ),
+        )
+        .limit(1);
+      if (!rows[0]) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Mentorship not found" });
+      }
+      const [row] = await withMentorshipDetails(db, rows, ctx.user.id);
+      return row;
     }),
 
   requestMock: candidate
@@ -508,5 +590,195 @@ export const candidateRouter = createRouter({
         fileMime: s.fileMime,
         fileBase64: s.fileData,
       };
+    }),
+
+  // ------------------------------------------------------ student onboarding
+  studentOnboarding: candidate.query(async ({ ctx }) => {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(studentOnboarding)
+      .where(eq(studentOnboarding.userId, ctx.user.id))
+      .limit(1);
+    const row = rows[0] ?? null;
+    let resumeFileName: string | null = null;
+    if (row?.resumeFileAssetId) {
+      const assets = await db
+        .select({ fileName: fileAssets.fileName })
+        .from(fileAssets)
+        .where(eq(fileAssets.id, row.resumeFileAssetId))
+        .limit(1);
+      resumeFileName = assets[0]?.fileName ?? null;
+    }
+    return row
+      ? { ...row, resumeFileName, parsedData: row.parsedData ?? null }
+      : { status: "not_started" as const, currentStep: "resume" as const, parsedData: null, resumeFileName: null };
+  }),
+
+  uploadStudentResume: candidate
+    .input(
+      z.object({
+        fileName: z.string().min(1).max(255),
+        fileMime: z.string().max(128),
+        fileBase64: z.string().min(1).max(12_000_000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+
+      if (!STUDENT_RESUME_MIMES.includes(input.fileMime)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Unsupported file type. Accepted: PDF, TXT, DOC, DOCX.",
+        });
+      }
+      const approxBytes = Math.floor(input.fileBase64.length * 0.75);
+      if (approxBytes > MAX_STUDENT_RESUME_BYTES) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Resume too large — maximum 8 MB.",
+        });
+      }
+
+      const existing = await db
+        .select()
+        .from(studentOnboarding)
+        .where(eq(studentOnboarding.userId, ctx.user.id))
+        .limit(1);
+
+      const [fileAsset] = await db
+        .insert(fileAssets)
+        .values({
+          ownerId: ctx.user.id,
+          fileName: input.fileName,
+          mimeType: input.fileMime,
+          size: approxBytes,
+          provider: "database",
+          data: input.fileBase64,
+        })
+        .$returningId();
+
+      // Replace any previously uploaded resume file.
+      if (existing[0]?.resumeFileAssetId) {
+        await db
+          .delete(fileAssets)
+          .where(eq(fileAssets.id, existing[0].resumeFileAssetId));
+      }
+
+      const parseResult = await regexParser.parse(input.fileBase64, input.fileMime);
+
+      const values = {
+        currentStep: "review",
+        status: "in_progress" as const,
+        resumeFileAssetId: fileAsset.id,
+        parsedData: parseResult.parsed,
+        startedAt: existing[0]?.startedAt ?? new Date(),
+      };
+      if (existing[0]) {
+        await db
+          .update(studentOnboarding)
+          .set(values)
+          .where(eq(studentOnboarding.id, existing[0].id));
+      } else {
+        await db.insert(studentOnboarding).values({ userId: ctx.user.id, ...values });
+      }
+
+      return {
+        success: true,
+        parsed: parseResult.parsed,
+        error: parseResult.error,
+        parserStatus: parseResult.partial
+          ? "partial"
+          : parseResult.success
+            ? "success"
+            : "failed",
+      };
+    }),
+
+  completeStudentOnboarding: candidate
+    .input(
+      z.object({
+        name: z.string().min(2).max(120),
+        phone: z.string().min(3).max(32),
+        linkedinUrl: z
+          .string()
+          .max(320)
+          .refine(linkedinUrlCheck, "Enter a valid LinkedIn URL like https://linkedin.com/in/your-handle"),
+        headline: z.string().max(255).optional().or(z.literal("")),
+        summary: z.string().max(4000).optional().or(z.literal("")),
+        skills: z.array(z.string().max(80)).max(60).default([]),
+        education: z
+          .array(
+            z.object({
+              institution: z.string().max(255).optional().or(z.literal("")),
+              degree: z.string().max(255).optional().or(z.literal("")),
+              fieldOfStudy: z.string().max(255).optional().or(z.literal("")),
+              startDate: z.string().max(32).optional().or(z.literal("")),
+              endDate: z.string().max(32).optional().or(z.literal("")),
+              grade: z.string().max(64).optional().or(z.literal("")),
+              description: z.string().max(2000).optional().or(z.literal("")),
+            }),
+          )
+          .max(20)
+          .default([]),
+        experience: z
+          .array(
+            z.object({
+              company: z.string().max(255).optional().or(z.literal("")),
+              role: z.string().max(255).optional().or(z.literal("")),
+              location: z.string().max(128).optional().or(z.literal("")),
+              startDate: z.string().max(32).optional().or(z.literal("")),
+              endDate: z.string().max(32).optional().or(z.literal("")),
+              isCurrent: z.boolean().default(false),
+              description: z.string().max(2000).optional().or(z.literal("")),
+            }),
+          )
+          .max(30)
+          .default([]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+
+      await db
+        .update(users)
+        .set({
+          name: input.name.trim(),
+          phone: input.phone.trim(),
+          linkedinUrl: input.linkedinUrl.trim(),
+        })
+        .where(eq(users.id, ctx.user.id));
+
+      const parsedData = {
+        headline: input.headline,
+        summary: input.summary,
+        skills: input.skills,
+        education: input.education,
+        experience: input.experience,
+      };
+
+      const existing = await db
+        .select()
+        .from(studentOnboarding)
+        .where(eq(studentOnboarding.userId, ctx.user.id))
+        .limit(1);
+
+      const values = {
+        currentStep: "done",
+        status: "completed" as const,
+        parsedData,
+        completedAt: new Date(),
+        startedAt: existing[0]?.startedAt ?? new Date(),
+      };
+      if (existing[0]) {
+        await db
+          .update(studentOnboarding)
+          .set(values)
+          .where(eq(studentOnboarding.id, existing[0].id));
+      } else {
+        await db.insert(studentOnboarding).values({ userId: ctx.user.id, ...values });
+      }
+
+      return { success: true };
     }),
 });
