@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import type { inferProcedureOutput } from "@trpc/server";
 import type { AppRouter } from "../../api/router";
@@ -21,19 +21,12 @@ import {
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { downloadBase64, formatINR } from "@/lib/format";
+import { fallbackFace } from "@/lib/images";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { downloadBase64, formatINR } from "@/lib/format";
-import { fallbackFace } from "@/lib/images";
+import { FilterChips, ListPager, SearchBox, usePager } from "@/components/ListControls";
 
 
 const subStatus: Record<string, { label: string; cls: string }> = {
@@ -75,7 +68,7 @@ export default function CandidateDashboard() {
 }
 
 function Overview({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
-  const { data: ms } = trpc.candidate.myMentorships.useQuery();
+  const { data: ms } = trpc.candidate.myMentorships.useQuery({ page: 1, pageSize: 50 });
   const { data: pbs } = trpc.candidate.myPlaybooks.useQuery();
   const { data: subs } = trpc.candidate.mySubmissions.useQuery();
   const { data: recommendedMentors } = trpc.catalog.mentors.useQuery();
@@ -300,6 +293,7 @@ function MentorshipsTab() {
       {view === "list" ? (
         <MentorshipList
           rows={data.rows}
+          total={data.total}
           totalPages={totalPages}
           page={page}
           setPage={setPage}
@@ -352,12 +346,14 @@ function MentorshipsTab() {
 
 function MentorshipList({
   rows,
+  total,
   totalPages,
   page,
   setPage,
   onOpen,
 }: {
   rows: MentorshipRow[];
+  total: number;
   totalPages: number;
   page: number;
   setPage: (p: number) => void;
@@ -438,40 +434,13 @@ function MentorshipList({
         );
       })}
 
-      {totalPages > 1 && (
-        <div className="flex flex-col items-center gap-2 pt-2">
-          <p className="text-xs text-muted-foreground">
-            Showing {Math.min((page - 1) * MENTORSHIPS_PAGE_SIZE + 1, rows.length)}–{Math.min(page * MENTORSHIPS_PAGE_SIZE, rows.length)} of {rows.length}
-          </p>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <PaginationItem key={i + 1}>
-                  <PaginationLink
-                    isActive={page === i + 1}
-                    onClick={() => setPage(i + 1)}
-                    className="cursor-pointer"
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <ListPager
+        page={page}
+        totalPages={totalPages}
+        onPage={setPage}
+        total={total}
+        pageSize={MENTORSHIPS_PAGE_SIZE}
+      />
     </div>
   );
 }
@@ -755,6 +724,8 @@ function OrdersTab() {
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "card">("upi");
   const [checkoutItems, setCheckoutItems] = useState<typeof cartItems>([]);
   const [doneCount, setDoneCount] = useState(0);
+  const [histFilter, setHistFilter] = useState("all");
+  const [histQuery, setHistQuery] = useState("");
   const utils = trpc.useUtils();
 
   const pay = trpc.payments.simulatePay.useMutation({
@@ -858,6 +829,19 @@ function OrdersTab() {
     .reduce((sum, i) => sum + i.price, 0);
 
   const checkoutTotal = checkoutItems.reduce((sum, i) => sum + i.price, 0);
+
+  const histList = useMemo(() => orders ?? [], [orders]);
+  const histPending = histList.filter((o) => o.order.status === "pending").length;
+  const histPaid = histList.filter((o) => o.order.status === "paid").length;
+  const filteredOrders = useMemo(() => {
+    const q = histQuery.trim().toLowerCase();
+    return histList.filter((o) => {
+      if (histFilter !== "all" && o.order.status !== histFilter) return false;
+      if (q && !`${o.title} ${o.expertName ?? ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [histList, histFilter, histQuery]);
+  const histPager = usePager(filteredOrders);
 
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
 
@@ -1022,57 +1006,81 @@ function OrdersTab() {
 
         {showHistory && (
           <div className="space-y-4">
-            {!orders || orders.length === 0 ? (
+            {histList.length === 0 ? (
               <p className="text-sm text-muted-foreground">No orders yet.</p>
             ) : (
-              orders.map(({ order, type, title, expertName, payment }) => {
-                const isPending = order.status === "pending";
-                return (
-                  <div key={order.id} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 rounded-2xl border bg-muted/40 p-4">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="font-medium">{title}</h4>
-                        <Badge variant={order.status === "paid" ? "default" : "secondary"}>
-                          {order.status}
-                        </Badge>
-                      </div>
-                      {expertName && (
-                        <p className="text-sm text-muted-foreground mt-1">with {expertName}</p>
-                      )}
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {type === "booking" ? "Session booking" : type === "mentorship" ? "Mentorship package" : "Playbook"}
-                      </p>
-                      <div className="mt-2 text-sm">
-                        <span className="text-muted-foreground">Amount:</span>{" "}
-                        <span className="font-medium">₹{order.amount.toLocaleString("en-IN")} {order.currency}</span>
-                        {payment && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            Paid via {payment.provider} · {payment.providerPaymentId}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isPending && (
-                        <Button
-                          size="sm"
-                          className="rounded-full"
-                          disabled={pay.isPending}
-                          onClick={() => pay.mutate({ orderId: order.id })}
-                        >
-                          {pay.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          <CreditCard className="mr-1.5 h-4 w-4" /> Pay now
-                        </Button>
-                      )}
-                      {order.status === "paid" && (
-                        <Badge className="bg-green-100 text-green-700 border-0">
-                          <CreditCard className="mr-1.5 h-3.5 w-3.5" /> Paid
-                        </Badge>
-                      )}
-                    </div>
+              <>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <FilterChips
+                    value={histFilter}
+                    onChange={setHistFilter}
+                    options={[
+                      { id: "all", label: "All", count: histList.length },
+                      { id: "pending", label: "Pending", count: histPending },
+                      { id: "paid", label: "Paid", count: histPaid },
+                    ]}
+                  />
+                  <SearchBox value={histQuery} onChange={setHistQuery} placeholder="Search orders…" />
+                </div>
+
+                {filteredOrders.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">No orders match your filters.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {histPager.pageItems.map(({ order, type, title, expertName, payment }) => {
+                      const isPending = order.status === "pending";
+                      return (
+                        <div key={order.id} className="flex flex-col gap-4 rounded-2xl border bg-muted/40 p-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-medium">{title}</h4>
+                              <Badge variant={order.status === "paid" ? "default" : "secondary"}>
+                                {order.status}
+                              </Badge>
+                            </div>
+                            {expertName && (
+                              <p className="text-sm text-muted-foreground mt-1">with {expertName}</p>
+                            )}
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {type === "booking" ? "Session booking" : type === "mentorship" ? "Mentorship package" : "Playbook"}
+                              {" · "}{new Date(order.createdAt).toLocaleDateString("en-IN")}
+                            </p>
+                            <div className="mt-2 text-sm">
+                              <span className="text-muted-foreground">Amount:</span>{" "}
+                              <span className="font-medium">₹{order.amount.toLocaleString("en-IN")} {order.currency}</span>
+                              {payment && (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  Paid via {payment.provider} · {payment.providerPaymentId}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isPending && (
+                              <Button
+                                size="sm"
+                                className="rounded-full"
+                                disabled={pay.isPending}
+                                onClick={() => pay.mutate({ orderId: order.id })}
+                              >
+                                {pay.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <CreditCard className="mr-1.5 h-4 w-4" /> Pay now
+                              </Button>
+                            )}
+                            {order.status === "paid" && (
+                              <Badge className="bg-green-100 text-green-700 border-0">
+                                <CreditCard className="mr-1.5 h-3.5 w-3.5" /> Paid
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })
+                )}
+
+                <ListPager page={histPager.page} totalPages={histPager.totalPages} onPage={histPager.setPage} total={filteredOrders.length} />
+              </>
             )}
           </div>
         )}
@@ -1083,6 +1091,21 @@ function OrdersTab() {
 
 function PlaybooksTab() {
   const { data, isLoading } = trpc.candidate.myPlaybooks.useQuery();
+  const [query, setQuery] = useState("");
+  const download = trpc.candidate.downloadPlaybook.useMutation({
+    onSuccess: (r) => {
+      if (r.fileBase64) downloadBase64(r.fileBase64, r.fileName ?? "playbook.pdf", r.fileMime ?? "application/pdf");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return data ?? [];
+    return (data ?? []).filter(({ playbook }) =>
+      `${playbook.title} ${playbook.category}`.toLowerCase().includes(q),
+    );
+  }, [data, query]);
+  const pager = usePager(filtered);
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
   if (!data || data.length === 0) {
     return (
@@ -1097,35 +1120,81 @@ function PlaybooksTab() {
     );
   }
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
-      {data.map(({ purchase, playbook }) => (
-        <Link
-          key={purchase.id}
-          to={`/playbooks/${playbook.id}`}
-          className="rounded-3xl border bg-card p-6 shadow-sm flex gap-4 transition-colors hover:border-orange-200 hover:bg-orange-50/30"
-        >
-          <div className="h-12 w-12 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
-            <BookOpen className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="font-display font-semibold">{playbook.title}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {playbook.pages} pages · bought {new Date(purchase.createdAt).toLocaleDateString("en-IN")}
-            </p>
-            <Badge variant="secondary" className="mt-2">{playbook.category}</Badge>
-          </div>
-        </Link>
-      ))}
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          {filtered.length} book{filtered.length === 1 ? "" : "s"} in your library
+        </p>
+        <SearchBox value={query} onChange={setQuery} placeholder="Search your playbooks…" />
+      </div>
+
+      {pager.pageItems.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">No playbooks match your search.</p>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2">
+          {pager.pageItems.map(({ purchase, playbook }) => (
+            <Link
+              key={purchase.id}
+              to={`/playbooks/${playbook.id}`}
+              className="rounded-3xl border bg-card p-6 shadow-sm flex gap-4 transition-colors hover:border-orange-200 hover:bg-orange-50/30"
+            >
+              <div className="h-12 w-12 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-semibold">{playbook.title}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {playbook.pages} pages · bought {new Date(purchase.createdAt).toLocaleDateString("en-IN")}
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge variant="secondary">{playbook.category}</Badge>
+                  {playbook.fileUrl && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full h-7"
+                      disabled={download.isPending}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        download.mutate({ playbookId: playbook.id });
+                      }}
+                    >
+                      {download.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                      Download PDF
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <ListPager page={pager.page} totalPages={pager.totalPages} onPage={pager.setPage} total={filtered.length} />
     </div>
   );
 }
 
 function SubmissionsTab() {
   const { data, isLoading } = trpc.candidate.mySubmissions.useQuery();
+  const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const dl = trpc.candidate.downloadSubmission.useMutation({
     onSuccess: (r) => r.fileBase64 && downloadBase64(r.fileBase64, r.fileName ?? "submission", r.fileMime ?? "application/octet-stream"),
     onError: (e) => toast.error(e.message),
   });
+
+  const countFor = (status: string) => (data ?? []).filter(({ submission: s }) => s.status === status).length;
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (data ?? []).filter(({ submission: s, event }) => {
+      if (filter !== "all" && s.status !== filter) return false;
+      if (q && !`${event.title} ${s.title} ${s.teamName}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [data, filter, query]);
+  const pager = usePager(filtered);
 
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
   if (!data || data.length === 0) {
@@ -1142,30 +1211,53 @@ function SubmissionsTab() {
   }
   const st = (s: string) => subStatus[s] ?? subStatus.submitted;
   return (
-    <div className="space-y-4">
-      {data.map(({ submission: s, event }) => (
-        <div key={s.id} className="rounded-3xl border bg-card p-6 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="text-xs text-muted-foreground">{event.title}</div>
-              <h3 className="font-display font-semibold mt-1">{s.title}</h3>
-              <p className="text-xs text-muted-foreground">Team {s.teamName} · {s.fileName}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {s.score !== null && <Badge className="bg-orange-500">{s.score}/100</Badge>}
-              <Badge className={st(s.status).cls}>{st(s.status).label}</Badge>
-              {s.fileName && (
-                <Button size="icon" variant="outline" className="rounded-full h-8 w-8" onClick={() => dl.mutate({ id: s.id })}>
-                  {dl.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                </Button>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <FilterChips
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { id: "all", label: "All", count: data.length },
+            { id: "submitted", label: "Submitted", count: countFor("submitted") },
+            { id: "shortlisted", label: "Shortlisted", count: countFor("shortlisted") },
+            { id: "winner", label: "Won", count: countFor("winner") },
+            { id: "rejected", label: "Not selected", count: countFor("rejected") },
+          ]}
+        />
+        <SearchBox value={query} onChange={setQuery} placeholder="Search entries…" />
+      </div>
+
+      {pager.pageItems.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">No entries match your filters.</p>
+      ) : (
+        <div className="space-y-4">
+          {pager.pageItems.map(({ submission: s, event }) => (
+            <div key={s.id} className="rounded-3xl border bg-card p-6 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">{event.title}</div>
+                  <h3 className="font-display font-semibold mt-1">{s.title}</h3>
+                  <p className="text-xs text-muted-foreground">Team {s.teamName} · {s.fileName}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {s.score !== null && <Badge className="bg-orange-500">{s.score}/100</Badge>}
+                  <Badge className={st(s.status).cls}>{st(s.status).label}</Badge>
+                  {s.fileName && (
+                    <Button size="icon" variant="outline" className="rounded-full h-8 w-8" onClick={() => dl.mutate({ id: s.id })}>
+                      {dl.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {s.feedback && (
+                <p className="mt-3 text-sm text-muted-foreground border-l-2 border-orange-400 pl-3">Jury: “{s.feedback}”</p>
               )}
             </div>
-          </div>
-          {s.feedback && (
-            <p className="mt-3 text-sm text-muted-foreground border-l-2 border-orange-400 pl-3">Jury: “{s.feedback}”</p>
-          )}
+          ))}
         </div>
-      ))}
+      )}
+
+      <ListPager page={pager.page} totalPages={pager.totalPages} onPage={pager.setPage} total={filtered.length} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand } from "@aws-sdk/client-s3";
 import { env } from "./env";
 
 const s3 = new S3Client({
@@ -93,4 +93,20 @@ export async function uploadObject(
 export function getPublicUrl(key: string): string {
   const publicUrl = env.s3.publicUrl.replace(/\/$/, "");
   return `${publicUrl}/${env.s3.bucket}/${key}`;
+}
+
+// Extract the object key from a public MinIO URL, or null if it isn't one of ours.
+export function parsePublicObjectUrl(url: string): string | null {
+  const publicUrl = env.s3.publicUrl.replace(/\/$/, "");
+  const prefix = `${publicUrl}/${env.s3.bucket}/`;
+  if (!url.startsWith(prefix)) return null;
+  return url.slice(prefix.length);
+}
+
+export async function getObject(
+  key: string,
+): Promise<{ body: Buffer; contentType: string | undefined }> {
+  const res = await s3.send(new GetObjectCommand({ Bucket: env.s3.bucket, Key: key }));
+  const bytes = await res.Body!.transformToByteArray();
+  return { body: Buffer.from(bytes), contentType: res.ContentType };
 }

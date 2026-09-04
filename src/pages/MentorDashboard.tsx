@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router";
 import type { inferProcedureOutput } from "@trpc/server";
 import type { AppRouter } from "../../api/router";
@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import DashboardShell from "@/components/DashboardShell";
+import { FilterChips, ListPager, SearchBox, usePager } from "@/components/ListControls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,14 +38,6 @@ import { Progress } from "@/components/ui/progress";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { formatINR } from "@/lib/format";
 import ImageUploadField from "@/components/expert/ImageUploadField";
 
@@ -113,7 +106,15 @@ type MenteeRow = MyMenteesOutput["rows"][number];
 
 function MenteesTab() {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = trpc.mentor.myMentees.useQuery({ page, pageSize: MENTEES_PAGE_SIZE });
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "cancelled">("all");
+  const [menteeQuery, setMenteeQuery] = useState("");
+  const deferredQuery = useDeferredValue(menteeQuery);
+  const { data, isLoading } = trpc.mentor.myMentees.useQuery({
+    page,
+    pageSize: MENTEES_PAGE_SIZE,
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(deferredQuery.trim() ? { search: deferredQuery.trim() } : {}),
+  });
   const utils = trpc.useUtils();
   const [view, setView] = useState<"list" | "detail">("list");
   const [selected, setSelected] = useState<MenteeRow | null>(null);
@@ -145,7 +146,7 @@ function MenteesTab() {
   };
 
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
-  if (!data || data.rows.length === 0) {
+  if (!data || data.total === 0) {
     return (
       <div className="rounded-3xl border bg-card p-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 mx-auto">
@@ -160,12 +161,29 @@ function MenteesTab() {
   }
 
   const totalPages = Math.ceil(data.total / data.pageSize);
+  const sc = data.statusCounts;
 
   return (
     <div className="space-y-5">
+      {view === "list" && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <FilterChips
+            value={statusFilter}
+            onChange={(v) => { setStatusFilter(v as typeof statusFilter); setPage(1); }}
+            options={[
+              { id: "all", label: "All", count: sc.active + sc.completed + sc.cancelled },
+              { id: "active", label: "Ongoing", count: sc.active },
+              { id: "completed", label: "Completed", count: sc.completed },
+              { id: "cancelled", label: "Cancelled", count: sc.cancelled },
+            ]}
+          />
+          <SearchBox value={menteeQuery} onChange={(v) => { setMenteeQuery(v); setPage(1); }} placeholder="Search mentees…" />
+        </div>
+      )}
       {view === "list" ? (
         <MenteesList
           rows={data.rows}
+          total={data.total}
           totalPages={totalPages}
           page={page}
           setPage={setPage}
@@ -227,17 +245,24 @@ function MenteesTab() {
 
 function MenteesList({
   rows,
+  total,
   totalPages,
   page,
   setPage,
   onOpen,
 }: {
   rows: MenteeRow[];
+  total: number;
   totalPages: number;
   page: number;
   setPage: (p: number) => void;
   onOpen: (row: MenteeRow) => void;
 }) {
+  if (rows.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">No mentees match your filters.</p>
+    );
+  }
   return (
     <div className="space-y-4">
       {rows.map((row) => {
@@ -298,40 +323,13 @@ function MenteesList({
         );
       })}
 
-      {totalPages > 1 && (
-        <div className="flex flex-col items-center gap-2 pt-2">
-          <p className="text-xs text-muted-foreground">
-            Showing {Math.min((page - 1) * MENTEES_PAGE_SIZE + 1, rows.length)}–{Math.min(page * MENTEES_PAGE_SIZE, rows.length)} of {rows.length}
-          </p>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <PaginationItem key={i + 1}>
-                  <PaginationLink
-                    isActive={page === i + 1}
-                    onClick={() => setPage(i + 1)}
-                    className="cursor-pointer"
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <ListPager
+        page={page}
+        totalPages={totalPages}
+        onPage={setPage}
+        total={total}
+        pageSize={MENTEES_PAGE_SIZE}
+      />
     </div>
   );
 }
@@ -494,6 +492,8 @@ function MenteeDetail({
 
 function GuestLecturesTab() {
   const { data, isLoading } = trpc.mentor.myGuestRequests.useQuery();
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
+  const [query, setQuery] = useState("");
   const utils = trpc.useUtils();
   const [respondFor, setRespondFor] = useState<{
     id: number;
@@ -512,6 +512,17 @@ function GuestLecturesTab() {
     onError: (e) => toast.error(e.message),
   });
 
+  const countFor = (status: string) => (data ?? []).filter(({ request }) => request.status === status).length;
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (data ?? []).filter(({ request, campusName }) => {
+      if (statusFilter !== "all" && request.status !== statusFilter) return false;
+      if (q && !`${campusName} ${request.topic ?? ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [data, statusFilter, query]);
+  const pager = usePager(filtered);
+
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
   if (!data || data.length === 0) {
     return (
@@ -523,8 +534,26 @@ function GuestLecturesTab() {
   }
 
   return (
-    <div className="space-y-4">
-      {data.map(({ request, campusName, campusEmail }) => {
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <FilterChips
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          options={[
+            { id: "all", label: "All", count: data.length },
+            { id: "pending", label: "Pending", count: countFor("pending") },
+            { id: "accepted", label: "Accepted", count: countFor("accepted") },
+            { id: "rejected", label: "Declined", count: countFor("rejected") },
+          ]}
+        />
+        <SearchBox value={query} onChange={setQuery} placeholder="Search invites…" />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">No invites match your filters.</p>
+      ) : (
+        <div className="space-y-4">
+          {pager.pageItems.map(({ request, campusName, campusEmail }) => {
         const statusMeta = {
           pending: { label: "Pending", cls: "bg-amber-100 text-amber-700" },
           accepted: { label: "Accepted", cls: "bg-green-100 text-green-700" },
@@ -605,8 +634,12 @@ function GuestLecturesTab() {
               </div>
             )}
           </div>
-        );
-      })}
+          );
+        })}
+        </div>
+      )}
+
+      <ListPager page={pager.page} totalPages={pager.totalPages} onPage={pager.setPage} total={filtered.length} />
 
       <Dialog open={!!respondFor} onOpenChange={(v) => !v && setRespondFor(null)}>
         <DialogContent>

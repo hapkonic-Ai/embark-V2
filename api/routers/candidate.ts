@@ -1,6 +1,7 @@
 import { and, count, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { Buffer } from "node:buffer";
 import {
   events,
   mentorProfiles,
@@ -17,6 +18,7 @@ import { getDb } from "../queries/connection";
 import { createRouter } from "../middleware";
 import { roleQuery } from "../rbac";
 import { parseDataUrl, resolveAssetUrl } from "../lib/file-assets";
+import { getObject, parsePublicObjectUrl } from "../lib/s3-client";
 
 const candidate = roleQuery("candidate");
 
@@ -254,13 +256,18 @@ export const candidateRouter = createRouter({
           message: "You already own this playbook.",
         });
       }
+      const offerPct = pb[0].offerPercent ?? 0;
+      const effectivePrice =
+        offerPct > 0
+          ? Math.round((pb[0].price * (100 - offerPct)) / 100)
+          : pb[0].price;
       const { orderId } = await db.transaction(async (tx) => {
         const [purchase] = await tx
           .insert(playbookPurchases)
           .values({
             userId: ctx.user.id,
             playbookId: input.playbookId,
-            price: pb[0].price,
+            price: effectivePrice,
           })
           .$returningId();
         const [order] = await tx
@@ -268,13 +275,15 @@ export const candidateRouter = createRouter({
           .values({
             studentId: ctx.user.id,
             playbookPurchaseId: purchase.id,
-            amount: pb[0].price,
+            amount: effectivePrice,
             currency: "INR",
             status: "pending",
             snapshot: {
               type: "playbook",
               playbookId: input.playbookId,
               playbookTitle: pb[0].title,
+              originalPrice: pb[0].price,
+              offerPercent: offerPct,
             },
           })
           .$returningId();
@@ -337,6 +346,32 @@ export const candidateRouter = createRouter({
           fileName: `${pb[0].title}.${parsed.mimeType.split("/").pop() ?? "txt"}`,
           fileMime: parsed.mimeType,
           fileBase64: parsed.base64,
+        };
+      }
+      if (/^https?:\/\//.test(resolved)) {
+        const s3Key = parsePublicObjectUrl(resolved);
+        if (s3Key) {
+          const obj = await getObject(s3Key);
+          const fileMime = obj.contentType || "application/pdf";
+          return {
+            fileName: `${pb[0].title}.${fileMime.split("/").pop() ?? "pdf"}`,
+            fileMime,
+            fileBase64: obj.body.toString("base64"),
+          };
+        }
+        const fileRes = await fetch(resolved);
+        if (!fileRes.ok) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Playbook file could not be fetched from storage.",
+          });
+        }
+        const buffer = Buffer.from(await fileRes.arrayBuffer());
+        const fileMime = fileRes.headers.get("content-type")?.split(";")[0] || "application/pdf";
+        return {
+          fileName: `${pb[0].title}.${fileMime.split("/").pop() ?? "pdf"}`,
+          fileMime,
+          fileBase64: buffer.toString("base64"),
         };
       }
       return {

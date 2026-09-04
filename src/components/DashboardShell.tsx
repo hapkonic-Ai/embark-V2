@@ -1,5 +1,5 @@
-import { type ReactNode, useState } from "react";
-import { Link, Navigate } from "react-router";
+import { type ReactNode } from "react";
+import { Link, Navigate, useSearchParams } from "react-router";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/site/Navbar";
@@ -27,9 +27,20 @@ export default function DashboardShell({
   children: (activeTab: string) => ReactNode;
 }) {
   const { user, isLoading } = useAuth();
-  const [active, setActive] = useState(() => {
-    return tabs.find((t) => t.id === initialTab)?.id ?? tabs[0]?.id ?? "";
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paramTab = searchParams.get("tab");
+  const active =
+    tabs.find((t) => t.id === paramTab)?.id ??
+    tabs.find((t) => t.id === initialTab)?.id ??
+    tabs[0]?.id ??
+    "";
+
+  const setActive = (id: string) => {
+    if (tabs.length <= 1) return; // single-tab pages keep clean URLs
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", id);
+    setSearchParams(next, { replace: true });
+  };
 
   const TabNav = (
     <nav className={cn("flex gap-1.5 overflow-x-auto pb-1", layout === "topbar" ? "mb-8" : "lg:flex-col")}>

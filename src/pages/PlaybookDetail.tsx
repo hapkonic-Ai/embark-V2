@@ -79,11 +79,13 @@ export default function PlaybookDetail() {
       return;
     }
     if (!playbook) return;
+    const offer = playbook.offerPercent ?? 0;
+    const finalPrice = offer > 0 ? Math.round((playbook.price * (100 - offer)) / 100) : playbook.price;
     addItem({
       type: "playbook",
       playbookId: playbook.id,
       title: playbook.title,
-      price: playbook.price,
+      price: finalPrice,
     });
     toast.success("Added to cart", { description: "Checkout from your dashboard Orders section." });
   };
@@ -144,6 +146,11 @@ export default function PlaybookDetail() {
                   alt={playbook.title}
                   className="h-full w-full object-cover"
                 />
+                {(playbook.offerPercent ?? 0) > 0 && (
+                  <span className="absolute left-4 top-4 rounded-full bg-emerald-500 px-3 py-1.5 text-sm font-bold text-white shadow">
+                    {playbook.offerPercent}% OFF
+                  </span>
+                )}
               </div>
               <div className="absolute -bottom-6 -right-6 hidden sm:block">
                 <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-xl">
@@ -187,8 +194,14 @@ export default function PlaybookDetail() {
               <div className="mt-8 rounded-3xl border bg-white p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
+                    {(playbook.offerPercent ?? 0) > 0 && (
+                      <>
+                        <span className="font-display text-xl text-muted-foreground line-through">{formatINR(playbook.price)}</span>
+                        <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">{playbook.offerPercent}% off applied</span>
+                      </>
+                    )}
                     <div className="font-display text-4xl font-bold text-stone-900">
-                      {formatINR(playbook.price)}
+                      {formatINR(playbook.offerPercent ? Math.round((playbook.price * (100 - (playbook.offerPercent ?? 0))) / 100) : playbook.price)}
                     </div>
                     <p className="text-sm text-muted-foreground">One-time purchase. Lifetime access.</p>
                   </div>

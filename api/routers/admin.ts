@@ -1,6 +1,9 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { Buffer } from "node:buffer";
+import { nanoid } from "nanoid";
+import { PDFParse } from "pdf-parse";
 import {
   events,
   expertPages,
@@ -14,6 +17,27 @@ import { getDb } from "../queries/connection";
 import { createRouter } from "../middleware";
 import { roleQuery } from "../rbac";
 import { generateUniqueSlug, getOrCreateExpertPage } from "../lib/expert-page";
+import { uploadObject } from "../lib/s3-client";
+import { approxBase64Bytes } from "../lib/file-assets";
+
+const ADMIN_IMAGE_MIMES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
+async function countPdfPages(base64: string): Promise<number | null> {
+  try {
+    const buffer = Buffer.from(base64, "base64");
+    const parser = new PDFParse({ data: new Uint8Array(buffer) });
+    try {
+      const info = await parser.getInfo({ parsePageInfo: true });
+      return typeof info.total === "number" ? info.total : null;
+    } finally {
+      await parser.destroy();
+    }
+  } catch {
+    return null;
+  }
+}
 
 const admin = roleQuery("admin", "superadmin");
 const superadmin = roleQuery("superadmin");
@@ -46,6 +70,8 @@ const playbookInput = z.object({
   pages: z.number().int().min(1).max(2000).default(40),
   emoji: z.string().max(16).default("📘"),
   coverImage: z.string().max(512).optional().or(z.literal("")),
+  fileUrl: z.string().max(255).optional().or(z.literal("")),
+  offerPercent: z.number().int().min(0).max(90).nullable().optional(),
   isPublished: z.boolean().default(true),
 });
 
@@ -167,6 +193,7 @@ export const adminRouter = createRouter({
     await getDb().insert(playbooks).values({
       ...input,
       coverImage: input.coverImage || null,
+      fileUrl: input.fileUrl || null,
     });
     return { success: true };
   }),
@@ -177,8 +204,58 @@ export const adminRouter = createRouter({
       const { id, ...data } = input;
       const set: Partial<typeof playbooks.$inferInsert> = { ...data };
       if (data.coverImage === "") set.coverImage = null;
+      if (data.fileUrl === "") set.fileUrl = null;
       await getDb().update(playbooks).set(set).where(eq(playbooks.id, id));
       return { success: true };
+    }),
+
+  uploadAsset: admin
+    .input(
+      z.object({
+        fileName: z.string().min(1).max(255),
+        fileMime: z.string().max(128),
+        fileBase64: z.string().min(1).max(16_000_000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const base64 = input.fileBase64.includes(",") ? input.fileBase64.split(",")[1]! : input.fileBase64;
+      const size = approxBase64Bytes(base64);
+
+      if (ADMIN_IMAGE_MIMES.includes(input.fileMime)) {
+        if (size > MAX_IMAGE_BYTES) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Image too large — maximum 5 MB.",
+          });
+        }
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+        const key = `admin/${ctx.user.id}/images/${nanoid(8)}-${safeName}`;
+        const url = await uploadObject(key, Buffer.from(base64, "base64"), input.fileMime);
+        return { kind: "image" as const, url };
+      }
+
+      if (input.fileMime === "application/pdf" || input.fileMime === "application/octet-stream") {
+        if (size > MAX_PDF_BYTES) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "PDF too large — maximum 10 MB.",
+          });
+        }
+        const pageCount = await countPdfPages(base64);
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+        const key = `admin/${ctx.user.id}/pdfs/${nanoid(8)}-${safeName}`;
+        const url = await uploadObject(key, Buffer.from(base64, "base64"), "application/pdf");
+        return {
+          kind: "pdf" as const,
+          url,
+          pageCount,
+        };
+      }
+
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Only JPG, PNG, GIF, WebP images or PDF files are accepted.",
+      });
     }),
 
   deletePlaybook: admin

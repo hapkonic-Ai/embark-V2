@@ -46,7 +46,13 @@ type Playbook = {
   emoji: string;
   coverImage: string | null;
   fileUrl: string | null;
+  offerPercent: number | null;
 };
+
+export function effectivePlaybookPrice(p: Pick<Playbook, "price" | "offerPercent">): number {
+  const offer = p.offerPercent ?? 0;
+  return offer > 0 ? Math.round((p.price * (100 - offer)) / 100) : p.price;
+}
 
 const MotionLink = motion(Link);
 
@@ -55,6 +61,11 @@ export default function Playbooks() {
   const reduce = useReducedMotion();
   const { addItem, items } = useCart();
   const { data: playbooks, isLoading } = trpc.catalog.playbooks.useQuery();
+  const { data: owned } = trpc.candidate.myPlaybooks.useQuery(
+    undefined,
+    { enabled: isAuthenticated && user?.role === "candidate" },
+  );
+  const ownedIds = new Set(owned?.map((o) => o.playbook.id) ?? []);
   const cartPlaybookIds = new Set(items.filter((i) => i.type === "playbook").map((i) => i.playbookId));
 
   const addToCart = (p: Playbook) => {
@@ -70,7 +81,7 @@ export default function Playbooks() {
       type: "playbook",
       playbookId: p.id,
       title: p.title,
-      price: p.price,
+      price: effectivePlaybookPrice(p),
     };
     addItem(item);
     toast.success("Added to cart", { description: "Checkout from your dashboard Orders section." });
@@ -146,6 +157,11 @@ export default function Playbooks() {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    {(p.offerPercent ?? 0) > 0 && (
+                      <span className="absolute left-3 top-3 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white shadow">
+                        {p.offerPercent}% OFF
+                      </span>
+                    )}
                     <div className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                       <h4 className="font-display text-xl font-bold text-white">{p.title}</h4>
                       <p className="mt-1 line-clamp-2 text-sm text-white/80">{p.description}</p>
@@ -159,8 +175,17 @@ export default function Playbooks() {
                       <BookOpen className="h-3.5 w-3.5" /> {p.pages} pages
                     </div>
                     <div className="mt-5 flex items-center justify-between border-t border-stone-800 pt-4">
-                      <span className="font-display text-xl font-bold text-stone-100">{formatINR(p.price)}</span>
-                      {cartPlaybookIds.has(p.id) ? (
+                      <div>
+                        {(p.offerPercent ?? 0) > 0 && (
+                          <span className="block text-sm text-muted-foreground line-through">{formatINR(p.price)}</span>
+                        )}
+                        <span className="font-display text-xl font-bold text-stone-100">{formatINR(effectivePlaybookPrice(p))}</span>
+                      </div>
+                      {ownedIds.has(p.id) ? (
+                        <Button size="sm" className="rounded-full bg-emerald-600 text-white hover:bg-emerald-500">
+                          <BookOpen className="mr-1.5 h-3.5 w-3.5" /> View the book
+                        </Button>
+                      ) : cartPlaybookIds.has(p.id) ? (
                         <Button size="sm" variant="outline" disabled className="rounded-full">
                           <Check className="mr-1.5 h-3.5 w-3.5" /> In cart
                         </Button>

@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, like } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { guestLectureRequests, mentorProfiles, mentorships, mockSessions, reviews, users } from "@db/schema";
@@ -55,6 +55,8 @@ export const mentorRouter = createRouter({
       z.object({
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(1).max(50).default(10),
+        status: z.enum(["active", "completed", "cancelled"]).optional(),
+        search: z.string().max(100).optional(),
       }).optional(),
     )
     .query(async ({ ctx, input }) => {
@@ -62,13 +64,26 @@ export const mentorRouter = createRouter({
       const pageSize = input?.pageSize ?? 10;
       const db = getDb();
       const profile = await getMyProfile(ctx.user.id);
-      if (!profile) return { rows: [], total: 0, page, pageSize };
+      if (!profile) return { rows: [], total: 0, page, pageSize, statusCounts: { active: 0, completed: 0, cancelled: 0 } };
       const offset = (page - 1) * pageSize;
-      const [totalRow, rows] = await Promise.all([
+      const search = input?.search?.trim();
+      const conds = [
+        eq(mentorships.mentorProfileId, profile.id),
+        ...(input?.status ? [eq(mentorships.status, input.status)] : []),
+        ...(search ? [like(users.name, `%${search}%`)] : []),
+      ];
+      const where = and(...conds);
+      const [totalRow, statusRows, rows] = await Promise.all([
         db
           .select({ count: count() })
           .from(mentorships)
-          .where(eq(mentorships.mentorProfileId, profile.id)),
+          .innerJoin(users, eq(users.id, mentorships.candidateId))
+          .where(where),
+        db
+          .select({ status: mentorships.status, n: count() })
+          .from(mentorships)
+          .where(eq(mentorships.mentorProfileId, profile.id))
+          .groupBy(mentorships.status),
         db
           .select({
             mentorship: mentorships,
@@ -78,11 +93,17 @@ export const mentorRouter = createRouter({
           })
           .from(mentorships)
           .innerJoin(users, eq(users.id, mentorships.candidateId))
-          .where(eq(mentorships.mentorProfileId, profile.id))
+          .where(where)
           .orderBy(desc(mentorships.createdAt))
           .limit(pageSize)
           .offset(offset),
       ]);
+      const statusCounts = { active: 0, completed: 0, cancelled: 0 };
+      for (const r of statusRows) {
+        if (r.status === "active") statusCounts.active = Number(r.n);
+        else if (r.status === "completed") statusCounts.completed = Number(r.n);
+        else statusCounts.cancelled = Number(r.n);
+      }
       const withSessions = await Promise.all(
         rows.map(async (r) => {
           const [sessions, review] = await Promise.all([
@@ -101,7 +122,13 @@ export const mentorRouter = createRouter({
           return { ...r, sessions, review };
         }),
       );
-      return { rows: withSessions, total: Number(totalRow[0]?.count ?? 0), page, pageSize };
+      return {
+        rows: withSessions,
+        total: Number(totalRow[0]?.count ?? 0),
+        page,
+        pageSize,
+        statusCounts,
+      };
     }),
 
   scheduleSession: mentor

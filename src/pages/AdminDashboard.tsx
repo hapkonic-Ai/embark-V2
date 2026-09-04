@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
-  BookOpen, CalendarPlus, Crown, Download, LayoutDashboard, Loader2,
-  Pencil, ShieldCheck, Star, Trash2, Trophy, Users,
+  BookOpen, CalendarPlus, Crown, Download, FileText, LayoutDashboard, Loader2,
+  Pencil, ShieldCheck, Star, Trash2, Trophy, Upload, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
@@ -19,7 +19,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { downloadBase64, formatINR } from "@/lib/format";
+import { downloadBase64, fileToBase64, formatINR } from "@/lib/format";
+import ImageUploadField from "@/components/expert/ImageUploadField";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -368,8 +369,8 @@ function SubmissionsTab() {
 
 // ------------------------------------------------------------- playbooks
 
-type PbForm = { id?: number; title: string; description: string; category: string; price: string; pages: string; emoji: string; coverImage: string; isPublished: boolean };
-const emptyPb: PbForm = { title: "", description: "", category: "GDPI", price: "499", pages: "40", emoji: "", coverImage: "", isPublished: true };
+type PbForm = { id?: number; title: string; description: string; category: string; price: string; pages: string; emoji: string; coverImage: string; coverUploaded: boolean; fileUrl: string; offer: string; isPublished: boolean };
+const emptyPb: PbForm = { title: "", description: "", category: "GDPI", price: "499", pages: "40", emoji: "", coverImage: "", coverUploaded: false, fileUrl: "", offer: "", isPublished: true };
 
 function PlaybooksTab() {
   const { data, isLoading } = trpc.admin.listPlaybooks.useQuery();
@@ -389,6 +390,41 @@ function PlaybooksTab() {
     onSuccess: () => { toast.success("Deleted"); invalidate(); },
     onError: (e) => toast.error(e.message),
   });
+  const uploadAsset = trpc.admin.uploadAsset.useMutation({
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handlePdfSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !editing) return;
+    const isPdf = file.type === "application/pdf" || file.type === "application/octet-stream";
+    if (!isPdf || !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Only PDF files are allowed.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("PDF must be under 10 MB.");
+      return;
+    }
+    try {
+      const fileBase64 = await fileToBase64(file);
+      const r = await uploadAsset.mutateAsync({ fileName: file.name, fileMime: file.type || "application/pdf", fileBase64 });
+      if (r.kind !== "pdf") return;
+      setEditing((prev) =>
+        prev
+          ? { ...prev, fileUrl: r.url, pages: r.pageCount != null ? String(r.pageCount) : prev.pages }
+          : prev,
+      );
+      toast.success(
+        r.pageCount != null
+          ? `PDF attached — ${r.pageCount} pages detected.`
+          : "PDF attached.",
+      );
+    } catch {
+      /* toast already shown by onError */
+    }
+  };
 
   if (isLoading) return <Skeleton className="h-64 rounded-3xl" />;
   return (
@@ -410,15 +446,25 @@ function PlaybooksTab() {
               <div>
                 <h3 className="font-display font-semibold">{p.title}</h3>
                 <p className="text-xs text-muted-foreground">{p.category} · {p.pages} pages · {formatINR(p.price)}</p>
-                <Badge className={`mt-2 ${p.isPublished ? "bg-green-100 text-green-700" : "bg-stone-200 text-stone-600"}`}>
-                  {p.isPublished ? "published" : "hidden"}
-                </Badge>
+                <div className="mt-2 flex gap-1.5">
+                  <Badge className={`${p.isPublished ? "bg-green-100 text-green-700" : "bg-stone-200 text-stone-600"}`}>
+                    {p.isPublished ? "published" : "hidden"}
+                  </Badge>
+                  {p.fileUrl && (
+                    <Badge className="bg-orange-100 text-orange-700">PDF attached</Badge>
+                  )}
+                  {(p.offerPercent ?? 0) > 0 && (
+                    <Badge className="bg-emerald-100 text-emerald-700">{p.offerPercent}% off</Badge>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-1.5">
               <Button size="icon" variant="outline" className="rounded-full h-8 w-8" onClick={() => setEditing({
                 id: p.id, title: p.title, description: p.description ?? "", category: p.category,
-                price: p.price.toString(), pages: p.pages.toString(), emoji: p.emoji, coverImage: p.coverImage ?? "", isPublished: p.isPublished,
+                price: p.price.toString(), pages: p.pages.toString(), emoji: p.emoji, coverImage: p.coverImage ?? "",
+                coverUploaded: !!p.coverImage && p.coverImage.includes("/embark-uploads/"),
+                fileUrl: p.fileUrl ?? "", offer: p.offerPercent?.toString() ?? "", isPublished: p.isPublished,
               })}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
@@ -450,10 +496,41 @@ function PlaybooksTab() {
                   <Input type="number" value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })} /></div>
                 <div className="space-y-1.5"><Label>Pages</Label>
                   <Input type="number" value={editing.pages} onChange={(e) => setEditing({ ...editing, pages: e.target.value })} /></div>
+                <div className="space-y-1.5"><Label>Offer (% off, optional)</Label>
+                  <Input type="number" min="0" max="90" placeholder="e.g. 20" value={editing.offer} onChange={(e) => setEditing({ ...editing, offer: e.target.value })} /></div>
               </div>
               <div className="space-y-1.5">
                 <Label>Cover image URL</Label>
-                <Input placeholder="https://images.unsplash.com/photo-..." value={editing.coverImage} onChange={(e) => setEditing({ ...editing, coverImage: e.target.value })} />
+                <Input placeholder="https://images.unsplash.com/photo-..." value={editing.coverUploaded ? "" : editing.coverImage} onChange={(e) => setEditing({ ...editing, coverImage: e.target.value, coverUploaded: false })} />
+              </div>
+              <ImageUploadField
+                label="Or upload cover image"
+                value={editing.coverImage}
+                onChange={(v) => setEditing({ ...editing, coverImage: v, coverUploaded: v !== "" })}
+                onUpload={async (dataUrl) => {
+                  const mime = dataUrl.match(/^data:([^;]+)/)?.[1] ?? "image/png";
+                  const base64 = dataUrl.split(",")[1] ?? "";
+                  const r = await uploadAsset.mutateAsync({ fileName: `cover.${mime.split("/")[1]}`, fileMime: mime, fileBase64: base64 });
+                  if (r.kind !== "image") throw new Error("Upload failed");
+                  return r.url;
+                }}
+                disabled={uploadAsset.isPending || create.isPending || update.isPending}
+              />
+              <div className="space-y-1.5">
+                <Label>Playbook PDF (buyers can download it)</Label>
+                {editing.fileUrl ? (
+                  <div className="flex items-center gap-2 rounded-2xl border bg-muted/40 px-4 py-3 text-sm">
+                    <FileText className="h-4 w-4 shrink-0 text-orange-500" />
+                    <span className="flex-1 truncate">PDF attached</span>
+                    <span className="text-xs text-muted-foreground">Cannot be changed after saving</span>
+                  </div>
+                ) : (
+                  <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed bg-muted/40 px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted ${uploadAsset.isPending ? "opacity-60 cursor-not-allowed" : ""}`}>
+                    {uploadAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {uploadAsset.isPending ? "Uploading…" : "Upload PDF (max 10 MB) — page count is detected automatically"}
+                    <input type="file" accept="application/pdf" className="hidden" onChange={handlePdfSelect} disabled={uploadAsset.isPending} />
+                  </label>
+                )}
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={editing.isPublished} onChange={(e) => setEditing({ ...editing, isPublished: e.target.checked })} />
@@ -463,10 +540,12 @@ function PlaybooksTab() {
                 className="w-full rounded-full"
                 disabled={create.isPending || update.isPending}
                 onClick={() => {
+                  const offerPct = editing.offer.trim() === "" ? null : Math.min(90, Math.max(0, Number(editing.offer)));
                   const payload = {
                     title: editing.title, description: editing.description, category: editing.category,
                     price: Number(editing.price), pages: Number(editing.pages), emoji: editing.emoji,
-                    coverImage: editing.coverImage || undefined, isPublished: editing.isPublished,
+                    coverImage: editing.coverImage, fileUrl: editing.fileUrl || undefined,
+                    offerPercent: offerPct, isPublished: editing.isPublished,
                   };
                   if (editing.id) update.mutate({ id: editing.id, ...payload });
                   else create.mutate(payload);
